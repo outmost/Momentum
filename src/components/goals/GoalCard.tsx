@@ -18,9 +18,10 @@ interface GoalCardProps {
   date: string;
   isBackdated?: boolean;
   isFuture?: boolean;
+  isLast?: boolean;
 }
 
-export function GoalCard({ goal, entry, date, isBackdated, isFuture }: GoalCardProps) {
+export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: GoalCardProps) {
   const router = useRouter();
   const milestones = useMilestones(goal.id);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
@@ -64,18 +65,24 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture }: GoalCardP
   const milestoneProgress = totalMilestones > 0
     ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
 
+  const hasBinaryCheck = goal.type === 'binary' || goal.type === 'milestone';
+
   return (
     <>
+      {/* Flat row — no card border, just a left color accent + bottom divider */}
       <div
-        className={cn(
-          'rounded-lg px-4 py-3.5 transition-opacity',
-          isFuture && 'opacity-40 pointer-events-none'
-        )}
-        style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+        className={cn('relative', isFuture && 'opacity-40 pointer-events-none')}
+        style={{ borderBottom: isLast ? 'none' : '1px solid var(--border)' }}
       >
-        <div className="flex items-start gap-1">
-          {/* Checkbox (binary + milestone) */}
-          {(goal.type === 'binary' || goal.type === 'milestone') && (
+        {/* Left color accent line */}
+        <div
+          className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r"
+          style={{ backgroundColor: completed ? 'var(--border)' : color }}
+        />
+
+        <div className="flex items-start pl-5 pr-3 py-3.5 gap-2">
+          {/* Checkbox for binary/milestone — large tap target */}
+          {hasBinaryCheck && (
             <BinaryEntry
               completed={completed}
               onChange={goal.type === 'binary' ? handleBinaryChange : () => {}}
@@ -84,31 +91,38 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture }: GoalCardP
           )}
 
           {/* Content */}
-          <div className={cn('flex-1 min-w-0', (goal.type === 'binary' || goal.type === 'milestone') ? '' : 'ml-2.5 mt-0.5')}>
-            <div className="flex items-center gap-2 mb-0.5">
+          <div className={cn('flex-1 min-w-0', hasBinaryCheck ? 'mt-[1px]' : 'mt-0.5')}>
+            <div className="flex items-baseline gap-2 flex-wrap">
               <button
                 onClick={() => router.push(`/goals/${goal.id}`)}
-                className="text-sm font-medium text-left transition-colors leading-snug"
-                style={{ color: completed ? 'var(--text-3)' : 'var(--text)', textDecoration: completed ? 'line-through' : 'none' }}
+                className="text-sm font-medium text-left leading-snug transition-colors"
+                style={{
+                  color: completed ? 'var(--text-3)' : 'var(--text)',
+                  textDecoration: completed ? 'line-through' : 'none',
+                }}
               >
                 {goal.title}
               </button>
               {isBackdated && (
-                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
+                <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>
                   backdated
                 </span>
               )}
             </div>
 
-            {/* Type-specific controls */}
+            {/* Controls below title */}
             {goal.type === 'numeric' && (
-              <NumericEntry value={value} target={goal.target ?? 0} unit={goal.unit} onChange={handleNumericChange} color={color} />
+              <div className="mt-2">
+                <NumericEntry value={value} target={goal.target ?? 0} unit={goal.unit} onChange={handleNumericChange} color={color} />
+              </div>
             )}
             {goal.type === 'timer' && (
-              <TimerEntry goalId={goal.id} value={value} target={goal.duration ?? 0} onChange={handleTimerChange} color={color} />
+              <div className="mt-2">
+                <TimerEntry goalId={goal.id} value={value} target={goal.duration ?? 0} onChange={handleTimerChange} color={color} />
+              </div>
             )}
             {goal.type === 'milestone' && (
-              <div>
+              <div className="mt-1.5">
                 <button
                   onClick={() => setExpanded(!expanded)}
                   className="text-xs transition-colors"
@@ -116,7 +130,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture }: GoalCardP
                 >
                   {completedMilestones}/{totalMilestones} steps
                 </button>
-                <ProgressBar value={milestoneProgress} size="sm" color={color} className="mt-1.5 max-w-[140px]" />
+                <ProgressBar value={milestoneProgress} size="sm" color={color} className="mt-1 max-w-[120px]" />
                 {expanded && (
                   <div className="mt-2.5 space-y-2">
                     {milestones?.map(m => (
@@ -131,7 +145,10 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture }: GoalCardP
                         />
                         <span
                           className="text-xs"
-                          style={{ color: m.isCompleted ? 'var(--text-3)' : 'var(--text-2)', textDecoration: m.isCompleted ? 'line-through' : 'none' }}
+                          style={{
+                            color: m.isCompleted ? 'var(--text-3)' : 'var(--text-2)',
+                            textDecoration: m.isCompleted ? 'line-through' : 'none',
+                          }}
                         >
                           {m.title}
                         </span>
@@ -143,13 +160,13 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture }: GoalCardP
             )}
           </div>
 
-          {/* Note button */}
+          {/* Note button — far right, barely visible until hovered */}
           {!isFuture && (
             <button
               onClick={() => setNoteModalOpen(true)}
-              className="shrink-0 w-7 h-7 rounded flex items-center justify-center transition-colors ml-1 mt-0.5"
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors mt-0.5"
               style={{ color: entry?.note ? 'var(--accent)' : 'var(--text-3)' }}
-              title="Add note"
+              title="Note"
             >
               <MessageSquare size={13} />
             </button>

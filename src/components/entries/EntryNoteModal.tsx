@@ -1,7 +1,6 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { Button } from '@/components/ui/Button';
 
 interface EntryNoteModalProps {
   open: boolean;
@@ -13,25 +12,48 @@ interface EntryNoteModalProps {
 
 export function EntryNoteModal({ open, onClose, onSave, initialNote = '', goalTitle }: EntryNoteModalProps) {
   const [note, setNote] = useState(initialNote);
-  
+
+  // Sync when opened
+  useEffect(() => { if (open) setNote(initialNote); }, [open, initialNote]);
+
   function handleSave() {
     onSave(note);
     onClose();
   }
-  
+
   return (
-    <Modal open={open} onClose={onClose} title={`Note for "${goalTitle}"`}>
-      <div className="p-6 space-y-4">
+    <Modal open={open} onClose={onClose} title={goalTitle} size="sm">
+      <div className="p-5 space-y-4">
         <textarea
           value={note}
           onChange={e => setNote(e.target.value)}
-          placeholder="Add a reflection or note for today..."
+          placeholder="Add a note for today…"
           rows={4}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          autoFocus
+          className="w-full px-3 py-2 rounded-md text-sm focus:outline-none resize-none"
+          style={{
+            border: '1px solid var(--border)',
+            backgroundColor: 'transparent',
+            color: 'var(--text)',
+          }}
+          onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleSave(); }}
         />
-        <div className="flex justify-end gap-3">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save Note</Button>
+        <p className="text-xs" style={{ color: 'var(--text-3)' }}>⌘↵ to save</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 text-sm rounded-md"
+            style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-3 py-1.5 text-sm font-medium rounded-md text-white"
+            style={{ backgroundColor: 'var(--accent)' }}
+          >
+            Save
+          </button>
         </div>
       </div>
     </Modal>

@@ -1,8 +1,14 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, MoreVertical, Pencil, Trash2 } from 'lucide-react';
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  DndContext, closestCenter, DragEndEvent,
+  useSensor, useSensors, PointerSensor, KeyboardSensor,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy,
+  arrayMove, sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import { GoalListItem } from '@/components/goals/GoalListItem';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { deleteFolder, updateFolder } from '@/hooks/useFolders';
@@ -10,7 +16,11 @@ import { reorderGoals } from '@/hooks/useGoals';
 import type { Folder, Goal } from '@/types';
 
 interface GoalWithStats extends Goal { completionRate7?: number; }
-interface FolderSectionProps { folder?: Folder; goals: GoalWithStats[]; defaultExpanded?: boolean; }
+interface FolderSectionProps {
+  folder?: Folder;
+  goals: GoalWithStats[];
+  defaultExpanded?: boolean;
+}
 
 export function FolderSection({ folder, goals, defaultExpanded = true }: FolderSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -18,6 +28,16 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editName, setEditName] = useState(false);
   const [newName, setNewName] = useState(folder?.name ?? '');
+  // Local copy for optimistic drag reorder
+  const [localGoals, setLocalGoals] = useState<GoalWithStats[]>(goals);
+
+  // Sync when parent data changes (after DB write)
+  useEffect(() => { setLocalGoals(goals); }, [goals]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   async function handleRename() {
     if (folder && newName.trim()) await updateFolder(folder.id, { name: newName.trim() });
@@ -27,33 +47,36 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = goals.findIndex(g => g.id === active.id);
-    const newIndex = goals.findIndex(g => g.id === over.id);
+    const oldIndex = localGoals.findIndex(g => g.id === active.id);
+    const newIndex = localGoals.findIndex(g => g.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    const reordered = [...goals];
-    const [moved] = reordered.splice(oldIndex, 1);
-    reordered.splice(newIndex, 0, moved);
-    await reorderGoals(reordered.map(g => g.id), reordered.map((_, i) => (i + 1) * 1000));
+    const reordered = arrayMove(localGoals, oldIndex, newIndex);
+    setLocalGoals(reordered); // Optimistic — instant visual feedback
+    await reorderGoals(
+      reordered.map(g => g.id),
+      reordered.map((_, i) => (i + 1) * 1000),
+    );
   }
 
   return (
-    <div className="rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-      {/* Section header */}
-      <div className="flex items-center px-4 py-2.5" style={{ borderBottom: expanded ? '1px solid var(--border)' : 'none' }}>
+    // No overflow-hidden — it clips the drag ghost
+    <div className="rounded-lg" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+      {/* Header */}
+      <div
+        className="flex items-center px-4 py-2.5"
+        style={{ borderBottom: expanded && localGoals.length > 0 ? '1px solid var(--border)' : 'none' }}
+      >
         <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 flex-1 min-w-0">
           {expanded
-            ? <ChevronDown size={13} style={{ color: 'var(--text-3)' }} className="shrink-0" />
-            : <ChevronRight size={13} style={{ color: 'var(--text-3)' }} className="shrink-0" />
+            ? <ChevronDown size={12} style={{ color: 'var(--text-3)' }} className="shrink-0" />
+            : <ChevronRight size={12} style={{ color: 'var(--text-3)' }} className="shrink-0" />
           }
           {folder ? (
-            <>
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: folder.color }} />
-              <span className="text-xs font-semibold uppercase tracking-widest truncate" style={{ color: 'var(--text-2)' }}>
-                {!editName && `${folder.icon} ${folder.name}`}
-              </span>
-            </>
+            <span className="text-[11px] font-semibold uppercase tracking-widest truncate" style={{ color: 'var(--text-2)' }}>
+              {!editName && `${folder.icon} ${folder.name}`}
+            </span>
           ) : (
-            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>Other</span>
+            <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>Other</span>
           )}
         </button>
 
@@ -69,13 +92,13 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
           />
         )}
 
-        <span className="text-xs ml-2 tabular shrink-0" style={{ color: 'var(--text-3)' }}>{goals.length}</span>
+        <span className="text-[11px] ml-2 tabular shrink-0" style={{ color: 'var(--text-3)' }}>{localGoals.length}</span>
 
         {folder && (
           <div className="relative ml-1 shrink-0">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="w-6 h-6 flex items-center justify-center rounded transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded"
               style={{ color: 'var(--text-3)' }}
             >
               <MoreVertical size={13} />
@@ -84,17 +107,15 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
                 <div
-                  className="absolute right-0 top-7 z-20 w-32 rounded-lg py-1 text-sm"
-                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                  className="absolute right-0 top-7 z-20 w-32 rounded-lg py-1"
+                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 16px rgba(0,0,0,0.10)' }}
                 >
                   <button onClick={() => { setEditName(true); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2"
-                    style={{ color: 'var(--text-2)' }}>
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm" style={{ color: 'var(--text-2)' }}>
                     <Pencil size={12} /> Rename
                   </button>
                   <button onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2"
-                    style={{ color: 'var(--danger)' }}>
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm" style={{ color: 'var(--danger)' }}>
                     <Trash2 size={12} /> Delete
                   </button>
                 </div>
@@ -105,16 +126,22 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
       </div>
 
       {expanded && (
-        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={goals.map(g => g.id)} strategy={verticalListSortingStrategy}>
-            {goals.map(goal => (
-              <GoalListItem key={goal.id} goal={goal} completionRate7={goal.completionRate7} draggable />
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={localGoals.map(g => g.id)} strategy={verticalListSortingStrategy}>
+            {localGoals.map((goal, i) => (
+              <GoalListItem
+                key={goal.id}
+                goal={goal}
+                completionRate7={goal.completionRate7}
+                draggable
+                isLast={i === localGoals.length - 1}
+              />
             ))}
           </SortableContext>
         </DndContext>
       )}
-      {expanded && goals.length === 0 && (
-        <p className="px-4 py-5 text-xs text-center" style={{ color: 'var(--text-3)' }}>No goals in this folder</p>
+      {expanded && localGoals.length === 0 && (
+        <p className="px-4 py-6 text-xs text-center" style={{ color: 'var(--text-3)' }}>No goals here</p>
       )}
 
       <ConfirmDialog

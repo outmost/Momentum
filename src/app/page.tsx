@@ -12,11 +12,10 @@ import { isScheduledForDate } from '@/lib/utils';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { Modal } from '@/components/ui/Modal';
 import { GoalForm } from '@/components/goals/GoalForm';
-import { EmptyState } from '@/components/ui/EmptyState';
 import type { Goal } from '@/types';
 
 export default function TodayPage() {
-  const { selectedDate, setSelectedDate, welcomeBackDismissed, setWelcomeBackDismissed } = useUIStore();
+  const { selectedDate, setSelectedDate } = useUIStore();
   const [goalFormOpen, setGoalFormOpen] = useState(false);
   const goals = useActiveGoals();
   const folders = useFolders();
@@ -25,16 +24,10 @@ export default function TodayPage() {
 
   useEffect(() => { initializeSettings(); }, []);
 
-  const lastVisit = typeof window !== 'undefined' ? localStorage.getItem('lastVisit') : null;
-  const showWelcomeBack = !welcomeBackDismissed && lastVisit &&
-    (Date.now() - Number(lastVisit)) > 3 * 24 * 60 * 60 * 1000;
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') localStorage.setItem('lastVisit', Date.now().toString());
-  }, []);
-
   function navigate(dir: -1 | 1) {
-    const d = dir === -1 ? subDays(parseISO(selectedDate), 1) : addDays(parseISO(selectedDate), 1);
+    const d = dir === -1
+      ? subDays(parseISO(selectedDate), 1)
+      : addDays(parseISO(selectedDate), 1);
     setSelectedDate(format(d, 'yyyy-MM-dd'));
   }
 
@@ -42,12 +35,13 @@ export default function TodayPage() {
   const isSelectedToday = selectedDate === today;
   const isSelectedFuture = selectedDate > today;
 
-  const scheduledGoals = goals?.filter(g =>
-    isScheduledForDate(selectedDate, g.frequency, g.customDays)
-  ) ?? [];
+  const scheduledGoals = (goals ?? [])
+    .filter(g => isScheduledForDate(selectedDate, g.frequency, g.customDays))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
 
+  // Group by folder, preserving sort order
   const grouped = new Map<string | null, Goal[]>();
   for (const goal of scheduledGoals) {
     const key = goal.folderId || null;
@@ -55,104 +49,131 @@ export default function TodayPage() {
     grouped.get(key)!.push(goal);
   }
 
-  const dateLabel = isSelectedToday ? 'Today' : format(parseISO(selectedDate), 'EEE, MMM d');
   const completedCount = scheduledGoals.filter(g => entryMap.get(g.id)?.completed).length;
+  const allDone = scheduledGoals.length > 0 && completedCount === scheduledGoals.length;
+
+  const dateLabel = isSelectedToday
+    ? format(new Date(), 'EEEE')
+    : format(parseISO(selectedDate), 'EEE, MMM d');
+
+  const dateSubLabel = isSelectedToday
+    ? format(new Date(), 'MMMM d')
+    : null;
 
   return (
     <div>
-      {/* Welcome back */}
-      {showWelcomeBack && (
-        <div
-          className="mb-6 px-4 py-3 rounded-lg flex items-center justify-between"
-          style={{ backgroundColor: 'var(--accent-2)', border: '1px solid var(--border)' }}
-        >
-          <p className="text-sm" style={{ color: 'var(--accent)' }}>Welcome back — pick up where you left off.</p>
-          <button
-            onClick={() => setWelcomeBackDismissed(true)}
-            className="text-xs ml-3"
-            style={{ color: 'var(--text-3)' }}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      {/* ── Header ── */}
+      <div className="mb-8">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight leading-none" style={{ color: 'var(--text)' }}>
+              {dateLabel}
+            </h1>
+            {dateSubLabel && (
+              <p className="mt-1 text-sm" style={{ color: 'var(--text-3)' }}>{dateSubLabel}</p>
+            )}
+          </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-7">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--text)' }}>
-            {dateLabel}
-          </h1>
-          {scheduledGoals.length > 0 && (
-            <p className="text-sm mt-0.5 tabular" style={{ color: 'var(--text-3)' }}>
-              {completedCount} of {scheduledGoals.length} done
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-0.5">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-8 h-8 flex items-center justify-center rounded transition-colors"
-            style={{ color: 'var(--text-3)' }}
-          >
-            <ChevronLeft size={18} />
-          </button>
-          {!isSelectedToday && (
+          <div className="flex items-center gap-0 mt-1">
             <button
-              onClick={() => setSelectedDate(today)}
-              className="px-2 py-1 text-xs rounded transition-colors font-medium"
-              style={{ color: 'var(--accent)' }}
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 flex items-center justify-center rounded transition-colors"
+              style={{ color: 'var(--text-3)' }}
             >
-              Today
+              <ChevronLeft size={18} />
             </button>
-          )}
-          <button
-            onClick={() => navigate(1)}
-            className="w-8 h-8 flex items-center justify-center rounded transition-colors"
-            style={{ color: 'var(--text-3)' }}
-          >
-            <ChevronRight size={18} />
-          </button>
+            {!isSelectedToday && (
+              <button
+                onClick={() => setSelectedDate(today)}
+                className="px-2 py-1 text-xs font-semibold rounded"
+                style={{ color: 'var(--accent)' }}
+              >
+                Today
+              </button>
+            )}
+            <button
+              onClick={() => navigate(1)}
+              className="w-8 h-8 flex items-center justify-center rounded transition-colors"
+              style={{ color: 'var(--text-3)' }}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
+
+        {/* Progress counter */}
+        {scheduledGoals.length > 0 && (
+          <div className="flex items-center gap-2 mt-4">
+            <span className="text-4xl font-semibold tabular leading-none" style={{ color: allDone ? 'var(--success)' : 'var(--text)' }}>
+              {completedCount}
+            </span>
+            <div>
+              <p className="text-xs leading-none" style={{ color: 'var(--text-3)' }}>of {scheduledGoals.length}</p>
+              <p className="text-xs leading-none mt-0.5" style={{ color: 'var(--text-3)' }}>done</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Goals */}
+      {/* ── Goal list ── */}
       {scheduledGoals.length === 0 ? (
-        goals?.length === 0 ? (
-          <EmptyState
-            icon={<span className="text-4xl">⬜</span>}
-            title="No goals yet"
-            description="Add your first goal to start building momentum."
-            action={{ label: 'Add goal', onClick: () => setGoalFormOpen(true) }}
-          />
-        ) : (
-          <EmptyState
-            icon={<span className="text-3xl">—</span>}
-            title={isSelectedFuture ? 'Future date' : 'Nothing scheduled'}
-            description={isSelectedFuture ? 'Check-ins are only available for today and past dates.' : 'No goals scheduled for this day.'}
-          />
-        )
+        <div className="text-center py-16">
+          {goals?.length === 0 ? (
+            <>
+              <p className="text-3xl mb-4" style={{ color: 'var(--border-2)' }}>—</p>
+              <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>No goals yet</p>
+              <p className="text-sm mb-6" style={{ color: 'var(--text-3)' }}>Add your first goal to start building momentum.</p>
+              <button
+                onClick={() => setGoalFormOpen(true)}
+                className="px-4 py-2 text-sm font-medium rounded-md text-white"
+                style={{ backgroundColor: 'var(--accent)' }}
+              >
+                Add goal
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-3xl mb-4" style={{ color: 'var(--border-2)' }}>—</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>
+                {isSelectedFuture ? 'Future date' : 'Nothing scheduled'}
+              </p>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
+                {isSelectedFuture
+                  ? 'Check-ins are only available for today and past dates.'
+                  : 'No goals scheduled for this day.'}
+              </p>
+            </>
+          )}
+        </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {Array.from(grouped.entries()).map(([folderId, fGoals]) => {
             const folder = folderId ? folders?.find(f => f.id === folderId) : null;
+            const showLabel = folder || grouped.size > 1;
+
             return (
               <div key={folderId ?? 'none'}>
-                {folder && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: folder.color }} />
-                    <h2 className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>
-                      {folder.icon} {folder.name}
+                {/* Folder label */}
+                {showLabel && (
+                  <div className="flex items-center gap-2 mb-2">
+                    {folder && (
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: folder.color }} />
+                    )}
+                    <h2
+                      className="text-[10px] font-bold uppercase tracking-[0.12em]"
+                      style={{ color: 'var(--text-3)' }}
+                    >
+                      {folder ? `${folder.icon} ${folder.name}` : 'Other'}
                     </h2>
                   </div>
                 )}
-                {!folder && grouped.size > 1 && (
-                  <h2 className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-3)' }}>
-                    Other
-                  </h2>
-                )}
-                <div className="space-y-2">
-                  {fGoals.map(goal => (
+
+                {/* Flat list of rows, wrapped in a single rounded container */}
+                <div
+                  className="rounded-lg overflow-hidden"
+                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+                >
+                  {fGoals.map((goal, i) => (
                     <GoalCard
                       key={goal.id}
                       goal={goal}
@@ -160,6 +181,7 @@ export default function TodayPage() {
                       date={selectedDate}
                       isBackdated={!isSelectedToday && !isSelectedFuture}
                       isFuture={isSelectedFuture}
+                      isLast={i === fGoals.length - 1}
                     />
                   ))}
                 </div>
@@ -173,10 +195,10 @@ export default function TodayPage() {
       {!isSelectedFuture && (
         <button
           onClick={() => setGoalFormOpen(true)}
-          className="fixed bottom-20 right-4 md:bottom-6 w-12 h-12 rounded-full flex items-center justify-center z-30 transition-opacity hover:opacity-90 shadow-sm"
+          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-11 h-11 rounded-full flex items-center justify-center z-30 shadow-sm transition-opacity hover:opacity-90"
           style={{ backgroundColor: 'var(--accent)', color: 'white' }}
         >
-          <Plus size={20} />
+          <Plus size={18} />
         </button>
       )}
 

@@ -30,7 +30,10 @@ export function useActiveGoals() {
 }
 
 export function useGoal(id: string) {
-  return useLiveQuery(() => db.goals.get(id), [id]);
+  return useLiveQuery(async () => {
+    const goal = await db.goals.get(id);
+    return goal ?? null;
+  }, [id]);
 }
 
 export async function createGoal(data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt' | 'sortOrder'>) {

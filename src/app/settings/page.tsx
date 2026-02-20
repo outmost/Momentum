@@ -7,6 +7,30 @@ import { requestNotificationPermission } from '@/lib/notifications';
 import { exportAllData, downloadJSON, importData, clearAllData } from '@/lib/export';
 import { Toggle } from '@/components/ui/Toggle';
 
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-3)' }}>
+        {label}
+      </p>
+      <div className="rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function Row({ children, last }: { children: React.ReactNode; last?: boolean }) {
+  return (
+    <div
+      className="px-4 py-3.5"
+      style={{ borderBottom: last ? 'none' : '1px solid var(--border)' }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const settings = useSettings();
   const { theme, setTheme } = useTheme();
@@ -16,20 +40,18 @@ export default function SettingsPage() {
   const [importing, setImporting] = useState(false);
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
   const fileRef = useRef<HTMLInputElement>(null);
-  
+
   async function handleExport() {
     const data = await exportAllData();
-    downloadJSON(data, `momentum-export-${new Date().toISOString().split('T')[0]}.json`);
+    downloadJSON(data, `momentum-${new Date().toISOString().split('T')[0]}.json`);
   }
-  
+
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    
     setImporting(true);
     try {
-      const text = await file.text();
-      await importData(text, importMode);
+      await importData(await file.text(), importMode);
       alert('Import successful!');
     } catch (err) {
       alert('Import failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
@@ -38,7 +60,7 @@ export default function SettingsPage() {
       if (fileRef.current) fileRef.current.value = '';
     }
   }
-  
+
   async function handleClearAll() {
     if (clearInput !== 'DELETE') return;
     await clearAllData();
@@ -46,30 +68,27 @@ export default function SettingsPage() {
     setClearStep2(false);
     setClearInput('');
   }
-  
+
   async function handleNotificationToggle(enabled: boolean) {
     if (enabled) {
       const permission = await requestNotificationPermission();
       if (permission !== 'granted') {
-        alert('Notification permission denied. Please enable notifications in your browser settings.');
+        alert('Notification permission denied. Enable notifications in your browser settings.');
         return;
       }
     }
     await updateSettings({ notificationsEnabled: enabled });
   }
-  
+
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Settings</h1>
-      
-      <div className="space-y-6">
+      <h1 className="text-2xl font-semibold tracking-tight mb-8" style={{ color: 'var(--text)' }}>Settings</h1>
+
+      <div className="space-y-8">
         {/* Appearance */}
-        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-          <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-700">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Appearance</h2>
-          </div>
-          <div className="p-5">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Theme</p>
+        <Section label="Appearance">
+          <Row>
+            <p className="text-sm mb-3" style={{ color: 'var(--text-2)' }}>Theme</p>
             <div className="grid grid-cols-3 gap-2">
               {([
                 { value: 'light', label: 'Light', icon: Sun },
@@ -79,121 +98,82 @@ export default function SettingsPage() {
                 <button
                   key={value}
                   onClick={() => setTheme(value)}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-colors ${
-                    theme === value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600'
-                  }`}
+                  className="flex flex-col items-center gap-2 py-3 rounded-md transition-colors"
+                  style={{
+                    border: `1px solid ${theme === value ? 'var(--accent)' : 'var(--border)'}`,
+                    backgroundColor: theme === value ? 'var(--accent-2)' : 'transparent',
+                    color: theme === value ? 'var(--accent)' : 'var(--text-3)',
+                  }}
                 >
-                  <Icon size={20} className={theme === value ? 'text-blue-500' : 'text-gray-400'} />
-                  <span className={`text-xs font-medium ${theme === value ? 'text-blue-500' : 'text-gray-500 dark:text-gray-400'}`}>
-                    {label}
-                  </span>
+                  <Icon size={16} />
+                  <span className="text-xs font-medium">{label}</span>
                 </button>
               ))}
             </div>
-          </div>
-        </section>
-        
-        {/* Preferences */}
-        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-          <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-700">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Preferences</h2>
-          </div>
-          <div className="p-5 space-y-4">
-            <div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Week starts on</p>
-              <div className="flex gap-2">
-                {([
-                  { value: 0, label: 'Sunday' },
-                  { value: 1, label: 'Monday' },
-                ] as const).map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => updateSettings({ weekStartsOn: value })}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      settings?.weekStartsOn === value
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+          </Row>
+          <Row last>
+            <p className="text-sm mb-3" style={{ color: 'var(--text-2)' }}>Week starts on</p>
+            <div className="flex gap-2">
+              {([{ value: 0, label: 'Sunday' }, { value: 1, label: 'Monday' }] as const).map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => updateSettings({ weekStartsOn: value })}
+                  className="px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: settings?.weekStartsOn === value ? 'var(--text)' : 'transparent',
+                    color: settings?.weekStartsOn === value ? 'var(--bg)' : 'var(--text-2)',
+                    border: settings?.weekStartsOn === value ? '1px solid transparent' : '1px solid var(--border)',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            
-            <div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Default view</p>
-              <div className="flex gap-2">
-                {([
-                  { value: 'today', label: 'Today' },
-                  { value: 'dashboard', label: 'Dashboard' },
-                ] as const).map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => updateSettings({ defaultView: value })}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      settings?.defaultView === value
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-        
+          </Row>
+        </Section>
+
         {/* Notifications */}
-        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-          <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-700">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Notifications</h2>
-          </div>
-          <div className="p-5 space-y-3">
+        <Section label="Notifications">
+          <Row last>
             <Toggle
               checked={settings?.notificationsEnabled ?? false}
               onChange={handleNotificationToggle}
-              label="Enable notifications"
+              label="Enable push notifications"
             />
-            <p className="text-xs text-gray-400">
-              Per-goal reminders are configured on each goal's edit form.
+            <p className="text-xs mt-2" style={{ color: 'var(--text-3)' }}>
+              Per-goal reminders are set in each goal's edit form.
             </p>
-            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                📱 SMS reminders — coming soon
-              </p>
-            </div>
-          </div>
-        </section>
-        
+          </Row>
+        </Section>
+
         {/* Data */}
-        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-          <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-700">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Data</h2>
-          </div>
-          <div className="p-5 space-y-3">
+        <Section label="Data">
+          <Row>
             <button
               onClick={handleExport}
-              className="flex items-center gap-2 w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-left"
+              className="flex items-center gap-3 w-full text-sm transition-colors text-left"
+              style={{ color: 'var(--text-2)' }}
             >
-              <Download size={16} className="text-blue-500" />
+              <Download size={15} style={{ color: 'var(--accent)' }} />
               Export all data as JSON
             </button>
-            
-            <div className="flex gap-2">
-              <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+          </Row>
+          <Row>
+            <div className="flex items-center gap-2">
+              {/* Mode toggle */}
+              <div
+                className="flex gap-0.5 p-0.5 rounded"
+                style={{ backgroundColor: 'var(--border)' }}
+              >
                 {(['merge', 'replace'] as const).map(mode => (
                   <button
                     key={mode}
                     onClick={() => setImportMode(mode)}
-                    className={`px-2 py-1 rounded text-xs font-medium transition-colors capitalize ${
-                      importMode === mode
-                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
-                        : 'text-gray-500'
-                    }`}
+                    className="px-2 py-1 rounded text-xs font-medium transition-colors capitalize"
+                    style={{
+                      backgroundColor: importMode === mode ? 'var(--surface)' : 'transparent',
+                      color: importMode === mode ? 'var(--text)' : 'var(--text-3)',
+                    }}
                   >
                     {mode}
                   </button>
@@ -202,63 +182,77 @@ export default function SettingsPage() {
               <button
                 onClick={() => fileRef.current?.click()}
                 disabled={importing}
-                className="flex items-center gap-2 flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 flex-1 text-sm text-left transition-colors disabled:opacity-50"
+                style={{ color: 'var(--text-2)' }}
               >
-                <Upload size={16} className="text-green-500" />
-                {importing ? 'Importing...' : 'Import from JSON'}
+                <Upload size={15} style={{ color: 'var(--success)' }} />
+                {importing ? 'Importing…' : 'Import from JSON'}
               </button>
               <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
             </div>
-            
+          </Row>
+          <Row last>
             <button
               onClick={() => setClearConfirmOpen(true)}
-              className="flex items-center gap-2 w-full px-4 py-3 bg-red-50 dark:bg-red-900/10 rounded-xl text-sm text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors text-left"
+              className="flex items-center gap-3 w-full text-sm text-left transition-colors"
+              style={{ color: 'var(--danger)' }}
             >
-              <Trash2 size={16} />
+              <Trash2 size={15} />
               Clear all data
             </button>
-          </div>
-        </section>
-        
+          </Row>
+        </Section>
+
         {/* About */}
-        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-          <div className="p-5 text-center space-y-1">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Momentum</p>
-            <p className="text-xs text-gray-400">Version 1.0.0</p>
-            <p className="text-xs text-gray-400">Built with care · Local-first, no account required</p>
-          </div>
-        </section>
+        <Section label="About">
+          <Row last>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>Momentum</span>
+              <span className="text-xs tabular" style={{ color: 'var(--text-3)' }}>v1.0.0</span>
+            </div>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>Local-first · No account required</p>
+          </Row>
+        </Section>
       </div>
-      
-      {/* Clear data confirmation */}
+
+      {/* Clear confirmation overlay */}
       {clearConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => { setClearConfirmOpen(false); setClearStep2(false); setClearInput(''); }} />
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Clear all data?</h3>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => { setClearConfirmOpen(false); setClearStep2(false); setClearInput(''); }} />
+          <div
+            className="relative w-full max-w-sm rounded-xl p-6"
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
+            <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>Clear all data?</h3>
             {!clearStep2 ? (
               <>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">This will permanently delete all your goals, entries, and history.</p>
-                <div className="flex gap-3">
-                  <button onClick={() => setClearConfirmOpen(false)} className="flex-1 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
-                  <button onClick={() => setClearStep2(true)} className="flex-1 px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600">Continue</button>
+                <p className="text-sm mb-5" style={{ color: 'var(--text-2)' }}>
+                  This will permanently delete all goals, entries, and history.
+                </p>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setClearConfirmOpen(false)} className="px-3 py-1.5 text-sm rounded-md" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>Cancel</button>
+                  <button onClick={() => setClearStep2(true)} className="px-3 py-1.5 text-sm rounded-md font-medium text-white" style={{ backgroundColor: 'var(--danger)' }}>Continue</button>
                 </div>
               </>
             ) : (
               <>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">This cannot be undone. Type <strong>DELETE</strong> to confirm.</p>
+                <p className="text-sm mb-3" style={{ color: 'var(--text-2)' }}>
+                  Type <strong style={{ color: 'var(--text)' }}>DELETE</strong> to confirm. This cannot be undone.
+                </p>
                 <input
                   value={clearInput}
                   onChange={e => setClearInput(e.target.value)}
-                  placeholder="Type DELETE"
-                  className="w-full px-3 py-2 rounded-lg border border-red-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 mb-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  placeholder="DELETE"
+                  className="w-full px-3 py-2 rounded-md text-sm mb-4 focus:outline-none"
+                  style={{ border: '1px solid var(--danger)', backgroundColor: 'transparent', color: 'var(--text)' }}
                 />
-                <div className="flex gap-3">
-                  <button onClick={() => { setClearConfirmOpen(false); setClearStep2(false); setClearInput(''); }} className="flex-1 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => { setClearConfirmOpen(false); setClearStep2(false); setClearInput(''); }} className="px-3 py-1.5 text-sm rounded-md" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>Cancel</button>
                   <button
                     onClick={handleClearAll}
                     disabled={clearInput !== 'DELETE'}
-                    className="flex-1 px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+                    className="px-3 py-1.5 text-sm rounded-md font-medium text-white disabled:opacity-40"
+                    style={{ backgroundColor: 'var(--danger)' }}
                   >
                     Clear All Data
                   </button>

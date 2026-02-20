@@ -9,15 +9,8 @@ import { deleteFolder, updateFolder } from '@/hooks/useFolders';
 import { reorderGoals } from '@/hooks/useGoals';
 import type { Folder, Goal } from '@/types';
 
-interface GoalWithStats extends Goal {
-  completionRate7?: number;
-}
-
-interface FolderSectionProps {
-  folder?: Folder;
-  goals: GoalWithStats[];
-  defaultExpanded?: boolean;
-}
+interface GoalWithStats extends Goal { completionRate7?: number; }
+interface FolderSectionProps { folder?: Folder; goals: GoalWithStats[]; defaultExpanded?: boolean; }
 
 export function FolderSection({ folder, goals, defaultExpanded = true }: FolderSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -25,54 +18,45 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editName, setEditName] = useState(false);
   const [newName, setNewName] = useState(folder?.name ?? '');
-  
+
   async function handleRename() {
-    if (folder && newName.trim()) {
-      await updateFolder(folder.id, { name: newName.trim() });
-    }
+    if (folder && newName.trim()) await updateFolder(folder.id, { name: newName.trim() });
     setEditName(false);
   }
-  
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    
     const oldIndex = goals.findIndex(g => g.id === active.id);
     const newIndex = goals.findIndex(g => g.id === over.id);
-    
     if (oldIndex === -1 || newIndex === -1) return;
-    
     const reordered = [...goals];
     const [moved] = reordered.splice(oldIndex, 1);
     reordered.splice(newIndex, 0, moved);
-    
-    // Generate new sort orders
-    const ids = reordered.map(g => g.id);
-    const orders = reordered.map((_, i) => (i + 1) * 1000);
-    await reorderGoals(ids, orders);
+    await reorderGoals(reordered.map(g => g.id), reordered.map((_, i) => (i + 1) * 1000));
   }
-  
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-      {/* Folder header */}
-      <div className="flex items-center px-4 py-3 border-b border-gray-50 dark:border-gray-700">
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 flex-1 min-w-0"
-        >
-          {expanded ? <ChevronDown size={16} className="text-gray-400 shrink-0" /> : <ChevronRight size={16} className="text-gray-400 shrink-0" />}
+    <div className="rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+      {/* Section header */}
+      <div className="flex items-center px-4 py-2.5" style={{ borderBottom: expanded ? '1px solid var(--border)' : 'none' }}>
+        <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 flex-1 min-w-0">
+          {expanded
+            ? <ChevronDown size={13} style={{ color: 'var(--text-3)' }} className="shrink-0" />
+            : <ChevronRight size={13} style={{ color: 'var(--text-3)' }} className="shrink-0" />
+          }
           {folder ? (
             <>
-              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: folder.color }} />
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate">
-                {folder.icon} {editName ? '' : folder.name}
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: folder.color }} />
+              <span className="text-xs font-semibold uppercase tracking-widest truncate" style={{ color: 'var(--text-2)' }}>
+                {!editName && `${folder.icon} ${folder.name}`}
               </span>
             </>
           ) : (
-            <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">Other</span>
+            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>Other</span>
           )}
         </button>
-        
+
         {editName && folder && (
           <input
             value={newName}
@@ -80,36 +64,38 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
             onBlur={handleRename}
             onKeyDown={e => e.key === 'Enter' && handleRename()}
             autoFocus
-            className="flex-1 text-sm px-2 py-1 border border-blue-500 rounded focus:outline-none bg-transparent text-gray-900 dark:text-gray-100"
+            className="flex-1 text-xs px-2 py-1 rounded focus:outline-none bg-transparent"
+            style={{ border: '1px solid var(--accent)', color: 'var(--text)' }}
           />
         )}
-        
-        <span className="text-xs text-gray-400 ml-2 shrink-0">{goals.length}</span>
-        
+
+        <span className="text-xs ml-2 tabular shrink-0" style={{ color: 'var(--text-3)' }}>{goals.length}</span>
+
         {folder && (
-          <div className="relative ml-2 shrink-0">
+          <div className="relative ml-1 shrink-0">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-6 h-6 flex items-center justify-center rounded transition-colors"
+              style={{ color: 'var(--text-3)' }}
             >
-              <MoreVertical size={14} />
+              <MoreVertical size={13} />
             </button>
-            
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-8 z-20 w-36 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1">
-                  <button
-                    onClick={() => { setEditName(true); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <Pencil size={14} /> Rename
+                <div
+                  className="absolute right-0 top-7 z-20 w-32 rounded-lg py-1 text-sm"
+                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                >
+                  <button onClick={() => { setEditName(true); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2"
+                    style={{ color: 'var(--text-2)' }}>
+                    <Pencil size={12} /> Rename
                   </button>
-                  <button
-                    onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10"
-                  >
-                    <Trash2 size={14} /> Delete
+                  <button onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2"
+                    style={{ color: 'var(--danger)' }}>
+                    <Trash2 size={12} /> Delete
                   </button>
                 </div>
               </>
@@ -117,8 +103,7 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
           </div>
         )}
       </div>
-      
-      {/* Goals */}
+
       {expanded && (
         <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={goals.map(g => g.id)} strategy={verticalListSortingStrategy}>
@@ -128,17 +113,16 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
           </SortableContext>
         </DndContext>
       )}
-      
       {expanded && goals.length === 0 && (
-        <div className="px-4 py-6 text-sm text-gray-400 text-center">No goals in this folder</div>
+        <p className="px-4 py-5 text-xs text-center" style={{ color: 'var(--text-3)' }}>No goals in this folder</p>
       )}
-      
+
       <ConfirmDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={() => { if (folder) deleteFolder(folder.id); setDeleteOpen(false); }}
-        title="Delete Folder"
-        message={`Delete "${folder?.name}"? Goals in this folder will be moved to uncategorized.`}
+        title="Delete folder"
+        message={`Delete "${folder?.name}"? Goals will be moved to uncategorized.`}
         confirmLabel="Delete Folder"
         variant="danger"
       />

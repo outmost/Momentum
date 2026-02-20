@@ -2,66 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Geist';
+  src: url('./fonts/GeistVF.woff') format('woff');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'GeistMono';
+  src: url('./fonts/GeistMonoVF.woff') format('woff');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  :root {
+    --bg:       #F5F5F5;
+    --surface:  #FFFFFF;
+    --border:   #E6E6E6;
+    --border-2: #CCCCCC;
+    --text:     #111111;
+    --text-2:   #555555;
+    --text-3:   #AAAAAA;
+    --accent:   #0057FF;
+    --accent-2: rgba(0, 87, 255, 0.07);
+    --success:  #16A34A;
+    --danger:   #DC2626;
   }
 
-  :root {
-    --bg-primary: #FFFFFF;
-    --bg-secondary: #F9FAFB;
-    --bg-card: #FFFFFF;
-    --border: #E5E7EB;
-    --text-primary: #111827;
-    --text-secondary: #6B7280;
-    --accent: #3B82F6;
-    --success: #10B981;
-    --success-light: #D1FAE5;
-  }
-  
   .dark {
-    --bg-primary: #111827;
-    --bg-secondary: #1F2937;
-    --bg-card: #1F2937;
-    --border: #374151;
-    --text-primary: #F9FAFB;
-    --text-secondary: #9CA3AF;
+    --bg:       #0A0A0A;
+    --surface:  #141414;
+    --border:   #272727;
+    --border-2: #383838;
+    --text:     #F0F0F0;
+    --text-2:   #888888;
+    --text-3:   #484848;
+    --accent:   #3B82F6;
+    --accent-2: rgba(59, 130, 246, 0.10);
+    --success:  #22C55E;
+    --danger:   #EF4444;
   }
-  
-  * {
-    box-sizing: border-box;
+
+  * { box-sizing: border-box; }
+  html { -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
+
+  ::selection { background: var(--accent-2); }
 }
 
 @layer utilities {
-  .animate-in {
-    animation: animateIn 0.2s ease-out;
-  }
-  
-  .slide-in-from-bottom-4 {
-    animation: slideInFromBottom 0.2s ease-out;
-  }
-  
-  .zoom-in-95 {
-    animation: zoomIn95 0.2s ease-out;
-  }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  .animate-in             { animation: fadeIn  0.15s ease-out; }
+  .slide-in-from-bottom-4 { animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+  .zoom-in-95             { animation: zoomIn  0.18s cubic-bezier(0.16, 1, 0.3, 1); }
 }
 
-@keyframes animateIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideInFromBottom {
-  from { transform: translateY(1rem); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes zoomIn95 {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
+@keyframes fadeIn  { from { opacity: 0; }                              to { opacity: 1; }                }
+@keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes zoomIn  { from { transform: scale(0.97); opacity: 0; }      to { transform: scale(1); opacity: 1; }      }

@@ -12,27 +12,22 @@ interface ToggleProps {
 
 export function Toggle({ checked, onChange, label, disabled, className }: ToggleProps) {
   return (
-    <label className={cn('flex items-center gap-3 cursor-pointer', disabled && 'opacity-50 cursor-not-allowed', className)}>
+    <label className={cn('flex items-center gap-3 cursor-pointer select-none', disabled && 'opacity-50 cursor-not-allowed', className)}>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={cn(
-          'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-150',
-          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
-          checked ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-600'
-        )}
+        className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-150 focus:outline-none"
+        style={{ backgroundColor: checked ? 'var(--accent)' : 'var(--border-2)' }}
       >
         <span
-          className={cn(
-            'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-150',
-            checked ? 'translate-x-6' : 'translate-x-1'
-          )}
+          className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-150"
+          style={{ transform: checked ? 'translateX(18px)' : 'translateX(3px)' }}
         />
       </button>
-      {label && <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>}
+      {label && <span className="text-sm" style={{ color: 'var(--text)' }}>{label}</span>}
     </label>
   );
 }

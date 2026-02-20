@@ -1,6 +1,5 @@
 'use client';
 import React, { useState } from 'react';
-import { Minus, Plus } from 'lucide-react';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 
 interface NumericEntryProps {
@@ -11,29 +10,28 @@ interface NumericEntryProps {
   color?: string;
 }
 
-export function NumericEntry({ value, target, unit, onChange, color = '#10B981' }: NumericEntryProps) {
+export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' }: NumericEntryProps) {
   const [inputMode, setInputMode] = useState(false);
   const [inputVal, setInputVal] = useState(value.toString());
   const progress = target > 0 ? Math.round((value / target) * 100) : 0;
-  
+
   function handleConfirm() {
     const num = Number(inputVal);
-    if (!isNaN(num) && num >= 0) {
-      onChange(num);
-    }
+    if (!isNaN(num) && num >= 0) onChange(num);
     setInputMode(false);
   }
-  
+
   return (
-    <div className="flex flex-col gap-1.5 min-w-[120px]">
-      <div className="flex items-center gap-1">
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
         <button
           onClick={() => onChange(Math.max(0, value - 1))}
-          className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          className="w-6 h-6 rounded flex items-center justify-center text-base leading-none transition-colors"
+          style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}
         >
-          <Minus size={12} />
+          −
         </button>
-        
+
         {inputMode ? (
           <input
             type="number"
@@ -42,26 +40,29 @@ export function NumericEntry({ value, target, unit, onChange, color = '#10B981' 
             onBlur={handleConfirm}
             onKeyDown={e => e.key === 'Enter' && handleConfirm()}
             autoFocus
-            className="w-16 text-center text-sm font-medium bg-transparent border-b border-blue-500 focus:outline-none text-gray-900 dark:text-gray-100"
+            className="w-14 text-center text-sm font-medium bg-transparent focus:outline-none tabular"
+            style={{ borderBottom: '1px solid var(--accent)', color: 'var(--text)' }}
           />
         ) : (
           <button
             onClick={() => { setInputVal(value.toString()); setInputMode(true); }}
-            className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[60px] text-center hover:text-blue-500"
+            className="text-xs tabular transition-colors"
+            style={{ color: 'var(--text-2)' }}
           >
-            {value} / {target}
-            {unit && <span className="text-xs text-gray-400 ml-1">{unit}</span>}
+            <span style={{ color: 'var(--text)', fontWeight: 500 }}>{value}</span>
+            <span style={{ color: 'var(--text-3)' }}>/{target}{unit ? ` ${unit}` : ''}</span>
           </button>
         )}
-        
+
         <button
           onClick={() => onChange(value + 1)}
-          className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          className="w-6 h-6 rounded flex items-center justify-center text-base leading-none transition-colors"
+          style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}
         >
-          <Plus size={12} />
+          +
         </button>
       </div>
-      <ProgressBar value={progress} size="sm" color={color} />
+      <ProgressBar value={progress} size="sm" color={color} className="max-w-[140px]" />
     </div>
   );
 }

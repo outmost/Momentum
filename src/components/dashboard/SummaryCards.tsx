@@ -1,65 +1,62 @@
 'use client';
 import React from 'react';
-import { Zap, Calendar, TrendingUp } from 'lucide-react';
 import { ProgressRing } from '@/components/ui/ProgressRing';
-import { useTodayProgress } from '@/hooks/useStats';
-import { useAllGoalStats } from '@/hooks/useStats';
+import { useTodayProgress, useAllGoalStats } from '@/hooks/useStats';
 import { format } from 'date-fns';
 
 export function SummaryCards() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayProgress = useTodayProgress(today);
   const allStats = useAllGoalStats();
-  
+
   const todayPercent = todayProgress && todayProgress.total > 0
-    ? Math.round((todayProgress.completed / todayProgress.total) * 100)
-    : 0;
-  
+    ? Math.round((todayProgress.completed / todayProgress.total) * 100) : 0;
+
   const maxStreak = allStats?.reduce((max, s) => Math.max(max, s.currentStreak), 0) ?? 0;
-  const weekRate = allStats && allStats.length > 0
-    ? Math.round(allStats.reduce((sum, s) => sum + s.completionRate7, 0) / allStats.length)
-    : 0;
-  const monthRate = allStats && allStats.length > 0
-    ? Math.round(allStats.reduce((sum, s) => sum + s.completionRate30, 0) / allStats.length)
-    : 0;
-  
-  const cards = [
+  const weekRate = allStats?.length
+    ? Math.round(allStats.reduce((s, x) => s + x.completionRate7, 0) / allStats.length) : 0;
+  const monthRate = allStats?.length
+    ? Math.round(allStats.reduce((s, x) => s + x.completionRate30, 0) / allStats.length) : 0;
+
+  const stats = [
     {
-      icon: <ProgressRing value={todayPercent} size={52} strokeWidth={5} color="#10B981">
-        <span className="text-xs font-bold text-gray-900 dark:text-white">{todayPercent}%</span>
-      </ProgressRing>,
-      label: "Today's Progress",
-      value: todayProgress ? `${todayProgress.completed} / ${todayProgress.total}` : '0 / 0',
-      sub: 'goals done',
+      value: todayProgress ? `${todayProgress.completed}/${todayProgress.total}` : '0/0',
+      label: "Today",
+      sub: `${todayPercent}% done`,
+      visual: (
+        <ProgressRing value={todayPercent} size={40} strokeWidth={3} color="#16A34A">
+          <span className="text-[9px] font-bold tabular" style={{ color: 'var(--text)' }}>{todayPercent}%</span>
+        </ProgressRing>
+      ),
     },
-    {
-      icon: <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center"><Zap size={22} className="text-amber-500" /></div>,
-      label: 'Best Streak',
-      value: `${maxStreak}`,
-      sub: 'days in a row',
-    },
-    {
-      icon: <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center"><Calendar size={22} className="text-blue-500" /></div>,
-      label: 'This Week',
-      value: `${weekRate}%`,
-      sub: 'avg completion',
-    },
-    {
-      icon: <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-full flex items-center justify-center"><TrendingUp size={22} className="text-purple-500" /></div>,
-      label: 'This Month',
-      value: `${monthRate}%`,
-      sub: 'avg completion',
-    },
+    { value: `${maxStreak}d`, label: "Best streak", sub: "days in a row" },
+    { value: `${weekRate}%`, label: "This week", sub: "avg completion" },
+    { value: `${monthRate}%`, label: "This month", sub: "avg completion" },
   ];
-  
+
   return (
     <div className="grid grid-cols-2 gap-3">
-      {cards.map(({ icon, label, value, sub }) => (
-        <div key={label} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-          <div className="mb-3">{icon}</div>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">{value}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500">{sub}</p>
+      {stats.map(({ value, label, sub, visual }) => (
+        <div
+          key={label}
+          className="rounded-lg p-4"
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
+          {visual ? (
+            <div className="flex items-center gap-3 mb-2">
+              {visual}
+              <div>
+                <p className="text-xl font-semibold tabular tracking-tight" style={{ color: 'var(--text)' }}>{value}</p>
+                <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-3)' }}>{label}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-2xl font-semibold tabular tracking-tight mb-1" style={{ color: 'var(--text)' }}>{value}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>{label}</p>
+            </>
+          )}
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>{sub}</p>
         </div>
       ))}
     </div>

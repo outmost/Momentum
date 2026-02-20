@@ -15,9 +15,13 @@ interface GoalFormProps {
   defaultFolderId?: string;
 }
 
+const inputClass = "w-full px-3 py-2 rounded-md text-sm focus:outline-none transition-colors";
+const inputStyle = { border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--text)' };
+const labelStyle = { color: 'var(--text-2)', fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '6px' };
+
 export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const folders = useFolders();
-  
+
   const [title, setTitle] = useState(goal?.title ?? '');
   const [description, setDescription] = useState(goal?.description ?? '');
   const [type, setType] = useState<GoalType>(goal?.type ?? 'binary');
@@ -36,17 +40,17 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const [saving, setSaving] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [showNewFolder, setShowNewFolder] = useState(false);
-  
+
   useEffect(() => {
-    if (goal && goal.type === 'milestone') {
+    if (goal?.type === 'milestone') {
       db.milestones.where('goalId').equals(goal.id).sortBy('sortOrder').then(ms => {
         setMilestones(ms.map(m => ({ id: m.id, title: m.title })));
       });
     }
   }, [goal]);
-  
+
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  
+
   function validate() {
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = 'Title is required';
@@ -57,11 +61,10 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
-  
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-    
     setSaving(true);
     try {
       const data = {
@@ -79,40 +82,27 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         reminderTime: reminderEnabled ? reminderTime : undefined,
         color: color || undefined,
       };
-      
       if (goal) {
         await updateGoal(goal.id, data);
-        // Handle milestones for edited goal
         if (type === 'milestone') {
           const existing = await db.milestones.where('goalId').equals(goal.id).toArray();
           const existingIds = new Set(existing.map(m => m.id));
           const newIds = new Set(milestones.filter(m => !m.isNew).map(m => m.id));
-          
-          // Delete removed milestones
-          for (const id of existingIds) {
-            if (!newIds.has(id)) await deleteMilestone(id);
-          }
-          
-          // Add new milestones
-          for (const m of milestones.filter(m => m.isNew)) {
-            await createMilestone(goal.id, m.title);
-          }
+          for (const id of existingIds) { if (!newIds.has(id)) await deleteMilestone(id); }
+          for (const m of milestones.filter(m => m.isNew)) await createMilestone(goal.id, m.title);
         }
       } else {
         const newGoal = await createGoal(data);
         if (type === 'milestone') {
-          for (const m of milestones) {
-            await createMilestone(newGoal.id, m.title);
-          }
+          for (const m of milestones) await createMilestone(newGoal.id, m.title);
         }
       }
-      
       onClose();
     } finally {
       setSaving(false);
     }
   }
-  
+
   async function handleCreateFolder() {
     if (!newFolderName.trim()) return;
     const folder = await createFolder({
@@ -124,163 +114,147 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
     setNewFolderName('');
     setShowNewFolder(false);
   }
-  
+
+  const pillBtn = (active: boolean) => ({
+    padding: '5px 12px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'all 0.1s',
+    backgroundColor: active ? 'var(--text)' : 'transparent',
+    color: active ? 'var(--bg)' : 'var(--text-3)',
+    border: active ? '1px solid transparent' : '1px solid var(--border)',
+  });
+
   return (
-    <form onSubmit={handleSubmit} className="p-6 space-y-5">
+    <form onSubmit={handleSubmit} className="p-5 space-y-5">
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Title <span className="text-red-500">*</span>
-        </label>
+        <label style={labelStyle}>Title *</label>
         <input
           value={title}
           onChange={e => setTitle(e.target.value)}
           maxLength={100}
           placeholder="What do you want to achieve?"
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
+          style={inputStyle}
         />
-        {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+        {errors.title && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.title}</p>}
       </div>
-      
-      {/* Type selector */}
+
+      {/* Type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
-        <div className="grid grid-cols-4 gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+        <label style={labelStyle}>Type</label>
+        <div className="flex gap-1 p-1 rounded-md" style={{ backgroundColor: 'var(--border)' }}>
           {(['binary', 'numeric', 'milestone', 'timer'] as GoalType[]).map(t => (
             <button
               key={t}
               type="button"
               onClick={() => setType(t)}
-              className={`py-1.5 px-2 rounded-md text-xs font-medium transition-colors capitalize ${
-                type === t
-                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-              }`}
+              className="flex-1 py-1.5 rounded text-xs font-medium transition-colors capitalize"
+              style={{
+                backgroundColor: type === t ? 'var(--surface)' : 'transparent',
+                color: type === t ? 'var(--text)' : 'var(--text-3)',
+              }}
             >
               {t}
             </button>
           ))}
         </div>
       </div>
-      
+
       {/* Folder */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Folder</label>
+        <label style={labelStyle}>Folder</label>
         {showNewFolder ? (
           <div className="flex gap-2">
             <input
               value={newFolderName}
               onChange={e => setNewFolderName(e.target.value)}
               placeholder="Folder name"
-              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
+              style={inputStyle}
               onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCreateFolder())}
             />
-            <button type="button" onClick={handleCreateFolder} className="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">Add</button>
-            <button type="button" onClick={() => setShowNewFolder(false)} className="px-3 py-2 text-gray-500 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</button>
+            <button type="button" onClick={handleCreateFolder} className="px-3 py-2 rounded-md text-sm font-medium text-white" style={{ backgroundColor: 'var(--accent)' }}>Add</button>
+            <button type="button" onClick={() => setShowNewFolder(false)} className="px-3 py-2 rounded-md text-sm" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>Cancel</button>
           </div>
         ) : (
           <div className="flex gap-2">
             <select
               value={folderId}
               onChange={e => setFolderId(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`${inputClass} flex-1`}
+              style={inputStyle}
             >
               <option value="">No folder</option>
-              {folders?.map(f => (
-                <option key={f.id} value={f.id}>{f.icon} {f.name}</option>
-              ))}
+              {folders?.map(f => <option key={f.id} value={f.id}>{f.icon} {f.name}</option>)}
             </select>
-            <button
-              type="button"
-              onClick={() => setShowNewFolder(true)}
-              className="px-3 py-2 text-sm text-blue-500 border border-blue-200 rounded-lg hover:bg-blue-50 dark:border-blue-800 dark:hover:bg-blue-900/20 whitespace-nowrap"
-            >
-              + New
-            </button>
+            <button type="button" onClick={() => setShowNewFolder(true)} className="px-3 py-2 rounded-md text-sm whitespace-nowrap" style={{ color: 'var(--accent)', border: '1px solid var(--border)' }}>+ New</button>
           </div>
         )}
       </div>
-      
+
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+        <label style={labelStyle}>Description</label>
         <textarea
           value={description}
           onChange={e => setDescription(e.target.value)}
           maxLength={500}
           rows={2}
-          placeholder="Optional description..."
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          placeholder="Optional"
+          className={`${inputClass} resize-none`}
+          style={inputStyle}
         />
       </div>
-      
-      {/* Numeric fields */}
+
+      {/* Numeric */}
       {type === 'numeric' && (
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target <span className="text-red-500">*</span></label>
-            <input
-              type="number"
-              value={target}
-              onChange={e => setTarget(e.target.value)}
-              min="1"
-              placeholder="e.g. 20"
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {errors.target && <p className="text-xs text-red-500 mt-1">{errors.target}</p>}
+            <label style={labelStyle}>Target *</label>
+            <input type="number" value={target} onChange={e => setTarget(e.target.value)} min="1" placeholder="e.g. 20" className={inputClass} style={inputStyle} />
+            {errors.target && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.target}</p>}
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
-            <input
-              value={unit}
-              onChange={e => setUnit(e.target.value)}
-              placeholder="pages, miles..."
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label style={labelStyle}>Unit</label>
+            <input value={unit} onChange={e => setUnit(e.target.value)} placeholder="pages, miles…" className={inputClass} style={inputStyle} />
           </div>
         </div>
       )}
-      
-      {/* Timer field */}
+
+      {/* Timer */}
       {type === 'timer' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration (minutes) <span className="text-red-500">*</span></label>
-          <input
-            type="number"
-            value={duration}
-            onChange={e => setDuration(e.target.value)}
-            min="1"
-            placeholder="e.g. 30"
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {errors.duration && <p className="text-xs text-red-500 mt-1">{errors.duration}</p>}
+          <label style={labelStyle}>Duration (minutes) *</label>
+          <input type="number" value={duration} onChange={e => setDuration(e.target.value)} min="1" placeholder="e.g. 30" className={inputClass} style={inputStyle} />
+          {errors.duration && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.duration}</p>}
         </div>
       )}
-      
-      {/* Milestone list */}
+
+      {/* Milestones */}
       {type === 'milestone' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Milestones <span className="text-red-500">*</span></label>
-          <div className="space-y-2">
+          <label style={labelStyle}>Milestones *</label>
+          <div className="space-y-1.5 mb-2">
             {milestones.map((m, i) => (
-              <div key={m.id} className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-sm flex-1 text-gray-700 dark:text-gray-300">{m.title}</span>
-                <button
-                  type="button"
-                  onClick={() => setMilestones(prev => prev.filter((_, idx) => idx !== i))}
-                  className="text-gray-400 hover:text-red-500"
-                >
-                  <Trash2 size={14} />
+              <div key={m.id} className="flex items-center gap-2 px-3 py-2 rounded-md" style={{ backgroundColor: 'var(--border)' }}>
+                <span className="text-sm flex-1" style={{ color: 'var(--text-2)' }}>{m.title}</span>
+                <button type="button" onClick={() => setMilestones(prev => prev.filter((_, idx) => idx !== i))} style={{ color: 'var(--text-3)' }}>
+                  <Trash2 size={13} />
                 </button>
               </div>
             ))}
           </div>
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2">
             <input
               value={newMilestoneTitle}
               onChange={e => setNewMilestoneTitle(e.target.value)}
-              placeholder="Add milestone..."
-              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Add milestone…"
+              className={`${inputClass} flex-1`}
+              style={inputStyle}
               onKeyDown={e => {
                 if (e.key === 'Enter' && newMilestoneTitle.trim()) {
                   e.preventDefault();
@@ -289,125 +263,93 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
                 }
               }}
             />
-            <button
-              type="button"
-              onClick={() => {
-                if (newMilestoneTitle.trim()) {
-                  setMilestones(prev => [...prev, { id: nanoid(), title: newMilestoneTitle.trim(), isNew: true }]);
-                  setNewMilestoneTitle('');
-                }
-              }}
-              className="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600"
-            >
-              <Plus size={16} />
+            <button type="button" onClick={() => {
+              if (newMilestoneTitle.trim()) {
+                setMilestones(prev => [...prev, { id: nanoid(), title: newMilestoneTitle.trim(), isNew: true }]);
+                setNewMilestoneTitle('');
+              }
+            }} className="px-3 py-2 rounded-md text-white" style={{ backgroundColor: 'var(--accent)' }}>
+              <Plus size={14} />
             </button>
           </div>
-          {errors.milestones && <p className="text-xs text-red-500 mt-1">{errors.milestones}</p>}
+          {errors.milestones && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.milestones}</p>}
         </div>
       )}
-      
+
       {/* Frequency */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency</label>
-        <div className="grid grid-cols-3 gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+        <label style={labelStyle}>Frequency</label>
+        <div className="flex gap-1 p-1 rounded-md" style={{ backgroundColor: 'var(--border)' }}>
           {(['daily', 'weekly', 'custom'] as Frequency[]).map(f => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFrequency(f)}
-              className={`py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
-                frequency === f
-                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
+            <button key={f} type="button" onClick={() => setFrequency(f)}
+              className="flex-1 py-1.5 rounded text-xs font-medium capitalize transition-colors"
+              style={{ backgroundColor: frequency === f ? 'var(--surface)' : 'transparent', color: frequency === f ? 'var(--text)' : 'var(--text-3)' }}>
               {f}
             </button>
           ))}
         </div>
-        
         {frequency === 'custom' && (
           <div className="flex gap-1 mt-2 flex-wrap">
             {dayNames.map((day, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setCustomDays(prev =>
-                  prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i]
-                )}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  customDays.includes(i)
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
-                }`}
-              >
+              <button key={i} type="button" onClick={() => setCustomDays(prev => prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i])}
+                style={pillBtn(customDays.includes(i))} className="transition-colors">
                 {day}
               </button>
             ))}
           </div>
         )}
-        {errors.customDays && <p className="text-xs text-red-500 mt-1">{errors.customDays}</p>}
+        {errors.customDays && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.customDays}</p>}
       </div>
-      
+
       {/* Color */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color</label>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setColor('')}
-            className={`w-7 h-7 rounded-full border-2 bg-gray-200 dark:bg-gray-600 ${color === '' ? 'border-blue-500' : 'border-transparent'}`}
+        <label style={labelStyle}>Color</label>
+        <div className="flex gap-2 flex-wrap items-center">
+          <button type="button" onClick={() => setColor('')}
+            className="w-6 h-6 rounded-full border-2"
+            style={{ backgroundColor: 'var(--border-2)', borderColor: color === '' ? 'var(--text)' : 'transparent' }}
             title="Default"
           />
           {GOAL_COLORS.map(c => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setColor(c)}
-              className={`w-7 h-7 rounded-full border-2 ${color === c ? 'border-gray-900 dark:border-white' : 'border-transparent'}`}
-              style={{ backgroundColor: c }}
+            <button key={c} type="button" onClick={() => setColor(c)}
+              className="w-6 h-6 rounded-full border-2 transition-transform"
+              style={{ backgroundColor: c, borderColor: color === c ? 'var(--text)' : 'transparent', transform: color === c ? 'scale(1.15)' : 'scale(1)' }}
             />
           ))}
         </div>
       </div>
-      
+
       {/* Reminder */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Reminder</p>
+          <p className="text-xs font-medium" style={{ color: 'var(--text-2)' }}>Daily reminder</p>
           {reminderEnabled && (
-            <input
-              type="time"
-              value={reminderTime}
-              onChange={e => setReminderTime(e.target.value)}
-              className="mt-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)}
+              className="mt-1 px-2 py-1 rounded text-xs focus:outline-none"
+              style={{ border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--text)' }}
             />
           )}
         </div>
         <button
           type="button"
           onClick={() => setReminderEnabled(!reminderEnabled)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${reminderEnabled ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-600'}`}
+          className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+          style={{ backgroundColor: reminderEnabled ? 'var(--accent)' : 'var(--border-2)' }}
         >
-          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${reminderEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+          <span
+            className="inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform"
+            style={{ transform: reminderEnabled ? 'translateX(18px)' : 'translateX(3px)' }}
+          />
         </button>
       </div>
-      
+
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-        >
+      <div className="flex justify-end gap-2 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
+        <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-md" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>
           Cancel
         </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-        >
-          {saving ? 'Saving...' : goal ? 'Update Goal' : 'Create Goal'}
+        <button type="submit" disabled={saving} className="px-4 py-2 text-sm font-medium rounded-md text-white disabled:opacity-50" style={{ backgroundColor: 'var(--accent)' }}>
+          {saving ? 'Saving…' : goal ? 'Update' : 'Create goal'}
         </button>
       </div>
     </form>

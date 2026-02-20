@@ -7,14 +7,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { deleteGoal, pauseGoal, resumeGoal, archiveGoal, completeGoal } from '@/hooks/useGoals';
-import { cn } from '@/lib/cn';
 import type { Goal } from '@/types';
 
-const TYPE_ICONS: Record<string, string> = {
-  binary: '✓',
-  numeric: '#',
-  milestone: '◎',
-  timer: '⏱',
+const TYPE_LABELS: Record<string, string> = {
+  binary: '✓', numeric: '#', milestone: '◎', timer: '⏱',
 };
 
 interface GoalListItemProps {
@@ -28,147 +24,137 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false }: G
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
-  
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: goal.id, disabled: !draggable });
-  
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-  
-  const color = goal.color || '#10B981';
-  
-  const statusBadge = goal.status !== 'active' ? (
-    <span className={cn(
-      'text-xs px-1.5 py-0.5 rounded font-medium',
-      goal.status === 'paused' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-      goal.status === 'completed' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-      goal.status === 'archived' && 'bg-gray-100 text-gray-500 dark:bg-gray-700',
-    )}>
-      {goal.status}
-    </span>
-  ) : null;
-  
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: goal.id, disabled: !draggable,
+  });
+
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  const color = goal.color || '#16A34A';
+
   return (
     <>
       <div
         ref={setNodeRef}
-        style={style}
-        className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-750"
+        style={{ ...style, borderBottom: '1px solid var(--border)' }}
+        className="flex items-center gap-3 px-4 py-3 transition-colors"
       >
-        {/* Drag handle */}
         {draggable && (
           <button
             {...attributes}
             {...listeners}
-            className="text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 cursor-grab active:cursor-grabbing touch-none"
+            className="cursor-grab active:cursor-grabbing touch-none shrink-0"
+            style={{ color: 'var(--text-3)' }}
           >
-            <GripVertical size={16} />
+            <GripVertical size={14} />
           </button>
         )}
-        
-        {/* Color dot */}
-        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-        
-        {/* Type icon */}
-        <span className="text-xs text-gray-400 font-mono w-4 shrink-0">
-          {TYPE_ICONS[goal.type]}
+
+        {/* Color accent */}
+        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+
+        {/* Type glyph */}
+        <span className="text-[11px] font-mono w-3 shrink-0" style={{ color: 'var(--text-3)' }}>
+          {TYPE_LABELS[goal.type]}
         </span>
-        
+
         {/* Title */}
         <button
           onClick={() => router.push(`/goals/${goal.id}`)}
-          className="flex-1 text-left text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-500 line-clamp-1 transition-colors"
+          className="flex-1 text-left text-sm font-medium line-clamp-1 transition-colors"
+          style={{ color: 'var(--text)' }}
         >
           {goal.title}
         </button>
-        
-        {statusBadge}
-        
-        {/* 7-day mini bar */}
-        <div className="w-16 shrink-0">
+
+        {/* Status badge */}
+        {goal.status !== 'active' && (
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
+            style={{
+              color: goal.status === 'paused' ? '#D97706' : 'var(--text-3)',
+              backgroundColor: goal.status === 'paused' ? 'rgba(217,119,6,0.1)' : 'var(--border)',
+            }}
+          >
+            {goal.status}
+          </span>
+        )}
+
+        {/* 7-day rate */}
+        <div className="w-14 shrink-0 space-y-0.5">
           <ProgressBar value={completionRate7} size="sm" color={color} />
-          <p className="text-xs text-gray-400 text-right mt-0.5">{completionRate7}%</p>
+          <p className="text-[10px] tabular text-right" style={{ color: 'var(--text-3)' }}>{completionRate7}%</p>
         </div>
-        
+
         {/* Menu */}
         <div className="relative shrink-0">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="w-7 h-7 flex items-center justify-center rounded transition-colors"
+            style={{ color: 'var(--text-3)' }}
           >
-            <MoreVertical size={16} />
+            <MoreVertical size={14} />
           </button>
-          
+
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-8 z-20 w-40 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1">
+              <div
+                className="absolute right-0 top-8 z-20 w-36 rounded-lg py-1 text-sm"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+              >
                 {goal.status === 'active' && (
-                  <button
-                    onClick={() => { pauseGoal(goal.id); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <Pause size={14} /> Pause
+                  <button onClick={() => { pauseGoal(goal.id); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-left transition-colors"
+                    style={{ color: 'var(--text-2)' }}>
+                    <Pause size={13} /> Pause
                   </button>
                 )}
                 {goal.status === 'paused' && (
-                  <button
-                    onClick={() => { resumeGoal(goal.id); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <Play size={14} /> Resume
+                  <button onClick={() => { resumeGoal(goal.id); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-left transition-colors"
+                    style={{ color: 'var(--text-2)' }}>
+                    <Play size={13} /> Resume
                   </button>
                 )}
                 {goal.status === 'active' && (
-                  <button
-                    onClick={() => { setCompleteOpen(true); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <CheckCircle size={14} /> Complete
+                  <button onClick={() => { setCompleteOpen(true); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-left transition-colors"
+                    style={{ color: 'var(--text-2)' }}>
+                    <CheckCircle size={13} /> Complete
                   </button>
                 )}
-                <button
-                  onClick={() => { archiveGoal(goal.id); setMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  <Archive size={14} /> Archive
+                <button onClick={() => { archiveGoal(goal.id); setMenuOpen(false); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-left transition-colors"
+                  style={{ color: 'var(--text-2)' }}>
+                  <Archive size={13} /> Archive
                 </button>
-                <button
-                  onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10"
-                >
-                  <Trash2 size={14} /> Delete
+                <div style={{ borderTop: '1px solid var(--border)', margin: '2px 0' }} />
+                <button onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-left transition-colors"
+                  style={{ color: 'var(--danger)' }}>
+                  <Trash2 size={13} /> Delete
                 </button>
               </div>
             </>
           )}
         </div>
       </div>
-      
+
       <ConfirmDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={() => { deleteGoal(goal.id); setDeleteOpen(false); }}
-        title="Delete Goal"
-        message={`Delete "${goal.title}"? This will permanently delete all entries and history. This cannot be undone.`}
+        title="Delete goal"
+        message={`Delete "${goal.title}"? All entries and history will be permanently removed.`}
         confirmLabel="Delete"
         variant="danger"
       />
-      
       <ConfirmDialog
         open={completeOpen}
         onClose={() => setCompleteOpen(false)}
         onConfirm={() => { completeGoal(goal.id); setCompleteOpen(false); }}
-        title="Mark as Complete"
+        title="Mark complete"
         message={`Mark "${goal.title}" as completed? It will be hidden from active views.`}
         confirmLabel="Mark Complete"
         variant="primary"

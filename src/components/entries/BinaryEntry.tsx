@@ -1,7 +1,6 @@
 'use client';
 import React from 'react';
 import { Check } from 'lucide-react';
-import { cn } from '@/lib/cn';
 
 interface BinaryEntryProps {
   completed: boolean;
@@ -9,20 +8,24 @@ interface BinaryEntryProps {
   color?: string;
 }
 
-export function BinaryEntry({ completed, onChange, color = '#10B981' }: BinaryEntryProps) {
+export function BinaryEntry({ completed, onChange, color = '#16A34A' }: BinaryEntryProps) {
   return (
     <button
       type="button"
       onClick={() => onChange(!completed)}
-      className={cn(
-        'w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-150 shrink-0',
-        completed
-          ? 'border-transparent text-white'
-          : 'border-gray-300 dark:border-gray-600 text-transparent hover:border-gray-400'
-      )}
-      style={completed ? { backgroundColor: color, borderColor: color } : {}}
+      className="w-10 h-10 flex items-center justify-center -m-2.5 shrink-0"
+      aria-label={completed ? 'Mark incomplete' : 'Mark complete'}
     >
-      <Check size={16} strokeWidth={3} />
+      <span
+        className="w-[18px] h-[18px] rounded-full flex items-center justify-center transition-all duration-150"
+        style={
+          completed
+            ? { backgroundColor: color, border: '1.5px solid transparent' }
+            : { border: '1.5px solid var(--border-2)', backgroundColor: 'transparent' }
+        }
+      >
+        {completed && <Check size={10} strokeWidth={3} color="white" />}
+      </span>
     </button>
   );
 }

@@ -4,18 +4,13 @@ import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { useTheme } from '@/hooks/useTheme';
 
-interface AppShellProps {
-  children: React.ReactNode;
-}
-
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children }: { children: React.ReactNode }) {
   useTheme();
-  
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
       <Sidebar />
       <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
-        <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="max-w-[560px] mx-auto px-5 py-8">
           {children}
         </div>
       </main>

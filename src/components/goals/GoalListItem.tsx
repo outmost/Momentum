@@ -144,7 +144,7 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
       <ConfirmDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        onConfirm={() => { deleteGoal(goal.id); setDeleteOpen(false); }}
+        onConfirm={async () => { await deleteGoal(goal.id); setDeleteOpen(false); }}
         title="Delete goal"
         message={`Delete "${goal.title}"? All entries and history will be permanently removed.`}
         confirmLabel="Delete"

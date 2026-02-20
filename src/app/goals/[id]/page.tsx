@@ -75,7 +75,8 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
   const [completeOpen, setCompleteOpen] = useState(false);
   const [newMilestone, setNewMilestone] = useState('');
 
-  if (!goal) return <div className="text-center py-12 text-sm" style={{ color: 'var(--text-3)' }}>Goal not found.</div>;
+  if (goal === undefined) return <div className="text-center py-12 text-sm" style={{ color: 'var(--text-3)' }}>Loading…</div>;
+  if (goal === null) return <div className="text-center py-12 text-sm" style={{ color: 'var(--text-3)' }}>Goal not found.</div>;
 
   const recentEntries = (entries ?? []).slice(0, 30);
 

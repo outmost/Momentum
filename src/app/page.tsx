@@ -15,6 +15,11 @@ import { Modal } from '@/components/ui/Modal';
 import { GoalForm } from '@/components/goals/GoalForm';
 import type { Goal } from '@/types';
 
+function localToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 export default function TodayPage() {
   const { selectedDate, setSelectedDate } = useUIStore();
   const [goalFormOpen, setGoalFormOpen] = useState(false);
@@ -32,7 +37,7 @@ export default function TodayPage() {
     setSelectedDate(format(d, 'yyyy-MM-dd'));
   }
 
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const today = localToday();
   const isSelectedToday = selectedDate === today;
   const isSelectedFuture = selectedDate > today;
 
@@ -42,7 +47,6 @@ export default function TodayPage() {
 
   const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
 
-  // Group by folder, preserving sort order
   const grouped = new Map<string | null, Goal[]>();
   for (const goal of scheduledGoals) {
     const key = goal.folderId || null;
@@ -53,25 +57,36 @@ export default function TodayPage() {
   const completedCount = scheduledGoals.filter(g => entryMap.get(g.id)?.completed).length;
   const allDone = scheduledGoals.length > 0 && completedCount === scheduledGoals.length;
 
-  const dateLabel = isSelectedToday
-    ? format(new Date(), 'EEEE')
-    : format(parseISO(selectedDate), 'EEE, MMM d');
-
-  const dateSubLabel = isSelectedToday
-    ? format(new Date(), 'MMMM d')
-    : null;
-
   return (
     <div>
       {/* ── Header ── */}
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight leading-none" style={{ color: 'var(--text)' }}>
-              {dateLabel}
-            </h1>
-            {dateSubLabel && (
-              <p className="mt-1 text-sm" style={{ color: 'var(--text-3)' }}>{dateSubLabel}</p>
+            {isSelectedToday ? (
+              <>
+                <h1 className="text-3xl font-semibold tracking-tight leading-none" style={{ color: 'var(--text)' }}>
+                  Today
+                </h1>
+                <p className="mt-1 text-sm" style={{ color: 'var(--text-3)' }}>
+                  {format(new Date(), 'EEEE, MMMM d')}
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl font-semibold tracking-tight leading-none" style={{ color: 'var(--text-2)' }}>
+                  {format(parseISO(selectedDate), 'EEE, MMM d')}
+                </h1>
+                {!isSelectedFuture && (
+                  <button
+                    onClick={() => setSelectedDate(today)}
+                    className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors"
+                    style={{ backgroundColor: 'var(--accent)', color: 'white' }}
+                  >
+                    ← Today
+                  </button>
+                )}
+              </>
             )}
           </div>
 
@@ -83,19 +98,11 @@ export default function TodayPage() {
             >
               <ChevronLeft size={18} />
             </button>
-            {!isSelectedToday && (
-              <button
-                onClick={() => setSelectedDate(today)}
-                className="px-2 py-1 text-xs font-semibold rounded"
-                style={{ color: 'var(--accent)' }}
-              >
-                Today
-              </button>
-            )}
             <button
               onClick={() => navigate(1)}
+              disabled={isSelectedToday}
               className="w-8 h-8 flex items-center justify-center rounded transition-colors"
-              style={{ color: 'var(--text-3)' }}
+              style={{ color: isSelectedToday ? 'var(--border-2)' : 'var(--text-3)' }}
             >
               <ChevronRight size={18} />
             </button>
@@ -105,12 +112,17 @@ export default function TodayPage() {
         {/* Progress counter */}
         {scheduledGoals.length > 0 && (
           <div className="flex items-center gap-2 mt-4">
-            <span className="text-4xl font-semibold tabular leading-none" style={{ color: allDone ? 'var(--success)' : 'var(--text)' }}>
+            <span
+              className="text-4xl font-semibold tabular leading-none"
+              style={{ color: allDone ? 'var(--success)' : 'var(--text)' }}
+            >
               {completedCount}
             </span>
             <div>
               <p className="text-xs leading-none" style={{ color: 'var(--text-3)' }}>of {scheduledGoals.length}</p>
-              <p className="text-xs leading-none mt-0.5" style={{ color: 'var(--text-3)' }}>done</p>
+              <p className="text-xs leading-none mt-0.5" style={{ color: allDone ? 'var(--success)' : 'var(--text-3)' }}>
+                {allDone ? 'all done ✓' : 'done'}
+              </p>
             </div>
           </div>
         )}
@@ -154,7 +166,6 @@ export default function TodayPage() {
 
             return (
               <div key={folderId ?? 'none'}>
-                {/* Folder label */}
                 {showLabel && (
                   <div className="flex items-center gap-2 mb-2">
                     {folder && (
@@ -169,7 +180,6 @@ export default function TodayPage() {
                   </div>
                 )}
 
-                {/* Flat list of rows, wrapped in a single rounded container */}
                 <div
                   className="rounded-lg overflow-hidden"
                   style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}

@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { useAllGoalStats, useTodayProgress, useTotalStats } from '@/hooks/useStats';
+import { useTodayProgress, useTotalStats } from '@/hooks/useStats';
 import { format } from 'date-fns';
 
 interface StatBlockProps {
@@ -37,20 +37,15 @@ function StatBlock({ value, label, sub, accent }: StatBlockProps) {
 export function SummaryCards() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayProgress = useTodayProgress(today);
-  const allStats = useAllGoalStats();
   const totals = useTotalStats();
 
   const completedToday = todayProgress?.completed ?? 0;
   const totalToday = todayProgress?.total ?? 0;
   const allDone = totalToday > 0 && completedToday === totalToday;
 
-  // Best current streak across all goals
-  const bestStreak = allStats?.reduce((m, s) => Math.max(m, s.currentStreak), 0) ?? 0;
-  // Longest streak holder name
-  const streakGoal = allStats?.find(s => s.currentStreak === bestStreak);
-
   const totalThisMonth = totals?.totalThisMonth ?? 0;
   const daysActiveThisWeek = totals?.daysActiveThisWeek ?? 0;
+  const consistency30 = totals?.consistency30 ?? 0;
 
   return (
     <div className="grid grid-cols-2 gap-2.5">
@@ -61,10 +56,10 @@ export function SummaryCards() {
         sub={allDone && totalToday > 0 ? 'All done ✓' : undefined}
       />
       <StatBlock
-        value={bestStreak > 0 ? `${bestStreak}d` : '—'}
-        label="Best streak"
-        sub={bestStreak >= 7 ? streakGoal?.goal.title : undefined}
-        accent={bestStreak >= 7}
+        value={consistency30 > 0 ? `${consistency30}%` : '—'}
+        label="Consistency"
+        sub="last 30 days"
+        accent={consistency30 >= 80}
       />
       <StatBlock
         value={totalThisMonth > 0 ? String(totalThisMonth) : '—'}

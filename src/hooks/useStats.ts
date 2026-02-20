@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { format, subDays, parseISO, addDays } from 'date-fns';
+import { format, subDays, parseISO } from 'date-fns';
 import type { Goal, Entry } from '@/types';
 import { isScheduledForDate } from '@/lib/utils';
 
@@ -12,21 +12,21 @@ function computeCurrentStreak(entries: Entry[], goal: Goal): number {
   const today = format(new Date(), 'yyyy-MM-dd');
   let streak = 0;
   let current = new Date();
-  
+
   const entryMap = new Map(entries.map(e => [e.date, e]));
-  
+
   for (let i = 0; i < 365; i++) {
     const dateStr = format(current, 'yyyy-MM-dd');
     if (dateStr > today) {
       current = subDays(current, 1);
       continue;
     }
-    
+
     if (!isScheduledForDate(dateStr, goal.frequency, goal.customDays)) {
       current = subDays(current, 1);
       continue;
     }
-    
+
     const entry = entryMap.get(dateStr);
     if (entry && entry.completed) {
       streak++;
@@ -35,31 +35,31 @@ function computeCurrentStreak(entries: Entry[], goal: Goal): number {
       break;
     }
   }
-  
+
   return streak;
 }
 
 function computeBestStreak(entries: Entry[], goal: Goal): number {
   if (entries.length === 0) return 0;
-  
+
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
   const entryMap = new Map(sorted.map(e => [e.date, e]));
-  
+
   const firstDate = sorted[0].date;
   const today = format(new Date(), 'yyyy-MM-dd');
-  
+
   let best = 0;
   let current = 0;
   let d = parseISO(firstDate);
-  
+
   while (format(d, 'yyyy-MM-dd') <= today) {
     const dateStr = format(d, 'yyyy-MM-dd');
-    
+
     if (!isScheduledForDate(dateStr, goal.frequency, goal.customDays)) {
       d = new Date(d.getTime() + 86400000);
       continue;
     }
-    
+
     const entry = entryMap.get(dateStr);
     if (entry && entry.completed) {
       current++;
@@ -67,10 +67,10 @@ function computeBestStreak(entries: Entry[], goal: Goal): number {
     } else {
       current = 0;
     }
-    
+
     d = new Date(d.getTime() + 86400000);
   }
-  
+
   return best;
 }
 
@@ -80,25 +80,26 @@ function computeCompletionRate(entries: Entry[], goal: Goal, days: number): numb
   for (let i = 0; i < days; i++) {
     dates.push(format(subDays(today, i), 'yyyy-MM-dd'));
   }
-  
+
   const scheduled = getScheduledDays(goal, dates);
   if (scheduled.length === 0) return 0;
-  
+
   const entryMap = new Map(entries.map(e => [e.date, e]));
   const completed = scheduled.filter(d => {
     const entry = entryMap.get(d);
     return entry && entry.completed;
   }).length;
-  
+
   return Math.round((completed / scheduled.length) * 100);
 }
 
+// Full stats for individual goal detail page (keeps streak for personal insight)
 export function useGoalStats(goalId: string, goal: Goal | undefined) {
   return useLiveQuery(async () => {
     if (!goal) return null;
-    
+
     const entries = await db.entries.where('goalId').equals(goalId).toArray();
-    
+
     return {
       currentStreak: computeCurrentStreak(entries, goal),
       bestStreak: computeBestStreak(entries, goal),
@@ -113,17 +114,17 @@ export function useTodayProgress(date: string) {
   return useLiveQuery(async () => {
     const activeGoals = await db.goals.where('status').equals('active').toArray();
     const todayGoals = activeGoals.filter(g => isScheduledForDate(date, g.frequency, g.customDays));
-    
+
     if (todayGoals.length === 0) return { completed: 0, total: 0 };
-    
+
     const entries = await db.entries.where('date').equals(date).toArray();
     const entryMap = new Map(entries.map(e => [e.goalId, e]));
-    
+
     const completed = todayGoals.filter(g => {
       const entry = entryMap.get(g.id);
       return entry && entry.completed;
     }).length;
-    
+
     return { completed, total: todayGoals.length };
   }, [date]);
 }
@@ -135,25 +136,27 @@ export function useCompletionTrend(days: number = 30) {
     for (let i = days - 1; i >= 0; i--) {
       dates.push(format(subDays(today, i), 'yyyy-MM-dd'));
     }
-    
+
     const activeGoals = await db.goals.where('status').anyOf(['active', 'completed']).toArray();
     const entries = await db.entries.toArray();
     const entryMap = new Map(entries.map(e => [`${e.goalId}:${e.date}`, e]));
-    
+
     return dates.map(date => {
       const scheduled = activeGoals.filter(g => isScheduledForDate(date, g.frequency, g.customDays));
       if (scheduled.length === 0) return { date, rate: 0 };
-      
+
       const completed = scheduled.filter(g => {
         const entry = entryMap.get(`${g.id}:${date}`);
         return entry && entry.completed;
       }).length;
-      
+
       return { date, rate: Math.round((completed / scheduled.length) * 100) };
     });
   }, [days]);
 }
 
+// Lightweight stats for Goals list page and Progress dashboard.
+// No per-goal streak computation — O(goals × 7) instead of O(goals × 365).
 export function useAllGoalStats() {
   return useLiveQuery(async () => {
     const goals = await db.goals.where('status').equals('active').toArray();
@@ -170,31 +173,49 @@ export function useAllGoalStats() {
         scheduled: isScheduledForDate(date, goal.frequency, goal.customDays),
         completed: !!entryMap.get(date)?.completed,
       }));
+      const completionRate7 = computeCompletionRate(goalEntries, goal, 7);
       return {
         goal,
-        completionRate7: computeCompletionRate(goalEntries, goal, 7),
-        completionRate30: computeCompletionRate(goalEntries, goal, 30),
-        currentStreak: computeCurrentStreak(goalEntries, goal),
+        completionRate7,
         last7,
       };
-    }).sort((a, b) => b.currentStreak - a.currentStreak); // best streaks first
+    }).sort((a, b) => b.completionRate7 - a.completionRate7); // highest momentum first
   });
 }
 
 export function useTotalStats() {
   return useLiveQuery(async () => {
     const today = new Date();
-    const last30 = Array.from({ length: 30 }, (_, i) =>
+    const last30Dates = Array.from({ length: 30 }, (_, i) =>
       format(subDays(today, i), 'yyyy-MM-dd')
     );
-    const last7 = last30.slice(0, 7);
+    const last7Dates = last30Dates.slice(0, 7);
 
+    const activeGoals = await db.goals.where('status').equals('active').toArray();
     const entries = await db.entries.toArray();
-    const totalThisMonth = entries.filter(e => e.completed && last30.includes(e.date)).length;
+
+    const totalThisMonth = entries.filter(e => e.completed && last30Dates.includes(e.date)).length;
     const daysActiveThisWeek = new Set(
-      entries.filter(e => e.completed && last7.includes(e.date)).map(e => e.date)
+      entries.filter(e => e.completed && last7Dates.includes(e.date)).map(e => e.date)
     ).size;
 
-    return { totalThisMonth, daysActiveThisWeek };
+    // Overall 30-day consistency: scheduled slots completed / total scheduled slots
+    let scheduledSlots = 0;
+    let completedSlots = 0;
+    const entryMap = new Map(entries.map(e => [`${e.goalId}:${e.date}`, e]));
+    for (const date of last30Dates) {
+      for (const goal of activeGoals) {
+        if (isScheduledForDate(date, goal.frequency, goal.customDays)) {
+          scheduledSlots++;
+          const entry = entryMap.get(`${goal.id}:${date}`);
+          if (entry?.completed) completedSlots++;
+        }
+      }
+    }
+    const consistency30 = scheduledSlots > 0
+      ? Math.round((completedSlots / scheduledSlots) * 100)
+      : 0;
+
+    return { totalThisMonth, daysActiveThisWeek, consistency30 };
   });
 }

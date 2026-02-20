@@ -146,14 +146,14 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — rate and volume, not streaks */}
       {stats && (
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: 'Streak', value: `${stats.currentStreak}d` },
+            { label: '7-day', value: `${stats.completionRate7}%` },
             { label: '30-day', value: `${stats.completionRate30}%` },
             { label: 'Total', value: stats.totalEntries },
-            { label: 'Best', value: `${stats.bestStreak}d` },
+            { label: 'All-time', value: `${stats.bestStreak}d` },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-lg p-3 text-center" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
               <p className="text-xl font-semibold tabular" style={{ color: 'var(--text)' }}>{value}</p>
@@ -242,8 +242,8 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
               <div key={entry.id} className="flex items-center px-5 py-2.5 gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
                 <span className="text-xs tabular w-20 shrink-0" style={{ color: 'var(--text-3)' }}>{entry.date}</span>
                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: entry.completed ? 'var(--success)' : 'var(--border-2)' }} />
-                <span className="text-sm flex-1" style={{ color: 'var(--text-2)' }}>
-                  {entry.completed ? 'Done' : 'Incomplete'}
+                <span className="text-sm flex-1" style={{ color: entry.completed ? 'var(--text-2)' : 'var(--text-3)' }}>
+                  {entry.completed ? 'Done' : '—'}
                   {entry.value != null && goal.type !== 'binary' && (
                     <span className="ml-2 tabular" style={{ color: 'var(--text-3)' }}>
                       {goal.type === 'timer' ? formatDuration(entry.value) : `${entry.value}${goal.unit ? ` ${goal.unit}` : ''}`}

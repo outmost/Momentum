@@ -22,7 +22,7 @@ export function GoalBreakdown() {
         Habits · last 7 days
       </p>
       <div>
-        {allStats.map(({ goal, currentStreak, last7 }, i) => (
+        {allStats.map(({ goal, completionRate7, last7 }, i) => (
           <button
             key={goal.id}
             onClick={() => router.push(`/goals/${goal.id}`)}
@@ -62,18 +62,15 @@ export function GoalBreakdown() {
               ))}
             </div>
 
-            {/* Streak */}
+            {/* 7-day completion rate */}
             <div className="text-right shrink-0 w-10">
-              {currentStreak > 0 ? (
-                <>
-                  <p
-                    className="text-sm font-semibold tabular leading-none"
-                    style={{ color: currentStreak >= 7 ? (goal.color || 'var(--accent)') : 'var(--text-2)' }}
-                  >
-                    {currentStreak}d
-                  </p>
-                  <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-3)' }}>streak</p>
-                </>
+              {completionRate7 > 0 ? (
+                <p
+                  className="text-sm font-semibold tabular leading-none"
+                  style={{ color: completionRate7 >= 80 ? (goal.color || 'var(--accent)') : 'var(--text-2)' }}
+                >
+                  {completionRate7}%
+                </p>
               ) : (
                 <p className="text-sm" style={{ color: 'var(--text-3)' }}>—</p>
               )}

@@ -13,6 +13,9 @@ interface TimerEntryProps {
   color?: string;
 }
 
+// OKR-inspired: 80 % of target time is the "great work" threshold.
+const SUCCESS_THRESHOLD = 0.8;
+
 export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' }: TimerEntryProps) {
   const { activeTimer, setActiveTimer } = useUIStore();
   const isRunning = activeTimer?.goalId === goalId;
@@ -28,7 +31,8 @@ export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' 
   }, [isRunning, activeTimer, value]);
 
   const progress = target > 0 ? Math.min(100, Math.round((display / target) * 100)) : 0;
-  const isComplete = target > 0 ? display >= target : display > 0;
+  const isSuccess = target > 0 && display >= target * SUCCESS_THRESHOLD; // ≥ 80 %
+  const isComplete = target > 0 ? display >= target : display > 0;       // 100 %
 
   function handleToggle() {
     if (isRunning) {
@@ -56,11 +60,14 @@ export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' 
           {isRunning ? <Pause size={10} /> : <Play size={10} />}
         </button>
 
-        {/* Time display — current value prominent */}
+        {/* Time display — colour graduates at 80 % just like NumericEntry */}
         <div className="flex items-baseline gap-1">
           <span
-            className="text-lg font-semibold tabular leading-none"
-            style={{ color: isComplete ? color : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}
+            className="text-lg font-semibold tabular leading-none transition-colors duration-200"
+            style={{
+              color: isComplete ? color : isSuccess ? color : 'var(--text)',
+              fontVariantNumeric: 'tabular-nums',
+            }}
           >
             {formatDuration(display)}
           </span>
@@ -82,8 +89,15 @@ export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' 
         </button>
       </div>
 
+      {/* Progress bar with OKR 80 % milestone tick */}
       {target > 0 && (
-        <ProgressBar value={progress} size="sm" color={color} className="max-w-[120px]" />
+        <ProgressBar
+          value={progress}
+          size="sm"
+          color={isSuccess ? color : 'var(--text-3)'}
+          milestone={80}
+          className="max-w-[120px]"
+        />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { format, parseISO, isToday, isFuture, isPast, startOfWeek, endOfWeek, eachDayOfInterval, subDays, addDays } from 'date-fns';
+import { format, parseISO, isToday, eachDayOfInterval, subDays } from 'date-fns';
 import type { Frequency } from '@/types';
 
 export function formatDate(date: Date | string): string {

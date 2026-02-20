@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { format, subDays, parseISO, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, subDays, parseISO } from 'date-fns';
 import type { Goal, Entry } from '@/types';
 import { isScheduledForDate } from '@/lib/utils';
 

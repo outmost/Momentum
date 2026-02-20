@@ -5,7 +5,7 @@ import type { Goal, GoalStatus } from '@/types';
 
 export function useGoals(folderId?: string, status?: GoalStatus) {
   return useLiveQuery(async () => {
-    let query = db.goals.orderBy('[folderId+sortOrder]');
+    const query = db.goals.orderBy('[folderId+sortOrder]');
     const goals = await query.toArray();
     
     let filtered = goals;

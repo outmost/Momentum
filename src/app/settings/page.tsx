@@ -4,7 +4,7 @@ import { Sun, Moon, Monitor, Download, Upload, Trash2, Sparkles } from 'lucide-r
 import { useSettings, updateSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/hooks/useTheme';
 import { requestNotificationPermission } from '@/lib/notifications';
-import { exportAllData, downloadJSON, importData, clearAllData } from '@/lib/export';
+import { exportAllData, downloadJSON, importData } from '@/lib/export';
 import { seedDemoData, clearAllAppData } from '@/lib/seed';
 import { Toggle } from '@/components/ui/Toggle';
 

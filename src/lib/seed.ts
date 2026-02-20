@@ -1,6 +1,7 @@
 import { db } from './db';
 import { nanoid } from 'nanoid';
 import { format, subDays, getDay } from 'date-fns';
+import type { Entry } from '@/types';
 
 // Deterministic pseudo-random — same seed gives same demo every time
 function makeRng(seed: number) {
@@ -79,7 +80,7 @@ export async function seedDemoData(): Promise<boolean> {
   ]);
 
   // ── Entries — last 30 days (realistic, varied) ────────────────────────────
-  const entries: Parameters<typeof db.entries.bulkAdd>[0] = [];
+  const entries: Entry[] = [];
 
   for (let i = 30; i >= 1; i--) {
     const d = subDays(new Date(), i);

@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { format, subDays, parseISO } from 'date-fns';
+import { format, subDays, parseISO, addDays } from 'date-fns';
 import type { Goal, Entry } from '@/types';
 import { isScheduledForDate } from '@/lib/utils';
 
@@ -158,15 +158,43 @@ export function useAllGoalStats() {
   return useLiveQuery(async () => {
     const goals = await db.goals.where('status').equals('active').toArray();
     const entries = await db.entries.toArray();
-    
+    const today = new Date();
+    const last7Dates = Array.from({ length: 7 }, (_, i) =>
+      format(subDays(today, 6 - i), 'yyyy-MM-dd')
+    );
+
     return goals.map(goal => {
       const goalEntries = entries.filter(e => e.goalId === goal.id);
+      const entryMap = new Map(goalEntries.map(e => [e.date, e]));
+      const last7 = last7Dates.map(date => ({
+        scheduled: isScheduledForDate(date, goal.frequency, goal.customDays),
+        completed: !!entryMap.get(date)?.completed,
+      }));
       return {
         goal,
         completionRate7: computeCompletionRate(goalEntries, goal, 7),
         completionRate30: computeCompletionRate(goalEntries, goal, 30),
         currentStreak: computeCurrentStreak(goalEntries, goal),
+        last7,
       };
-    }).sort((a, b) => a.completionRate30 - b.completionRate30);
+    }).sort((a, b) => b.currentStreak - a.currentStreak); // best streaks first
+  });
+}
+
+export function useTotalStats() {
+  return useLiveQuery(async () => {
+    const today = new Date();
+    const last30 = Array.from({ length: 30 }, (_, i) =>
+      format(subDays(today, i), 'yyyy-MM-dd')
+    );
+    const last7 = last30.slice(0, 7);
+
+    const entries = await db.entries.toArray();
+    const totalThisMonth = entries.filter(e => e.completed && last30.includes(e.date)).length;
+    const daysActiveThisWeek = new Set(
+      entries.filter(e => e.completed && last7.includes(e.date)).map(e => e.date)
+    ).size;
+
+    return { totalThisMonth, daysActiveThisWeek };
   });
 }

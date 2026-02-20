@@ -1,15 +1,16 @@
 'use client';
 import React from 'react';
-import { useAllGoalStats, useTodayProgress } from '@/hooks/useStats';
+import { useAllGoalStats, useTodayProgress, useTotalStats } from '@/hooks/useStats';
 import { format } from 'date-fns';
 
 interface StatBlockProps {
   value: string | number;
   label: string;
+  sub?: string;
   accent?: boolean;
 }
 
-function StatBlock({ value, label, accent }: StatBlockProps) {
+function StatBlock({ value, label, sub, accent }: StatBlockProps) {
   return (
     <div
       className="rounded-lg p-5 flex flex-col justify-between"
@@ -21,9 +22,14 @@ function StatBlock({ value, label, accent }: StatBlockProps) {
       >
         {value}
       </p>
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] mt-3" style={{ color: 'var(--text-3)' }}>
-        {label}
-      </p>
+      <div className="mt-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: 'var(--text-3)' }}>
+          {label}
+        </p>
+        {sub && (
+          <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>{sub}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -32,16 +38,19 @@ export function SummaryCards() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayProgress = useTodayProgress(today);
   const allStats = useAllGoalStats();
+  const totals = useTotalStats();
 
   const completedToday = todayProgress?.completed ?? 0;
   const totalToday = todayProgress?.total ?? 0;
   const allDone = totalToday > 0 && completedToday === totalToday;
 
-  const maxStreak = allStats?.reduce((m, s) => Math.max(m, s.currentStreak), 0) ?? 0;
-  const weekRate = allStats?.length
-    ? Math.round(allStats.reduce((s, x) => s + x.completionRate7, 0) / allStats.length) : 0;
-  const monthRate = allStats?.length
-    ? Math.round(allStats.reduce((s, x) => s + x.completionRate30, 0) / allStats.length) : 0;
+  // Best current streak across all goals
+  const bestStreak = allStats?.reduce((m, s) => Math.max(m, s.currentStreak), 0) ?? 0;
+  // Longest streak holder name
+  const streakGoal = allStats?.find(s => s.currentStreak === bestStreak);
+
+  const totalThisMonth = totals?.totalThisMonth ?? 0;
+  const daysActiveThisWeek = totals?.daysActiveThisWeek ?? 0;
 
   return (
     <div className="grid grid-cols-2 gap-2.5">
@@ -49,10 +58,24 @@ export function SummaryCards() {
         value={totalToday > 0 ? `${completedToday}/${totalToday}` : '—'}
         label="Today"
         accent={allDone}
+        sub={allDone && totalToday > 0 ? 'All done ✓' : undefined}
       />
-      <StatBlock value={weekRate > 0 ? `${weekRate}%` : '—'} label="7-day avg" />
-      <StatBlock value={monthRate > 0 ? `${monthRate}%` : '—'} label="30-day avg" />
-      <StatBlock value={maxStreak > 0 ? `${maxStreak}d` : '—'} label="Best streak" />
+      <StatBlock
+        value={bestStreak > 0 ? `${bestStreak}d` : '—'}
+        label="Best streak"
+        sub={bestStreak >= 7 ? streakGoal?.goal.title : undefined}
+        accent={bestStreak >= 7}
+      />
+      <StatBlock
+        value={totalThisMonth > 0 ? String(totalThisMonth) : '—'}
+        label="This month"
+        sub="completions"
+      />
+      <StatBlock
+        value={daysActiveThisWeek > 0 ? `${daysActiveThisWeek}/7` : '—'}
+        label="This week"
+        sub="active days"
+      />
     </div>
   );
 }

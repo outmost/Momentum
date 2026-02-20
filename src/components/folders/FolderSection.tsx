@@ -7,7 +7,6 @@ import { GoalListItem } from '@/components/goals/GoalListItem';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { deleteFolder, updateFolder } from '@/hooks/useFolders';
 import { reorderGoals } from '@/hooks/useGoals';
-import { cn } from '@/lib/cn';
 import type { Folder, Goal } from '@/types';
 
 interface GoalWithStats extends Goal {

@@ -5,7 +5,6 @@ import { useSettings, updateSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/hooks/useTheme';
 import { requestNotificationPermission } from '@/lib/notifications';
 import { exportAllData, downloadJSON, importData, clearAllData } from '@/lib/export';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Toggle } from '@/components/ui/Toggle';
 
 export default function SettingsPage() {

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useCompletionTrend } from '@/hooks/useStats';
 import { format, parseISO } from 'date-fns';
 

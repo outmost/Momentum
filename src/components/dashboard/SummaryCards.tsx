@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Target, Zap, Calendar, TrendingUp } from 'lucide-react';
+import { Zap, Calendar, TrendingUp } from 'lucide-react';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useTodayProgress } from '@/hooks/useStats';
 import { useAllGoalStats } from '@/hooks/useStats';

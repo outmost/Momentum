@@ -31,7 +31,7 @@ export function GoalBreakdown() {
         <p className="text-xs text-gray-400 mt-0.5">Sorted by 30-day completion rate</p>
       </div>
       <div className="divide-y divide-gray-50 dark:divide-gray-700">
-        {allStats.slice(0, 8).map(({ goal, completionRate30, completionRate7, currentStreak }) => (
+        {allStats.slice(0, 8).map(({ goal, completionRate30, currentStreak }) => (
           <button
             key={goal.id}
             onClick={() => router.push(`/goals/${goal.id}`)}

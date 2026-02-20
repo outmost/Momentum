@@ -1,13 +1,13 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
-import { X, Plus, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { createGoal, updateGoal } from '@/hooks/useGoals';
 import { useFolders, createFolder } from '@/hooks/useFolders';
 import { createMilestone, deleteMilestone } from '@/hooks/useMilestones';
 import { db } from '@/lib/db';
 import { FOLDER_COLORS, GOAL_COLORS } from '@/lib/utils';
-import type { Goal, GoalType, Frequency, Milestone } from '@/types';
+import type { Goal, GoalType, Frequency } from '@/types';
 
 interface GoalFormProps {
   goal?: Goal;

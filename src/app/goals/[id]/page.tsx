@@ -79,6 +79,25 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
 
   const recentEntries = (entries ?? []).slice(0, 30);
 
+  // How many consecutive non-completed entries sit at the top of history (current miss run)
+  const currentMissRun = (() => {
+    let n = 0;
+    for (const e of recentEntries) {
+      if (!e.completed) n++;
+      else break;
+    }
+    return n;
+  })();
+
+  const COMEBACK_MESSAGES: Record<number, string> = {
+    2: "Two days gone — make today the comeback.",
+    3: "Missing days happens to everyone. What defines you is coming back.",
+  };
+  const comebackMsg =
+    currentMissRun >= 4
+      ? "Champions aren't people who never miss. They're people who always return."
+      : COMEBACK_MESSAGES[currentMissRun] ?? null;
+
   return (
     <div className="space-y-5">
       {/* Back */}
@@ -238,23 +257,53 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
           <p className="text-sm text-center py-8" style={{ color: 'var(--text-3)' }}>No entries yet.</p>
         ) : (
           <div>
-            {recentEntries.map(entry => (
-              <div key={entry.id} className="flex items-center px-5 py-2.5 gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                <span className="text-xs tabular w-20 shrink-0" style={{ color: 'var(--text-3)' }}>{entry.date}</span>
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: entry.completed ? 'var(--success)' : 'var(--border-2)' }} />
-                <span className="text-sm flex-1" style={{ color: entry.completed ? 'var(--text-2)' : 'var(--text-3)' }}>
-                  {entry.completed ? 'Done' : '—'}
-                  {entry.value != null && goal.type !== 'binary' && (
-                    <span className="ml-2 tabular" style={{ color: 'var(--text-3)' }}>
-                      {goal.type === 'timer' ? formatDuration(entry.value) : `${entry.value}${goal.unit ? ` ${goal.unit}` : ''}`}
-                    </span>
-                  )}
-                </span>
-                {entry.note && (
-                  <span className="text-xs italic truncate max-w-[100px]" style={{ color: 'var(--text-3)' }}>{entry.note}</span>
-                )}
+            {comebackMsg && (
+              <div
+                className="px-5 py-2.5 text-xs italic"
+                style={{
+                  color: 'var(--accent)',
+                  backgroundColor: 'color-mix(in srgb, var(--accent) 6%, transparent)',
+                  borderBottom: '1px solid var(--border)',
+                }}
+              >
+                {comebackMsg}
               </div>
-            ))}
+            )}
+            {recentEntries.map(entry => {
+              const hasPartial = !entry.completed && entry.value != null && entry.value > 0;
+              const dotColor = entry.completed
+                ? 'var(--success)'
+                : hasPartial
+                  ? '#F59E0B'
+                  : 'var(--border-2)';
+              const label = entry.completed
+                ? 'Done'
+                : hasPartial
+                  ? 'Partial'
+                  : '—';
+              const labelColor = entry.completed
+                ? 'var(--text-2)'
+                : hasPartial
+                  ? '#F59E0B'
+                  : 'var(--text-3)';
+              return (
+                <div key={entry.id} className="flex items-center px-5 py-2.5 gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <span className="text-xs tabular w-20 shrink-0" style={{ color: 'var(--text-3)' }}>{entry.date}</span>
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+                  <span className="text-sm flex-1" style={{ color: labelColor }}>
+                    {label}
+                    {entry.value != null && goal.type !== 'binary' && (
+                      <span className="ml-2 tabular" style={{ color: hasPartial ? '#F59E0B' : 'var(--text-3)' }}>
+                        {goal.type === 'timer' ? formatDuration(entry.value) : `${entry.value}${goal.unit ? ` ${goal.unit}` : ''}`}
+                      </span>
+                    )}
+                  </span>
+                  {entry.note && (
+                    <span className="text-xs italic truncate max-w-[100px]" style={{ color: 'var(--text-3)' }}>{entry.note}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

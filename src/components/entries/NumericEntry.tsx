@@ -10,17 +10,28 @@ interface NumericEntryProps {
   color?: string;
 }
 
+// OKR-inspired: 80 % is the "great work" success point.
+// Reaching it earns a dopamine hit; 100 % is the full target.
+const SUCCESS_THRESHOLD = 0.8;
+
 export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' }: NumericEntryProps) {
   const [inputMode, setInputMode] = useState(false);
   const [inputVal, setInputVal] = useState(value.toString());
-  const progress = target > 0 ? Math.min(100, Math.round((value / target) * 100)) : 0;
-  const isComplete = target > 0 ? value >= target : value > 0;
+
+  const rawProgress = target > 0 ? (value / target) * 100 : 0;
+  const progress = Math.min(100, Math.round(rawProgress));
+  const isSuccess = target > 0 && value >= target * SUCCESS_THRESHOLD; // ≥ 80 %
+  const isComplete = target > 0 ? value >= target : value > 0;         // 100 %
+  const isStretch = target > 0 && value > target;                       // beyond target
 
   function handleConfirm() {
     const num = Number(inputVal);
     if (!isNaN(num) && num >= 0) onChange(num);
     setInputMode(false);
   }
+
+  // The value text colour graduates: default → success-colour at 80 %
+  const valueColor = isComplete ? color : isSuccess ? color : 'var(--text)';
 
   return (
     <div className="space-y-1.5 mt-1.5">
@@ -52,14 +63,23 @@ export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' 
             className="flex items-baseline gap-1 transition-colors"
           >
             <span
-              className="text-lg font-semibold tabular leading-none"
-              style={{ color: isComplete ? color : 'var(--text)' }}
+              className="text-lg font-semibold tabular leading-none transition-colors duration-200"
+              style={{ color: valueColor }}
             >
               {value}
             </span>
             <span className="text-xs" style={{ color: 'var(--text-3)' }}>
               / {target}{unit ? ` ${unit}` : ''}
             </span>
+            {/* Over-target badge — shows how far past the goal the user went */}
+            {isStretch && (
+              <span
+                className="ml-0.5 text-[10px] font-semibold"
+                style={{ color: color, opacity: 0.8 }}
+              >
+                +{value - target}{unit ? ` ${unit}` : ''}
+              </span>
+            )}
           </button>
         )}
 
@@ -73,9 +93,26 @@ export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' 
         </button>
       </div>
 
-      {/* Progress bar only when there's something to show */}
+      {/* Progress bar with OKR 80 % milestone tick */}
       {target > 0 && (
-        <ProgressBar value={progress} size="sm" color={color} className="max-w-[120px]" />
+        <div className="flex items-center gap-1.5 max-w-[120px]">
+          <ProgressBar
+            value={progress}
+            size="sm"
+            color={isSuccess ? color : 'var(--text-3)'}
+            milestone={80}
+            className="flex-1"
+          />
+          {/* Subtle % label fades in once there's meaningful progress */}
+          {value > 0 && (
+            <span
+              className="text-[9px] tabular leading-none transition-colors duration-200"
+              style={{ color: isSuccess ? color : 'var(--text-3)', opacity: 0.7, minWidth: 20, textAlign: 'right' }}
+            >
+              {progress}%
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, TrendingUp } from 'lucide-react';
 import { BinaryEntry } from '@/components/entries/BinaryEntry';
 import { NumericEntry } from '@/components/entries/NumericEntry';
 import { TimerEntry } from '@/components/entries/TimerEntry';
@@ -9,6 +9,7 @@ import { EntryNoteModal } from '@/components/entries/EntryNoteModal';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { upsertEntry } from '@/hooks/useEntries';
 import { useMilestones, toggleMilestone } from '@/hooks/useMilestones';
+import { updateGoal } from '@/hooks/useGoals';
 import { cn } from '@/lib/cn';
 import type { Goal, Entry } from '@/types';
 
@@ -21,11 +22,21 @@ interface GoalCardProps {
   isLast?: boolean;
 }
 
+/** Round a number up to the nearest "nice" increment for clean stretch targets. */
+function niceStretchTarget(original: number, exceeded: number): number {
+  // 25 % above original target, rounded to a contextually clean number
+  const raw = Math.max(original * 1.25, exceeded * 1.1);
+  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
+  const step = magnitude >= 5 ? magnitude : magnitude * 5;
+  return Math.ceil(raw / step) * step;
+}
+
 export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: GoalCardProps) {
   const router = useRouter();
   const milestones = useMilestones(goal.id);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [stretchDismissed, setStretchDismissed] = useState(false);
 
   const color = goal.color || '#16A34A';
   const completed = entry?.completed ?? false;
@@ -67,6 +78,22 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
 
   const hasBinaryCheck = goal.type === 'binary' || goal.type === 'milestone';
 
+  // Stretch-goal suggestion: surfaces automatically when a numeric goal exceeds its target.
+  const showStretchBanner =
+    !isFuture &&
+    !stretchDismissed &&
+    goal.type === 'numeric' &&
+    goal.target !== undefined &&
+    value > goal.target;
+  const stretchTarget = goal.target !== undefined
+    ? niceStretchTarget(goal.target, value)
+    : 0;
+
+  async function handleAcceptStretch() {
+    await updateGoal(goal.id, { target: stretchTarget });
+    setStretchDismissed(true);
+  }
+
   // Left accent bar communicates progress state at a glance:
   //  · done        → goal color, full opacity
   //  · in progress → goal color, 45% opacity
@@ -78,7 +105,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
     <>
       <div
         className={cn('relative', isFuture && 'opacity-40 pointer-events-none')}
-        style={{ borderBottom: isLast ? 'none' : '1px solid var(--border)' }}
+        style={{ borderBottom: isLast && !showStretchBanner ? 'none' : '1px solid var(--border)' }}
       >
         {/* Left color accent — state-aware */}
         <div
@@ -186,6 +213,43 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
             </button>
           )}
         </div>
+
+        {/* ── Stretch-goal banner ──────────────────────────────────────────────
+            Surfaces automatically when a numeric goal's value exceeds its target.
+            Offers a one-tap raise to the next clean milestone (OKR "stretch").   */}
+        {showStretchBanner && (
+          <div
+            className="flex items-center gap-2 px-5 py-2"
+            style={{
+              borderTop: '1px solid var(--border)',
+              backgroundColor: 'var(--surface)',
+            }}
+          >
+            <TrendingUp size={11} style={{ color, flexShrink: 0 }} />
+            <span className="text-[11px] flex-1" style={{ color: 'var(--text-2)' }}>
+              Target exceeded — push to{' '}
+              <strong style={{ color: 'var(--text)' }}>
+                {stretchTarget}{goal.unit ? ` ${goal.unit}` : ''}
+              </strong>
+              ?
+            </span>
+            <button
+              onClick={handleAcceptStretch}
+              className="text-[11px] font-semibold px-2 py-0.5 rounded transition-colors"
+              style={{ color: 'white', backgroundColor: color }}
+            >
+              Stretch
+            </button>
+            <button
+              onClick={() => setStretchDismissed(true)}
+              className="text-[11px] px-1 transition-colors"
+              style={{ color: 'var(--text-3)' }}
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
       </div>
 
       <EntryNoteModal

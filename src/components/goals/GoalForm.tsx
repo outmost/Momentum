@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { createGoal, updateGoal } from '@/hooks/useGoals';
 import { useFolders, createFolder } from '@/hooks/useFolders';
 import { createMilestone, deleteMilestone } from '@/hooks/useMilestones';
@@ -17,7 +17,15 @@ interface GoalFormProps {
 
 const inputClass = "w-full px-3 py-2 rounded-md text-sm focus:outline-none transition-colors";
 const inputStyle = { border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--text)' };
-const labelStyle = { color: 'var(--text-2)', fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '6px' };
+const labelStyle = { color: 'var(--text-2)', fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '6px' } as const;
+
+// Human-readable type labels — keeps the segmented control concise.
+const TYPE_LABELS: Record<GoalType, string> = {
+  binary: 'Done / not done',
+  numeric: 'Track a number',
+  milestone: 'Step-by-step',
+  timer: 'Time-based',
+};
 
 export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const folders = useFolders();
@@ -40,6 +48,10 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const [saving, setSaving] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [showNewFolder, setShowNewFolder] = useState(false);
+
+  // Progressive disclosure: show advanced options only when explicitly requested,
+  // or always-open when editing an existing goal so nothing looks hidden.
+  const [showAdvanced, setShowAdvanced] = useState(!!goal);
 
   useEffect(() => {
     if (goal?.type === 'milestone') {
@@ -128,94 +140,68 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   });
 
   return (
-    <form onSubmit={handleSubmit} className="p-5 space-y-5">
-      {/* Title */}
+    <form onSubmit={handleSubmit} className="p-5 space-y-4">
+
+      {/* ── Title — always first, auto-focused ── */}
       <div>
-        <label style={labelStyle}>Title *</label>
         <input
           value={title}
           onChange={e => setTitle(e.target.value)}
           maxLength={100}
           placeholder="What do you want to achieve?"
           className={inputClass}
-          style={inputStyle}
+          style={{ ...inputStyle, fontSize: '15px', fontWeight: 500 }}
+          autoFocus
         />
         {errors.title && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.title}</p>}
       </div>
 
-      {/* Type */}
+      {/* ── Goal type — four compact tiles ── */}
       <div>
         <label style={labelStyle}>Type</label>
-        <div className="flex gap-1 p-1 rounded-md" style={{ backgroundColor: 'var(--border)' }}>
+        <div className="grid grid-cols-2 gap-1.5">
           {(['binary', 'numeric', 'milestone', 'timer'] as GoalType[]).map(t => (
             <button
               key={t}
               type="button"
               onClick={() => setType(t)}
-              className="flex-1 py-1.5 rounded text-xs font-medium transition-colors capitalize"
+              className="px-3 py-2 rounded-md text-left transition-colors"
               style={{
-                backgroundColor: type === t ? 'var(--surface)' : 'transparent',
-                color: type === t ? 'var(--text)' : 'var(--text-3)',
+                border: `1px solid ${type === t ? 'var(--accent)' : 'var(--border)'}`,
+                backgroundColor: type === t ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'transparent',
               }}
             >
-              {t}
+              <span
+                className="block text-xs font-semibold capitalize"
+                style={{ color: type === t ? 'var(--accent)' : 'var(--text)' }}
+              >
+                {t}
+              </span>
+              <span className="block text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>
+                {TYPE_LABELS[t]}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Folder */}
-      <div>
-        <label style={labelStyle}>Folder</label>
-        {showNewFolder ? (
-          <div className="flex gap-2">
-            <input
-              value={newFolderName}
-              onChange={e => setNewFolderName(e.target.value)}
-              placeholder="Folder name"
-              className={inputClass}
-              style={inputStyle}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCreateFolder())}
-            />
-            <button type="button" onClick={handleCreateFolder} className="px-3 py-2 rounded-md text-sm font-medium text-white" style={{ backgroundColor: 'var(--accent)' }}>Add</button>
-            <button type="button" onClick={() => setShowNewFolder(false)} className="px-3 py-2 rounded-md text-sm" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>Cancel</button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <select
-              value={folderId}
-              onChange={e => setFolderId(e.target.value)}
-              className={`${inputClass} flex-1`}
-              style={inputStyle}
-            >
-              <option value="">No folder</option>
-              {folders?.map(f => <option key={f.id} value={f.id}>{f.icon} {f.name}</option>)}
-            </select>
-            <button type="button" onClick={() => setShowNewFolder(true)} className="px-3 py-2 rounded-md text-sm whitespace-nowrap" style={{ color: 'var(--accent)', border: '1px solid var(--border)' }}>+ New</button>
-          </div>
-        )}
-      </div>
-
-      {/* Description */}
-      <div>
-        <label style={labelStyle}>Description</label>
-        <textarea
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          maxLength={500}
-          rows={2}
-          placeholder="Optional"
-          className={`${inputClass} resize-none`}
-          style={inputStyle}
-        />
-      </div>
+      {/* ── Type-specific required fields (always visible) ── */}
 
       {/* Numeric */}
       {type === 'numeric' && (
         <div className="flex gap-3">
           <div className="flex-1">
             <label style={labelStyle}>Target *</label>
-            <input type="number" value={target} onChange={e => setTarget(e.target.value)} min="1" placeholder="e.g. 20" className={inputClass} style={inputStyle} />
+            <input
+              type="number"
+              value={target}
+              onChange={e => setTarget(e.target.value)}
+              min="1"
+              placeholder="e.g. 20"
+              className={inputClass}
+              style={inputStyle}
+              autoFocus
+            />
             {errors.target && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.target}</p>}
           </div>
           <div className="flex-1">
@@ -229,7 +215,16 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
       {type === 'timer' && (
         <div>
           <label style={labelStyle}>Duration (minutes) *</label>
-          <input type="number" value={duration} onChange={e => setDuration(e.target.value)} min="1" placeholder="e.g. 30" className={inputClass} style={inputStyle} />
+          <input
+            type="number"
+            value={duration}
+            onChange={e => setDuration(e.target.value)}
+            min="1"
+            placeholder="e.g. 30"
+            className={inputClass}
+            style={inputStyle}
+            autoFocus
+          />
           {errors.duration && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.duration}</p>}
         </div>
       )}
@@ -237,7 +232,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
       {/* Milestones */}
       {type === 'milestone' && (
         <div>
-          <label style={labelStyle}>Milestones *</label>
+          <label style={labelStyle}>Steps *</label>
           <div className="space-y-1.5 mb-2">
             {milestones.map((m, i) => (
               <div key={m.id} className="flex items-center gap-2 px-3 py-2 rounded-md" style={{ backgroundColor: 'var(--border)' }}>
@@ -252,7 +247,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
             <input
               value={newMilestoneTitle}
               onChange={e => setNewMilestoneTitle(e.target.value)}
-              placeholder="Add milestone…"
+              placeholder="Add step…"
               className={`${inputClass} flex-1`}
               style={inputStyle}
               onKeyDown={e => {
@@ -276,80 +271,141 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         </div>
       )}
 
-      {/* Frequency */}
+      {/* ── More options — collapsed by default for new goals ──────────────── */}
       <div>
-        <label style={labelStyle}>Frequency</label>
-        <div className="flex gap-1 p-1 rounded-md" style={{ backgroundColor: 'var(--border)' }}>
-          {(['daily', 'weekly', 'custom'] as Frequency[]).map(f => (
-            <button key={f} type="button" onClick={() => setFrequency(f)}
-              className="flex-1 py-1.5 rounded text-xs font-medium capitalize transition-colors"
-              style={{ backgroundColor: frequency === f ? 'var(--surface)' : 'transparent', color: frequency === f ? 'var(--text)' : 'var(--text-3)' }}>
-              {f}
-            </button>
-          ))}
-        </div>
-        {frequency === 'custom' && (
-          <div className="flex gap-1 mt-2 flex-wrap">
-            {dayNames.map((day, i) => (
-              <button key={i} type="button" onClick={() => setCustomDays(prev => prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i])}
-                style={pillBtn(customDays.includes(i))} className="transition-colors">
-                {day}
-              </button>
-            ))}
-          </div>
-        )}
-        {errors.customDays && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.customDays}</p>}
-      </div>
-
-      {/* Color */}
-      <div>
-        <label style={labelStyle}>Color</label>
-        <div className="flex gap-2 flex-wrap items-center">
-          <button type="button" onClick={() => setColor('')}
-            className="w-6 h-6 rounded-full border-2"
-            style={{ backgroundColor: 'var(--border-2)', borderColor: color === '' ? 'var(--text)' : 'transparent' }}
-            title="Default"
-          />
-          {GOAL_COLORS.map(c => (
-            <button key={c} type="button" onClick={() => setColor(c)}
-              className="w-6 h-6 rounded-full border-2 transition-transform"
-              style={{ backgroundColor: c, borderColor: color === c ? 'var(--text)' : 'transparent', transform: color === c ? 'scale(1.15)' : 'scale(1)' }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Reminder */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium" style={{ color: 'var(--text-2)' }}>Daily reminder</p>
-          {reminderEnabled && (
-            <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)}
-              className="mt-1 px-2 py-1 rounded text-xs focus:outline-none"
-              style={{ border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--text)' }}
-            />
-          )}
-        </div>
         <button
           type="button"
-          onClick={() => setReminderEnabled(!reminderEnabled)}
-          className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
-          style={{ backgroundColor: reminderEnabled ? 'var(--accent)' : 'var(--border-2)' }}
+          onClick={() => setShowAdvanced(v => !v)}
+          className="flex items-center gap-1 text-xs transition-colors"
+          style={{ color: 'var(--text-3)' }}
         >
-          <span
-            className="inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform"
-            style={{ transform: reminderEnabled ? 'translateX(18px)' : 'translateX(3px)' }}
-          />
+          {showAdvanced ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          {showAdvanced ? 'Fewer options' : 'More options'}
         </button>
       </div>
 
-      {/* Actions */}
+      {showAdvanced && (
+        <div className="space-y-4 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
+
+          {/* Folder */}
+          <div>
+            <label style={labelStyle}>Folder</label>
+            {showNewFolder ? (
+              <div className="flex gap-2">
+                <input
+                  value={newFolderName}
+                  onChange={e => setNewFolderName(e.target.value)}
+                  placeholder="Folder name"
+                  className={inputClass}
+                  style={inputStyle}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCreateFolder())}
+                />
+                <button type="button" onClick={handleCreateFolder} className="px-3 py-2 rounded-md text-sm font-medium text-white" style={{ backgroundColor: 'var(--accent)' }}>Add</button>
+                <button type="button" onClick={() => setShowNewFolder(false)} className="px-3 py-2 rounded-md text-sm" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>Cancel</button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <select value={folderId} onChange={e => setFolderId(e.target.value)} className={`${inputClass} flex-1`} style={inputStyle}>
+                  <option value="">No folder</option>
+                  {folders?.map(f => <option key={f.id} value={f.id}>{f.icon} {f.name}</option>)}
+                </select>
+                <button type="button" onClick={() => setShowNewFolder(true)} className="px-3 py-2 rounded-md text-sm whitespace-nowrap" style={{ color: 'var(--accent)', border: '1px solid var(--border)' }}>+ New</button>
+              </div>
+            )}
+          </div>
+
+          {/* Description */}
+          <div>
+            <label style={labelStyle}>Description</label>
+            <textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              maxLength={500}
+              rows={2}
+              placeholder="Optional"
+              className={`${inputClass} resize-none`}
+              style={inputStyle}
+            />
+          </div>
+
+          {/* Frequency */}
+          <div>
+            <label style={labelStyle}>Frequency</label>
+            <div className="flex gap-1 p-1 rounded-md" style={{ backgroundColor: 'var(--border)' }}>
+              {(['daily', 'weekly', 'custom'] as Frequency[]).map(f => (
+                <button key={f} type="button" onClick={() => setFrequency(f)}
+                  className="flex-1 py-1.5 rounded text-xs font-medium capitalize transition-colors"
+                  style={{ backgroundColor: frequency === f ? 'var(--surface)' : 'transparent', color: frequency === f ? 'var(--text)' : 'var(--text-3)' }}>
+                  {f}
+                </button>
+              ))}
+            </div>
+            {frequency === 'custom' && (
+              <div className="flex gap-1 mt-2 flex-wrap">
+                {dayNames.map((day, i) => (
+                  <button key={i} type="button"
+                    onClick={() => setCustomDays(prev => prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i])}
+                    style={pillBtn(customDays.includes(i))}
+                  >
+                    {day}
+                  </button>
+                ))}
+              </div>
+            )}
+            {errors.customDays && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.customDays}</p>}
+          </div>
+
+          {/* Color */}
+          <div>
+            <label style={labelStyle}>Color</label>
+            <div className="flex gap-2 flex-wrap items-center">
+              <button type="button" onClick={() => setColor('')}
+                className="w-6 h-6 rounded-full border-2"
+                style={{ backgroundColor: 'var(--border-2)', borderColor: color === '' ? 'var(--text)' : 'transparent' }}
+                title="Default"
+              />
+              {GOAL_COLORS.map(c => (
+                <button key={c} type="button" onClick={() => setColor(c)}
+                  className="w-6 h-6 rounded-full border-2 transition-transform"
+                  style={{ backgroundColor: c, borderColor: color === c ? 'var(--text)' : 'transparent', transform: color === c ? 'scale(1.15)' : 'scale(1)' }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Reminder */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-2)' }}>Daily reminder</p>
+              {reminderEnabled && (
+                <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)}
+                  className="mt-1 px-2 py-1 rounded text-xs focus:outline-none"
+                  style={{ border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--text)' }}
+                />
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setReminderEnabled(!reminderEnabled)}
+              className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+              style={{ backgroundColor: reminderEnabled ? 'var(--accent)' : 'var(--border-2)' }}
+            >
+              <span
+                className="inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform"
+                style={{ transform: reminderEnabled ? 'translateX(18px)' : 'translateX(3px)' }}
+              />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Actions ── */}
       <div className="flex justify-end gap-2 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
         <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-md" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>
           Cancel
         </button>
         <button type="submit" disabled={saving} className="px-4 py-2 text-sm font-medium rounded-md text-white disabled:opacity-50" style={{ backgroundColor: 'var(--accent)' }}>
-          {saving ? 'Saving…' : goal ? 'Update' : 'Create goal'}
+          {saving ? 'Saving…' : goal ? 'Update' : 'Add goal'}
         </button>
       </div>
     </form>

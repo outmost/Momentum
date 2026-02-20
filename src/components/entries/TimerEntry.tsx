@@ -28,6 +28,7 @@ export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' 
   }, [isRunning, activeTimer, value]);
 
   const progress = target > 0 ? Math.min(100, Math.round((display / target) * 100)) : 0;
+  const isComplete = target > 0 ? display >= target : display > 0;
 
   function handleToggle() {
     if (isRunning) {
@@ -40,8 +41,9 @@ export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' 
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 mt-1.5">
       <div className="flex items-center gap-2.5">
+        {/* Play/pause */}
         <button
           onClick={handleToggle}
           className="w-6 h-6 rounded flex items-center justify-center transition-all"
@@ -51,23 +53,38 @@ export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' 
             color: isRunning ? 'white' : 'var(--text-2)',
           }}
         >
-          {isRunning ? <Pause size={11} /> : <Play size={11} />}
+          {isRunning ? <Pause size={10} /> : <Play size={10} />}
         </button>
 
-        <span className="text-xs tabular font-medium" style={{ color: 'var(--text-2)' }}>
-          <span style={{ color: 'var(--text)' }}>{formatDuration(display)}</span>
-          <span style={{ color: 'var(--text-3)' }}> / {formatDuration(target)}</span>
-        </span>
+        {/* Time display — current value prominent */}
+        <div className="flex items-baseline gap-1">
+          <span
+            className="text-lg font-semibold tabular leading-none"
+            style={{ color: isComplete ? color : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}
+          >
+            {formatDuration(display)}
+          </span>
+          {target > 0 && (
+            <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+              / {formatDuration(target)}
+            </span>
+          )}
+        </div>
 
+        {/* Reset */}
         <button
           onClick={() => { setActiveTimer(null); onChange(0); setDisplay(0); }}
           className="transition-colors"
           style={{ color: 'var(--text-3)' }}
+          title="Reset"
         >
           <RotateCcw size={11} />
         </button>
       </div>
-      <ProgressBar value={progress} size="sm" color={color} className="max-w-[140px]" />
+
+      {target > 0 && (
+        <ProgressBar value={progress} size="sm" color={color} className="max-w-[120px]" />
+      )}
     </div>
   );
 }

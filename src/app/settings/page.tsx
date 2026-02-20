@@ -1,10 +1,11 @@
 'use client';
 import React, { useState, useRef } from 'react';
-import { Sun, Moon, Monitor, Download, Upload, Trash2 } from 'lucide-react';
+import { Sun, Moon, Monitor, Download, Upload, Trash2, Sparkles } from 'lucide-react';
 import { useSettings, updateSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/hooks/useTheme';
 import { requestNotificationPermission } from '@/lib/notifications';
 import { exportAllData, downloadJSON, importData, clearAllData } from '@/lib/export';
+import { seedDemoData, clearAllAppData } from '@/lib/seed';
 import { Toggle } from '@/components/ui/Toggle';
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
@@ -38,6 +39,7 @@ export default function SettingsPage() {
   const [clearStep2, setClearStep2] = useState(false);
   const [clearInput, setClearInput] = useState('');
   const [importing, setImporting] = useState(false);
+  const [seedMsg, setSeedMsg] = useState<string | null>(null);
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -61,9 +63,15 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleLoadSample() {
+    const seeded = await seedDemoData();
+    setSeedMsg(seeded ? 'Sample data loaded!' : 'You already have goals — sample data skipped.');
+    setTimeout(() => setSeedMsg(null), 3000);
+  }
+
   async function handleClearAll() {
     if (clearInput !== 'DELETE') return;
-    await clearAllData();
+    await clearAllAppData();
     setClearConfirmOpen(false);
     setClearStep2(false);
     setClearInput('');
@@ -148,6 +156,19 @@ export default function SettingsPage() {
 
         {/* Data */}
         <Section label="Data">
+          <Row>
+            <button
+              onClick={handleLoadSample}
+              className="flex items-center gap-3 w-full text-sm transition-colors text-left"
+              style={{ color: 'var(--text-2)' }}
+            >
+              <Sparkles size={15} style={{ color: 'var(--accent)' }} />
+              Load sample data
+            </button>
+            {seedMsg && (
+              <p className="text-xs mt-2" style={{ color: 'var(--text-3)' }}>{seedMsg}</p>
+            )}
+          </Row>
           <Row>
             <button
               onClick={handleExport}

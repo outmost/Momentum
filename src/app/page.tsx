@@ -8,6 +8,7 @@ import { useFolders } from '@/hooks/useFolders';
 import { useEntriesForDate } from '@/hooks/useEntries';
 import { useSettings } from '@/hooks/useSettings';
 import { initializeSettings } from '@/lib/db';
+import { seedDemoData } from '@/lib/seed';
 import { isScheduledForDate } from '@/lib/utils';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { Modal } from '@/components/ui/Modal';
@@ -22,7 +23,7 @@ export default function TodayPage() {
   const entries = useEntriesForDate(selectedDate);
   useSettings();
 
-  useEffect(() => { initializeSettings(); }, []);
+  useEffect(() => { initializeSettings(); seedDemoData(); }, []);
 
   function navigate(dir: -1 | 1) {
     const d = dir === -1

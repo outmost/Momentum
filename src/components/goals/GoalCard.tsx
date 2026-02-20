@@ -67,21 +67,27 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
 
   const hasBinaryCheck = goal.type === 'binary' || goal.type === 'milestone';
 
+  // Left accent bar communicates progress state at a glance:
+  //  · done        → goal color, full opacity
+  //  · in progress → goal color, 45% opacity
+  //  · not started → var(--border) (hairline, barely visible)
+  const hasProgress = value > 0 || completed;
+  const accentOpacity = completed ? 1 : hasProgress ? 0.45 : 0.2;
+
   return (
     <>
-      {/* Flat row — no card border, just a left color accent + bottom divider */}
       <div
         className={cn('relative', isFuture && 'opacity-40 pointer-events-none')}
         style={{ borderBottom: isLast ? 'none' : '1px solid var(--border)' }}
       >
-        {/* Left color accent line */}
+        {/* Left color accent — state-aware */}
         <div
-          className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r"
-          style={{ backgroundColor: completed ? 'var(--border)' : color }}
+          className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r transition-all duration-300"
+          style={{ backgroundColor: color, opacity: accentOpacity }}
         />
 
         <div className="flex items-start pl-5 pr-3 py-3.5 gap-2">
-          {/* Checkbox for binary/milestone — large tap target */}
+          {/* Checkbox for binary / milestone */}
           {hasBinaryCheck && (
             <BinaryEntry
               completed={completed}
@@ -91,7 +97,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
           )}
 
           {/* Content */}
-          <div className={cn('flex-1 min-w-0', hasBinaryCheck ? 'mt-[1px]' : 'mt-0.5')}>
+          <div className={cn('flex-1 min-w-0', hasBinaryCheck ? 'mt-[1px]' : '')}>
             <div className="flex items-baseline gap-2 flex-wrap">
               <button
                 onClick={() => router.push(`/goals/${goal.id}`)}
@@ -110,16 +116,24 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
               )}
             </div>
 
-            {/* Controls below title */}
+            {/* Type-specific controls */}
             {goal.type === 'numeric' && (
-              <div className="mt-2">
-                <NumericEntry value={value} target={goal.target ?? 0} unit={goal.unit} onChange={handleNumericChange} color={color} />
-              </div>
+              <NumericEntry
+                value={value}
+                target={goal.target ?? 0}
+                unit={goal.unit}
+                onChange={handleNumericChange}
+                color={color}
+              />
             )}
             {goal.type === 'timer' && (
-              <div className="mt-2">
-                <TimerEntry goalId={goal.id} value={value} target={goal.duration ?? 0} onChange={handleTimerChange} color={color} />
-              </div>
+              <TimerEntry
+                goalId={goal.id}
+                value={value}
+                target={goal.duration ?? 0}
+                onChange={handleTimerChange}
+                color={color}
+              />
             )}
             {goal.type === 'milestone' && (
               <div className="mt-1.5">
@@ -160,7 +174,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
             )}
           </div>
 
-          {/* Note button — far right, barely visible until hovered */}
+          {/* Note button */}
           {!isFuture && (
             <button
               onClick={() => setNoteModalOpen(true)}

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { format, subDays, parseISO } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { Edit2, Pause, Play, Archive, Trash2, CheckCircle, ChevronLeft, Plus } from 'lucide-react';
 import { useGoal, deleteGoal, pauseGoal, resumeGoal, archiveGoal, completeGoal } from '@/hooks/useGoals';
 import { useEntries } from '@/hooks/useEntries';
@@ -13,10 +13,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { formatDuration } from '@/lib/utils';
 
-function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: any }) {
+function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: string; target?: number; duration?: number } }) {
   const today = new Date();
-  const startDate = format(subDays(today, 89), 'yyyy-MM-dd');
-  const endDate = format(today, 'yyyy-MM-dd');
   const entries = useEntries(goalId);
   
   const entryMap = new Map((entries ?? []).map(e => [e.date, e]));

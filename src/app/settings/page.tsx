@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef } from 'react';
-import { Sun, Moon, Monitor, Download, Upload, Trash2, Bell } from 'lucide-react';
+import { Sun, Moon, Monitor, Download, Upload, Trash2 } from 'lucide-react';
 import { useSettings, updateSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/hooks/useTheme';
 import { requestNotificationPermission } from '@/lib/notifications';

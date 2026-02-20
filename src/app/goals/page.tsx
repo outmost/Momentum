@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Search, Filter, Plus, FolderPlus } from 'lucide-react';
+import { Search, Plus, FolderPlus } from 'lucide-react';
 import { useAllGoals } from '@/hooks/useGoals';
 import { useFolders } from '@/hooks/useFolders';
 import { useAllGoalStats } from '@/hooks/useStats';

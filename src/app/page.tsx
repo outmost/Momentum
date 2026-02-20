@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { format, addDays, subDays, parseISO, isToday, isFuture } from 'date-fns';
+import { format, addDays, subDays, parseISO } from 'date-fns';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useUIStore } from '@/lib/store';
 import { useActiveGoals } from '@/hooks/useGoals';
@@ -13,7 +13,7 @@ import { GoalCard } from '@/components/goals/GoalCard';
 import { Modal } from '@/components/ui/Modal';
 import { GoalForm } from '@/components/goals/GoalForm';
 import { EmptyState } from '@/components/ui/EmptyState';
-import type { Goal, Entry } from '@/types';
+import type { Goal } from '@/types';
 
 export default function TodayPage() {
   const { selectedDate, setSelectedDate, welcomeBackDismissed, setWelcomeBackDismissed } = useUIStore();
@@ -21,8 +21,8 @@ export default function TodayPage() {
   const goals = useActiveGoals();
   const folders = useFolders();
   const entries = useEntriesForDate(selectedDate);
-  const settings = useSettings();
-  
+  useSettings();
+
   useEffect(() => {
     initializeSettings();
   }, []);

@@ -1,12 +1,11 @@
 'use client';
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { format, parseISO, subDays, addDays, startOfWeek } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@/lib/store';
 import { useActiveGoals } from '@/hooks/useGoals';
 import { useEntriesForDate } from '@/hooks/useEntries';
-import { useSettings } from '@/hooks/useSettings';
 import { useRoutineBlocks } from '@/hooks/useRoutine';
 import { useDateRangeProgress } from '@/hooks/useStats';
 import { seedDefaultRoutineBlocks } from '@/hooks/useRoutine';
@@ -25,53 +24,21 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-const MOMENTUM_MESSAGES = {
-  zero:     ['Ready when you are.', 'Every legend starts somewhere.', "Today's the day. Go."],
-  starting: ["You're moving. Keep going.", 'First one down — momentum is building.', 'The hardest step is the first.'],
-  building: ["You're in it now.", 'Consistency compounds.', 'Each one matters.'],
-  halfway:  ['Over halfway. Finish strong.', 'More done than left.', 'The momentum is real.'],
-  almost:   ["Almost. Don't stop.", 'So close. One more.', 'Push through.'],
-  done:     ['You showed up. That\'s everything.', 'Perfect day. No excuses needed.', 'All done — you earned this.', '100%. Pure momentum.'],
-};
-
-function getMomentumMessage(completed: number, total: number, allDone: boolean): string {
-  if (total === 0) return '';
-  if (allDone) {
-    const msgs = MOMENTUM_MESSAGES.done;
-    return msgs[Math.floor(Date.now() / 10000) % msgs.length];
-  }
-  const pct = completed / total;
-  const pick = (arr: string[]) => arr[Math.floor(Date.now() / 10000) % arr.length];
-  if (pct === 0)    return pick(MOMENTUM_MESSAGES.zero);
-  if (pct < 0.25)  return pick(MOMENTUM_MESSAGES.starting);
-  if (pct < 0.5)   return pick(MOMENTUM_MESSAGES.building);
-  if (pct < 0.75)  return pick(MOMENTUM_MESSAGES.halfway);
-  return pick(MOMENTUM_MESSAGES.almost);
-}
-
 export default function TodayPage() {
   const { selectedDate, setSelectedDate } = useUIStore();
   const [goalFormOpen, setGoalFormOpen] = useState(false);
-  const goals = useActiveGoals();
-  const entries = useEntriesForDate(selectedDate);
-  const settings = useSettings();
+  const goals         = useActiveGoals();
+  const entries       = useEntriesForDate(selectedDate);
   const routineBlocks = useRoutineBlocks();
 
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [showConfetti,    setShowConfetti]    = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const wasAllDone = useRef(false);
+  const wasAllDone        = useRef(false);
   const hasSeenIncomplete = useRef(false);
-  const [momentumMsg, setMomentumMsg] = useState('');
 
-  const weekStartsOn = settings?.weekStartsOn ?? 0;
-  const { rangeStart, rangeEnd } = useMemo(() => {
-    const sel = parseISO(selectedDate);
-    const ws = startOfWeek(sel, { weekStartsOn });
-    return {
-      rangeStart: format(subDays(ws, 7), 'yyyy-MM-dd'),
-      rangeEnd:   format(addDays(ws, 13), 'yyyy-MM-dd'),
-    };
-  }, [selectedDate, weekStartsOn]);
+  // Completion data for the week strip (last 28 days → today)
+  const rangeStart = useMemo(() => format(subDays(new Date(), 28), 'yyyy-MM-dd'), []);
+  const rangeEnd   = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
   const completionMap = useDateRangeProgress(rangeStart, rangeEnd);
 
   useEffect(() => {
@@ -79,7 +46,7 @@ export default function TodayPage() {
     seedDefaultRoutineBlocks();
   }, []);
 
-  const today = localToday();
+  const today            = localToday();
   const isSelectedToday  = selectedDate === today;
   const isSelectedFuture = selectedDate > today;
 
@@ -89,10 +56,11 @@ export default function TodayPage() {
 
   const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
 
-  const blocks    = routineBlocks ?? [];
+  const blocks = useMemo(() => routineBlocks ?? [], [routineBlocks]);
+
+  // Group goals by routine block
   const grouped   = new Map<string, Goal[]>();
   const ungrouped: Goal[] = [];
-
   for (const goal of scheduledGoals) {
     if (goal.routineBlockId && blocks.some(b => b.id === goal.routineBlockId)) {
       if (!grouped.has(goal.routineBlockId)) grouped.set(goal.routineBlockId, []);
@@ -102,14 +70,38 @@ export default function TodayPage() {
     }
   }
 
+  // ── Time-aware block ordering ────────────────────────────────
+  // Find the index of the currently active block (last one whose startTime has passed)
+  const activeBlockIdx = useMemo(() => {
+    if (!isSelectedToday || blocks.length === 0) return -1;
+    const n    = new Date();
+    const hhmm = `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
+    let idx = -1;
+    for (let i = blocks.length - 1; i >= 0; i--) {
+      if (blocks[i].startTime <= hhmm) { idx = i; break; }
+    }
+    return idx;
+  }, [isSelectedToday, blocks]);
+
+  // Reorder: current + future first, past blocks at the bottom
+  const orderedBlocks = useMemo(() => {
+    if (!isSelectedToday || activeBlockIdx <= 0) return blocks;
+    return [
+      ...blocks.slice(activeBlockIdx),    // current block + everything after
+      ...blocks.slice(0, activeBlockIdx), // blocks before current (past)
+    ];
+  }, [isSelectedToday, blocks, activeBlockIdx]);
+
+  // Track where past blocks start in the ordered list (for "Earlier" divider)
+  const firstPastDisplayIdx = orderedBlocks.findIndex(b => {
+    const origIdx = blocks.indexOf(b);
+    return isSelectedToday && origIdx >= 0 && origIdx < activeBlockIdx;
+  });
+
+  // ── Progress ─────────────────────────────────────────────────
   const completedCount = scheduledGoals.filter(g => entryMap.get(g.id)?.completed).length;
   const allDone = scheduledGoals.length > 0 && completedCount === scheduledGoals.length;
   const pct     = scheduledGoals.length > 0 ? completedCount / scheduledGoals.length : 0;
-  const circumference = 2 * Math.PI * 16;
-
-  useEffect(() => {
-    setMomentumMsg(getMomentumMessage(completedCount, scheduledGoals.length, allDone));
-  }, [completedCount, scheduledGoals.length, allDone]);
 
   useEffect(() => {
     if (!allDone) hasSeenIncomplete.current = true;
@@ -122,128 +114,72 @@ export default function TodayPage() {
     wasAllDone.current = allDone;
   }, [allDone, scheduledGoals.length]);
 
-  let staggerIndex = 0;
+  const dateObj = isSelectedToday ? new Date() : parseISO(selectedDate);
 
   return (
     <div>
       <Confetti active={showConfetti} count={60} />
-      <AllDoneCelebration active={showCelebration} message={momentumMsg} />
+      <AllDoneCelebration active={showCelebration} message={allDone ? 'You showed up. That\'s everything.' : ''} />
 
       {/* ── Header ── */}
-      <motion.div
-        className="mb-4"
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <h1 className="page-title">
-          {isSelectedToday
-            ? format(new Date(), 'EEEE')
-            : format(parseISO(selectedDate), 'EEEE')}
-        </h1>
+      <div className="mb-4">
         <p
-          className="mt-1 text-xs font-medium"
-          style={{ color: 'var(--text-3)' }}
+          style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--text-3)',
+            marginBottom: '2px',
+          }}
         >
-          {isSelectedToday
-            ? format(new Date(), 'MMMM d') + ' · Today'
-            : format(parseISO(selectedDate), 'MMMM d')}
+          {format(dateObj, 'EEEE')}
         </p>
-      </motion.div>
+        <div className="flex items-baseline justify-between gap-3">
+          <h1 className="page-title">{format(dateObj, 'MMMM d')}</h1>
+          {scheduledGoals.length > 0 && (
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={`${completedCount}-${scheduledGoals.length}`}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  fontSize: '13px',
+                  fontWeight: allDone ? 600 : 400,
+                  color: allDone ? 'var(--success)' : 'var(--text-3)',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {allDone ? 'All done ✓' : `${completedCount} / ${scheduledGoals.length}`}
+              </motion.span>
+            </AnimatePresence>
+          )}
+        </div>
+      </div>
 
       {/* ── Week strip ── */}
       <WeekStrip
         selectedDate={selectedDate}
         onSelectDate={setSelectedDate}
-        weekStartsOn={weekStartsOn}
         completionMap={completionMap}
       />
 
-      {/* ── Progress row ── */}
+      {/* ── Thin progress bar ── */}
       {scheduledGoals.length > 0 && (
-        <motion.div
-          className="flex items-center gap-4 mb-7 px-1"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
+        <div
+          className="mb-7 rounded-full overflow-hidden"
+          style={{ height: '3px', backgroundColor: 'var(--border)' }}
         >
-          {/* Progress ring */}
-          <div className="relative w-[52px] h-[52px] shrink-0">
-            <svg viewBox="0 0 40 40" className="w-full h-full -rotate-90">
-              <circle
-                cx="20" cy="20" r="16"
-                fill="none"
-                strokeWidth="3"
-                style={{ stroke: 'var(--border)' }}
-              />
-              <motion.circle
-                cx="20" cy="20" r="16"
-                fill="none"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                animate={{ strokeDashoffset: circumference * (1 - pct) }}
-                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                style={{
-                  strokeDashoffset: circumference,
-                  stroke: completedCount > 0 ? 'var(--success)' : 'var(--border-2)',
-                }}
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <motion.span
-                key={completedCount}
-                className="tabular"
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: allDone ? 'var(--success)' : 'var(--text)',
-                }}
-                initial={{ scale: 0.7, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              >
-                {completedCount}/{scheduledGoals.length}
-              </motion.span>
-            </div>
-          </div>
-
-          {/* Message */}
-          <div>
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={momentumMsg}
-                className="text-[15px] font-semibold leading-snug"
-                style={{ color: allDone ? 'var(--success)' : 'var(--text)' }}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.22 }}
-              >
-                {momentumMsg}
-              </motion.p>
-            </AnimatePresence>
-
-            {completedCount > 0 && !allDone && (
-              <span
-                className="animate-streak-flame inline-block text-sm mt-0.5"
-                style={{ transformOrigin: 'bottom center' }}
-              >
-                🔥
-              </span>
-            )}
-            {allDone && (
-              <motion.span
-                className="inline-block text-sm mt-0.5"
-                initial={{ scale: 0, rotate: -20 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-              >
-                ✅
-              </motion.span>
-            )}
-          </div>
-        </motion.div>
+          <motion.div
+            className="h-full rounded-full"
+            style={{ backgroundColor: allDone ? 'var(--success)' : 'var(--accent)' }}
+            animate={{ width: `${pct * 100}%` }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
       )}
 
       {/* ── Goal list ── */}
@@ -252,15 +188,12 @@ export default function TodayPage() {
           className="text-center py-16"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.4 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
         >
           {goals?.length === 0 ? (
             <>
               <p className="text-4xl mb-4">🌱</p>
-              <p
-                className="text-[15px] font-semibold mb-1.5"
-                style={{ color: 'var(--text)' }}
-              >
+              <p className="text-[15px] font-semibold mb-1.5" style={{ color: 'var(--text)' }}>
                 Start your first habit
               </p>
               <p className="text-sm mb-6" style={{ color: 'var(--text-3)' }}>
@@ -289,102 +222,133 @@ export default function TodayPage() {
         </motion.div>
       ) : (
         <div className="space-y-5">
-          {/* Routine-block groups */}
-          {blocks.map(block => {
-            const blockGoals = grouped.get(block.id);
-            if (!blockGoals || blockGoals.length === 0) return null;
 
-            const blockCompleted = blockGoals.filter(g => entryMap.get(g.id)?.completed).length;
-            const blockDone      = blockCompleted === blockGoals.length;
-            const blockStartIdx  = staggerIndex;
-            staggerIndex += blockGoals.length;
-
-            return (
-              <motion.div
-                key={block.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: blockStartIdx * 0.04, duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-              >
-                {/* Block label */}
-                <div className="flex items-center gap-2 mb-2.5 px-1">
-                  <span className="text-sm">{block.emoji}</span>
-                  <h2
-                    className="section-label transition-colors duration-300"
-                    style={{ color: blockDone ? 'var(--success)' : undefined }}
-                  >
-                    {block.name}
-                  </h2>
-                  {blockDone && (
-                    <motion.span
-                      style={{ fontSize: '10px', fontWeight: 600, color: 'var(--success)' }}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                    >
-                      ✓
-                    </motion.span>
-                  )}
-                </div>
-
-                <div
-                  className="card-overflow transition-shadow duration-500"
-                  style={{
-                    boxShadow: blockDone
-                      ? '0 0 0 1px color-mix(in srgb, var(--success) 20%, transparent), var(--shadow-sm)'
-                      : undefined,
-                  }}
-                >
-                  {blockGoals.map((goal, i) => (
-                    <GoalCard
-                      key={goal.id}
-                      goal={goal}
-                      entry={entryMap.get(goal.id)}
-                      date={selectedDate}
-                      isBackdated={!isSelectedToday && !isSelectedFuture}
-                      isFuture={isSelectedFuture}
-                      isLast={i === blockGoals.length - 1}
-                      animationDelay={(blockStartIdx + i) * 40}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            );
-          })}
-
-          {/* Ungrouped / Anytime */}
+          {/* ── Anytime / ungrouped goals (always at top) ── */}
           {ungrouped.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: staggerIndex * 0.04, duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             >
-              {blocks.length > 0 && grouped.size > 0 && (
+              {blocks.length > 0 && (
                 <div className="flex items-center gap-2 mb-2.5 px-1">
-                  <h2 className="section-label">Anytime</h2>
+                  <h2 className="section-label">Today</h2>
                 </div>
               )}
-
               <div className="card-overflow">
-                {ungrouped.map((goal, i) => {
-                  const delay = staggerIndex * 40;
-                  staggerIndex++;
-                  return (
-                    <GoalCard
-                      key={goal.id}
-                      goal={goal}
-                      entry={entryMap.get(goal.id)}
-                      date={selectedDate}
-                      isBackdated={!isSelectedToday && !isSelectedFuture}
-                      isFuture={isSelectedFuture}
-                      isLast={i === ungrouped.length - 1}
-                      animationDelay={delay}
-                    />
-                  );
-                })}
+                {ungrouped.map((goal, i) => (
+                  <GoalCard
+                    key={goal.id}
+                    goal={goal}
+                    entry={entryMap.get(goal.id)}
+                    date={selectedDate}
+                    isBackdated={!isSelectedToday && !isSelectedFuture}
+                    isFuture={isSelectedFuture}
+                    isLast={i === ungrouped.length - 1}
+                    animationDelay={i * 40}
+                  />
+                ))}
               </div>
             </motion.div>
           )}
+
+          {/* ── Routine-block groups (time-aware order) ── */}
+          {orderedBlocks.map((block, displayIdx) => {
+            const blockGoals = grouped.get(block.id);
+            if (!blockGoals || blockGoals.length === 0) return null;
+
+            const origIdx    = blocks.indexOf(block);
+            const isPastBlock = isSelectedToday && origIdx >= 0 && origIdx < activeBlockIdx;
+            const showDivider = displayIdx === firstPastDisplayIdx && firstPastDisplayIdx > 0;
+
+            const blockCompleted = blockGoals.filter(g => entryMap.get(g.id)?.completed).length;
+            const blockDone      = blockCompleted === blockGoals.length;
+            const baseDelay      = (ungrouped.length + displayIdx) * 40;
+
+            return (
+              <React.Fragment key={block.id}>
+                {showDivider && (
+                  <div className="flex items-center gap-3 pt-1">
+                    <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border)' }} />
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 500,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'var(--text-3)',
+                      }}
+                    >
+                      Earlier today
+                    </span>
+                    <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border)' }} />
+                  </div>
+                )}
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: isPastBlock ? 0.5 : 1, y: 0 }}
+                  transition={{
+                    delay: baseDelay / 1000,
+                    duration: 0.32,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                >
+                  {/* Block label */}
+                  <div className="flex items-center gap-2 mb-2.5 px-1">
+                    <span className="text-sm">{block.emoji}</span>
+                    <h2
+                      className="section-label transition-colors duration-300"
+                      style={{ color: blockDone ? 'var(--success)' : undefined }}
+                    >
+                      {block.name}
+                    </h2>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        color: 'var(--text-3)',
+                        marginLeft: 'auto',
+                      }}
+                    >
+                      {block.startTime}
+                    </span>
+                    {blockDone && (
+                      <motion.span
+                        style={{ fontSize: '10px', fontWeight: 600, color: 'var(--success)' }}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                      >
+                        ✓
+                      </motion.span>
+                    )}
+                  </div>
+
+                  <div
+                    className="card-overflow transition-shadow duration-500"
+                    style={{
+                      boxShadow: blockDone
+                        ? '0 0 0 1px color-mix(in srgb, var(--success) 20%, transparent), var(--shadow-sm)'
+                        : undefined,
+                    }}
+                  >
+                    {blockGoals.map((goal, i) => (
+                      <GoalCard
+                        key={goal.id}
+                        goal={goal}
+                        entry={entryMap.get(goal.id)}
+                        date={selectedDate}
+                        isBackdated={!isSelectedToday && !isSelectedFuture}
+                        isFuture={isSelectedFuture}
+                        isLast={i === blockGoals.length - 1}
+                        animationDelay={baseDelay + i * 40}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              </React.Fragment>
+            );
+          })}
         </div>
       )}
 

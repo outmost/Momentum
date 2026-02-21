@@ -69,7 +69,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
   const goal = useGoal(params.id);
   const entries = useEntries(params.id);
   const milestones = useMilestones(params.id);
-  const stats = useGoalStats(params.id, goal);
+  const stats = useGoalStats(params.id, goal ?? undefined);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);

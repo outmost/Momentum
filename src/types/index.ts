@@ -3,6 +3,7 @@
 export type GoalType = 'binary' | 'numeric' | 'milestone' | 'timer';
 export type Frequency = 'daily' | 'weekly' | 'custom';
 export type GoalStatus = 'active' | 'paused' | 'completed' | 'archived';
+export type DayType = 'workday' | 'restday';
 
 // ---- Tables ----
 
@@ -22,6 +23,7 @@ export interface Goal {
   type: GoalType;
   status: GoalStatus;
   folderId?: string;
+  routineBlockId?: string;
   sortOrder: number;
   target?: number;
   unit?: string;
@@ -57,12 +59,27 @@ export interface Entry {
   updatedAt: number;
 }
 
+export interface RoutineBlock {
+  id: string;
+  name: string;
+  emoji: string;
+  startTime: string; // HH:mm
+  dayTypes: DayType[]; // which day types this block applies to
+  sortOrder: number;
+  createdAt: number;
+}
+
+// Maps day-of-week (0=Sun..6=Sat) to a day type.
+// Default: Mon-Fri = workday, Sat-Sun = restday.
+export type DayTypeMap = Record<number, DayType>;
+
 export interface AppSettings {
   id: 'settings';
   theme: 'light' | 'dark' | 'system';
   weekStartsOn: 0 | 1;
   defaultView: 'today' | 'dashboard';
   notificationsEnabled: boolean;
+  dayTypeMap: DayTypeMap;
   seeded?: boolean;
   createdAt: number;
   updatedAt: number;

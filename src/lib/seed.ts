@@ -1,6 +1,7 @@
 import { db } from './db';
 import { nanoid } from 'nanoid';
 import { format, subDays, getDay } from 'date-fns';
+import { seedDefaultRoutineBlocks } from '@/hooks/useRoutine';
 import type { Entry } from '@/types';
 
 // Deterministic pseudo-random — same seed gives same demo every time
@@ -144,6 +145,26 @@ export async function seedDemoData(): Promise<boolean> {
 
   await db.entries.bulkAdd(entries);
 
+  // Seed default routine blocks and link demo goals to them
+  await seedDefaultRoutineBlocks();
+  const blocks = await db.routineBlocks.orderBy('sortOrder').toArray();
+  const morningBlock = blocks.find(b => b.name === 'Morning');
+  const middayBlock = blocks.find(b => b.name === 'Midday');
+  const eveningBlock = blocks.find(b => b.name === 'Evening');
+
+  if (morningBlock) {
+    await db.goals.update(meditateId, { routineBlockId: morningBlock.id });
+    await db.goals.update(pushupsId, { routineBlockId: morningBlock.id });
+  }
+  if (middayBlock) {
+    await db.goals.update(deepworkId, { routineBlockId: middayBlock.id });
+    await db.goals.update(waterId, { routineBlockId: middayBlock.id });
+  }
+  if (eveningBlock) {
+    await db.goals.update(readId, { routineBlockId: eveningBlock.id });
+    await db.goals.update(spanishId, { routineBlockId: eveningBlock.id });
+  }
+
   // Mark as seeded so clear-all won't trigger another seed on next visit.
   await db.settings.update('settings', { seeded: true, updatedAt: Date.now() });
 
@@ -154,11 +175,12 @@ export async function seedDemoData(): Promise<boolean> {
  * Wipes everything — used by "Clear all data" in settings.
  */
 export async function clearAllAppData() {
-  await db.transaction('rw', [db.goals, db.folders, db.entries, db.milestones, db.settings], async () => {
+  await db.transaction('rw', [db.goals, db.folders, db.entries, db.milestones, db.routineBlocks, db.settings], async () => {
     await db.entries.clear();
     await db.milestones.clear();
     await db.goals.clear();
     await db.folders.clear();
+    await db.routineBlocks.clear();
     // Keep settings (theme preference etc)
   });
 }

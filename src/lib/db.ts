@@ -1,5 +1,15 @@
 import Dexie, { type Table } from 'dexie';
-import type { Folder, Goal, Milestone, Entry, AppSettings } from '@/types';
+import type { Folder, Goal, Milestone, Entry, AppSettings, RoutineBlock } from '@/types';
+
+const DEFAULT_DAY_TYPE_MAP = {
+  0: 'restday' as const,  // Sun
+  1: 'workday' as const,  // Mon
+  2: 'workday' as const,  // Tue
+  3: 'workday' as const,  // Wed
+  4: 'workday' as const,  // Thu
+  5: 'workday' as const,  // Fri
+  6: 'restday' as const,  // Sat
+};
 
 class MomentumDB extends Dexie {
   folders!: Table<Folder>;
@@ -7,6 +17,7 @@ class MomentumDB extends Dexie {
   milestones!: Table<Milestone>;
   entries!: Table<Entry>;
   settings!: Table<AppSettings>;
+  routineBlocks!: Table<RoutineBlock>;
 
   constructor() {
     super('momentum-db');
@@ -16,6 +27,14 @@ class MomentumDB extends Dexie {
       milestones: 'id, goalId, sortOrder, [goalId+sortOrder]',
       entries: 'id, goalId, date, [goalId+date]',
       settings: 'id',
+    });
+    this.version(2).stores({
+      folders: 'id, sortOrder',
+      goals: 'id, folderId, routineBlockId, status, sortOrder, [folderId+sortOrder]',
+      milestones: 'id, goalId, sortOrder, [goalId+sortOrder]',
+      entries: 'id, goalId, date, [goalId+date]',
+      settings: 'id',
+      routineBlocks: 'id, sortOrder',
     });
   }
 }
@@ -32,7 +51,13 @@ export async function initializeSettings() {
       weekStartsOn: 0,
       defaultView: 'today',
       notificationsEnabled: false,
+      dayTypeMap: DEFAULT_DAY_TYPE_MAP,
       createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  } else if (!existing.dayTypeMap) {
+    await db.settings.update('settings', {
+      dayTypeMap: DEFAULT_DAY_TYPE_MAP,
       updatedAt: Date.now(),
     });
   }

@@ -2,15 +2,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, subDays } from 'date-fns';
-import { Edit2, Pause, Play, Archive, Trash2, CheckCircle, ChevronLeft, Plus } from 'lucide-react';
+import { Edit2, Pause, Play, Archive, Trash2, CheckCircle, ChevronLeft } from 'lucide-react';
 import { useGoal, deleteGoal, pauseGoal, resumeGoal, archiveGoal, completeGoal } from '@/hooks/useGoals';
 import { useEntries } from '@/hooks/useEntries';
-import { useMilestones, toggleMilestone, createMilestone, deleteMilestone } from '@/hooks/useMilestones';
 import { useGoalStats } from '@/hooks/useStats';
 import { Modal } from '@/components/ui/Modal';
 import { GoalForm } from '@/components/goals/GoalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { formatDuration } from '@/lib/utils';
 
 function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: string; target?: number; duration?: number; color?: string } }) {
@@ -76,12 +74,10 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const goal = useGoal(params.id);
   const entries = useEntries(params.id);
-  const milestones = useMilestones(params.id);
   const stats = useGoalStats(params.id, goal ?? undefined);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
-  const [newMilestone, setNewMilestone] = useState('');
 
   if (goal === undefined) return <div className="text-center py-12 text-sm" style={{ color: 'var(--text-3)' }}>Loading…</div>;
   if (goal === null) return <div className="text-center py-12 text-sm" style={{ color: 'var(--text-3)' }}>Goal not found.</div>;
@@ -218,67 +214,6 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
         <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>Last 90 days</p>
         <CalendarHeatmap goalId={goal.id} goal={goal} />
       </div>
-
-      {/* Milestones */}
-      {goal.type === 'milestone' && (
-        <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>Milestones</p>
-          <div className="space-y-2 mb-3">
-            {milestones?.map(m => (
-              <div key={m.id} className="flex items-center gap-3 animate-stagger-in">
-                <input
-                  type="checkbox"
-                  checked={m.isCompleted}
-                  onChange={() => toggleMilestone(m.id)}
-                  className="w-3.5 h-3.5 rounded"
-                  style={{ accentColor: 'var(--success)' }}
-                />
-                <span className="text-sm flex-1 transition-all duration-200" style={{
-                  color: m.isCompleted ? 'var(--text-3)' : 'var(--text-2)',
-                  textDecoration: m.isCompleted ? 'line-through' : 'none',
-                }}>
-                  {m.title}
-                </span>
-                <button onClick={() => deleteMilestone(m.id)} className="transition-all duration-200 hover:scale-110 active:scale-90" style={{ color: 'var(--text-3)' }}>
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <ProgressBar
-            value={milestones?.length ? Math.round((milestones.filter(m => m.isCompleted).length / milestones.length) * 100) : 0}
-            className="mb-3"
-            color={goalColor}
-          />
-          <div className="flex gap-2">
-            <input
-              value={newMilestone}
-              onChange={e => setNewMilestone(e.target.value)}
-              placeholder="Add milestone…"
-              className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none"
-              style={{ border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--text)' }}
-              onKeyDown={async e => {
-                if (e.key === 'Enter' && newMilestone.trim()) {
-                  await createMilestone(goal.id, newMilestone.trim());
-                  setNewMilestone('');
-                }
-              }}
-            />
-            <button
-              onClick={async () => {
-                if (newMilestone.trim()) {
-                  await createMilestone(goal.id, newMilestone.trim());
-                  setNewMilestone('');
-                }
-              }}
-              className="px-3 py-2 rounded-lg text-sm font-medium text-white transition-all active:scale-95"
-              style={{ backgroundColor: 'var(--accent)' }}
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* History */}
       <div

@@ -12,7 +12,7 @@ import { useUIStore } from '@/lib/store';
 import type { Goal } from '@/types';
 
 const TYPE_LABELS: Record<string, string> = {
-  binary: '\u2713', numeric: '#', milestone: '\u25CE', timer: '\u23F1',
+  binary: '\u2713', numeric: '#', timer: '\u23F1',
 };
 
 interface GoalListItemProps {

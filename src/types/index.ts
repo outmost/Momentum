@@ -1,6 +1,6 @@
 // ---- Enums / Union Types ----
 
-export type GoalType = 'binary' | 'numeric' | 'milestone' | 'timer';
+export type GoalType = 'binary' | 'numeric' | 'timer';
 export type Frequency = 'daily' | 'weekly' | 'custom';
 export type GoalStatus = 'active' | 'paused' | 'completed' | 'archived';
 

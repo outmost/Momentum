@@ -7,9 +7,7 @@ import { BinaryEntry } from '@/components/entries/BinaryEntry';
 import { NumericEntry } from '@/components/entries/NumericEntry';
 import { TimerEntry } from '@/components/entries/TimerEntry';
 import { EntryNoteModal } from '@/components/entries/EntryNoteModal';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { upsertEntry } from '@/hooks/useEntries';
-import { useMilestones, toggleMilestone } from '@/hooks/useMilestones';
 import { updateGoal } from '@/hooks/useGoals';
 import { cn } from '@/lib/cn';
 import type { Goal, Entry } from '@/types';
@@ -33,9 +31,7 @@ function niceStretchTarget(original: number, exceeded: number): number {
 
 export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, animationDelay = 0 }: GoalCardProps) {
   const router = useRouter();
-  const milestones = useMilestones(goal.id);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [stretchDismissed, setStretchDismissed] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const prevCompletedRef = useRef<boolean | null>(null);
@@ -73,20 +69,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
     await upsertEntry(goal.id, date, { note, completed: entry?.completed ?? false });
   }
 
-  async function handleMilestoneToggle(milestoneId: string) {
-    if (isFuture) return;
-    await toggleMilestone(milestoneId);
-    const all   = milestones ?? [];
-    const count = all.filter(m => m.id === milestoneId ? !m.isCompleted : m.isCompleted).length;
-    await upsertEntry(goal.id, date, { completed: count === all.length, value: count });
-  }
-
-  const completedMilestones = milestones?.filter(m => m.isCompleted).length ?? 0;
-  const totalMilestones     = milestones?.length ?? 0;
-  const milestoneProgress   = totalMilestones > 0
-    ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
-
-  const hasBinaryCheck = goal.type === 'binary' || goal.type === 'milestone';
+  const hasBinaryCheck = goal.type === 'binary';
 
   const showStretchBanner =
     !isFuture && !stretchDismissed &&
@@ -145,7 +128,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
           {hasBinaryCheck && (
             <BinaryEntry
               completed={completed}
-              onChange={goal.type === 'binary' ? handleBinaryChange : () => {}}
+              onChange={handleBinaryChange}
               color={accentColor}
             />
           )}
@@ -211,56 +194,6 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
                 onChange={handleTimerChange}
                 color={accentColor}
               />
-            )}
-            {goal.type === 'milestone' && (
-              <div className="mt-1.5">
-                <button
-                  onClick={() => setExpanded(!expanded)}
-                  className="text-xs transition-colors"
-                  style={{ color: 'var(--text-3)' }}
-                >
-                  {completedMilestones}/{totalMilestones} steps
-                </button>
-                <ProgressBar
-                  value={milestoneProgress}
-                  size="sm"
-                  color={accentColor}
-                  className="mt-1 max-w-[120px]"
-                />
-                <AnimatePresence>
-                  {expanded && (
-                    <motion.div
-                      className="mt-2.5 space-y-2"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                      {milestones?.map(m => (
-                        <label key={m.id} className="flex items-center gap-2.5 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={m.isCompleted}
-                            onChange={() => handleMilestoneToggle(m.id)}
-                            disabled={isFuture}
-                            className="w-3.5 h-3.5 rounded"
-                            style={{ accentColor: accentColor }}
-                          />
-                          <span
-                            className="text-xs transition-all duration-200"
-                            style={{
-                              color: m.isCompleted ? 'var(--text-3)' : 'var(--text-2)',
-                              textDecoration: m.isCompleted ? 'line-through' : 'none',
-                            }}
-                          >
-                            {m.title}
-                          </span>
-                        </label>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
             )}
           </div>
 

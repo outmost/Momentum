@@ -1,12 +1,9 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { nanoid } from 'nanoid';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { createGoal, updateGoal } from '@/hooks/useGoals';
 import { useFolders, createFolder } from '@/hooks/useFolders';
 import { useRoutineBlocks } from '@/hooks/useRoutine';
-import { createMilestone, deleteMilestone } from '@/hooks/useMilestones';
-import { db } from '@/lib/db';
 import { FOLDER_COLORS, GOAL_COLORS } from '@/lib/utils';
 import type { Goal, GoalType, Frequency } from '@/types';
 
@@ -24,7 +21,6 @@ const labelStyle = { color: 'var(--text-2)', fontSize: '12px', fontWeight: 500, 
 const TYPE_LABELS: Record<GoalType, string> = {
   binary: 'Done / not done',
   numeric: 'Track a number',
-  milestone: 'Step-by-step',
   timer: 'Time-based',
 };
 
@@ -46,8 +42,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const [reminderEnabled, setReminderEnabled] = useState(goal?.reminderEnabled ?? false);
   const [reminderTime, setReminderTime] = useState(goal?.reminderTime ?? '08:00');
   const [color, setColor] = useState(goal?.color ?? '');
-  const [milestones, setMilestones] = useState<{ id: string; title: string; isNew?: boolean }[]>([]);
-  const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -57,14 +51,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   // or always-open when editing an existing goal so nothing looks hidden.
   const [showAdvanced, setShowAdvanced] = useState(!!goal);
 
-  useEffect(() => {
-    if (goal?.type === 'milestone') {
-      db.milestones.where('goalId').equals(goal.id).sortBy('sortOrder').then(ms => {
-        setMilestones(ms.map(m => ({ id: m.id, title: m.title })));
-      });
-    }
-  }, [goal]);
-
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   function validate() {
@@ -72,7 +58,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
     if (!title.trim()) errs.title = 'Title is required';
     if (type === 'numeric' && (!target || Number(target) <= 0)) errs.target = 'Target must be greater than 0';
     if (type === 'timer' && (!duration || Number(duration) <= 0)) errs.duration = 'Duration must be greater than 0';
-    if (type === 'milestone' && milestones.length === 0) errs.milestones = 'Add at least one milestone';
     if (frequency === 'custom' && customDays.length === 0) errs.customDays = 'Select at least one day';
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -102,18 +87,8 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
       };
       if (goal) {
         await updateGoal(goal.id, data);
-        if (type === 'milestone') {
-          const existing = await db.milestones.where('goalId').equals(goal.id).toArray();
-          const existingIds = new Set(existing.map(m => m.id));
-          const newIds = new Set(milestones.filter(m => !m.isNew).map(m => m.id));
-          for (const id of existingIds) { if (!newIds.has(id)) await deleteMilestone(id); }
-          for (const m of milestones.filter(m => m.isNew)) await createMilestone(goal.id, m.title);
-        }
       } else {
-        const newGoal = await createGoal(data);
-        if (type === 'milestone') {
-          for (const m of milestones) await createMilestone(newGoal.id, m.title);
-        }
+        await createGoal(data);
       }
       onClose();
     } finally {
@@ -217,8 +192,8 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
       {/* ── Goal type — four compact tiles ── */}
       <div>
         <label style={labelStyle}>Type</label>
-        <div className="grid grid-cols-2 gap-1.5">
-          {(['binary', 'numeric', 'milestone', 'timer'] as GoalType[]).map(t => (
+        <div className="grid grid-cols-3 gap-1.5">
+          {(['binary', 'numeric', 'timer'] as GoalType[]).map(t => (
             <button
               key={t}
               type="button"
@@ -282,48 +257,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
             style={inputStyle}
           />
           {errors.duration && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.duration}</p>}
-        </div>
-      )}
-
-      {/* Milestones */}
-      {type === 'milestone' && (
-        <div>
-          <label style={labelStyle}>Steps *</label>
-          <div className="space-y-1.5 mb-2">
-            {milestones.map((m, i) => (
-              <div key={m.id} className="flex items-center gap-2 px-3 py-2 rounded-md" style={{ backgroundColor: 'var(--border)' }}>
-                <span className="text-sm flex-1" style={{ color: 'var(--text-2)' }}>{m.title}</span>
-                <button type="button" onClick={() => setMilestones(prev => prev.filter((_, idx) => idx !== i))} style={{ color: 'var(--text-3)' }}>
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input
-              value={newMilestoneTitle}
-              onChange={e => setNewMilestoneTitle(e.target.value)}
-              placeholder="Add step…"
-              className={`${inputClass} flex-1`}
-              style={inputStyle}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && newMilestoneTitle.trim()) {
-                  e.preventDefault();
-                  setMilestones(prev => [...prev, { id: nanoid(), title: newMilestoneTitle.trim(), isNew: true }]);
-                  setNewMilestoneTitle('');
-                }
-              }}
-            />
-            <button type="button" onClick={() => {
-              if (newMilestoneTitle.trim()) {
-                setMilestones(prev => [...prev, { id: nanoid(), title: newMilestoneTitle.trim(), isNew: true }]);
-                setNewMilestoneTitle('');
-              }
-            }} className="px-3 py-2 rounded-md text-white" style={{ backgroundColor: 'var(--accent)' }}>
-              <Plus size={14} />
-            </button>
-          </div>
-          {errors.milestones && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.milestones}</p>}
         </div>
       )}
 

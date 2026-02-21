@@ -2,14 +2,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, TrendingUp } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { BinaryEntry } from '@/components/entries/BinaryEntry';
 import { NumericEntry } from '@/components/entries/NumericEntry';
 import { TimerEntry } from '@/components/entries/TimerEntry';
 import { EntryNoteModal } from '@/components/entries/EntryNoteModal';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { upsertEntry } from '@/hooks/useEntries';
-import { useMilestones, toggleMilestone } from '@/hooks/useMilestones';
 import { updateGoal } from '@/hooks/useGoals';
 import { cn } from '@/lib/cn';
 import type { Goal, Entry } from '@/types';
@@ -33,9 +31,7 @@ function niceStretchTarget(original: number, exceeded: number): number {
 
 export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, animationDelay = 0 }: GoalCardProps) {
   const router = useRouter();
-  const milestones = useMilestones(goal.id);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [stretchDismissed, setStretchDismissed] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const prevCompletedRef = useRef<boolean | null>(null);
@@ -73,20 +69,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
     await upsertEntry(goal.id, date, { note, completed: entry?.completed ?? false });
   }
 
-  async function handleMilestoneToggle(milestoneId: string) {
-    if (isFuture) return;
-    await toggleMilestone(milestoneId);
-    const all   = milestones ?? [];
-    const count = all.filter(m => m.id === milestoneId ? !m.isCompleted : m.isCompleted).length;
-    await upsertEntry(goal.id, date, { completed: count === all.length, value: count });
-  }
-
-  const completedMilestones = milestones?.filter(m => m.isCompleted).length ?? 0;
-  const totalMilestones     = milestones?.length ?? 0;
-  const milestoneProgress   = totalMilestones > 0
-    ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
-
-  const hasBinaryCheck = goal.type === 'binary' || goal.type === 'milestone';
+  const hasBinaryCheck = goal.type === 'binary';
 
   const showStretchBanner =
     !isFuture && !stretchDismissed &&
@@ -99,6 +82,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
   }
 
   const hasProgress = value > 0 || completed;
+  const accentColor = goal.color || 'var(--success)';
 
   return (
     <>
@@ -106,36 +90,35 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
         className={cn('relative', isFuture && 'opacity-40 pointer-events-none')}
         style={{
           borderBottom: isLast && !showStretchBanner ? 'none' : '1px solid var(--border)',
-          animationDelay: `${animationDelay}ms`,
         }}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: isFuture ? 0.4 : 1, y: 0 }}
-        transition={{ delay: animationDelay / 1000, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ delay: animationDelay / 1000, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
       >
         {/* Left colour accent bar */}
         <motion.div
           className="absolute left-0 top-4 bottom-4 rounded-r-sm"
           animate={{
             width:   completed ? 3 : hasProgress ? 2.5 : 2,
-            opacity: completed ? 1 : hasProgress ? 0.65 : 0.2,
+            opacity: completed ? 1 : hasProgress ? 0.6 : 0.15,
           }}
           transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-          style={{ backgroundColor: goal.color || 'var(--success)' }}
+          style={{ backgroundColor: accentColor }}
         />
 
         {/* Completion glow overlay */}
         <AnimatePresence>
           {justCompleted && (
             <motion.div
-              className="absolute inset-0 pointer-events-none"
+              className="absolute inset-0 pointer-events-none rounded-sm"
               style={{
-                background: `radial-gradient(ellipse at 0% 50%, color-mix(in srgb, var(--success) 10%, transparent), transparent 65%)`,
+                background: `radial-gradient(ellipse at 0% 50%, color-mix(in srgb, ${accentColor} 8%, transparent), transparent 60%)`,
                 zIndex: 0,
               }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             />
           )}
         </AnimatePresence>
@@ -145,8 +128,8 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
           {hasBinaryCheck && (
             <BinaryEntry
               completed={completed}
-              onChange={goal.type === 'binary' ? handleBinaryChange : () => {}}
-              color={goal.color || 'var(--success)'}
+              onChange={handleBinaryChange}
+              color={accentColor}
             />
           )}
 
@@ -155,8 +138,13 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
             <div className="flex items-baseline gap-2 flex-wrap">
               <button
                 onClick={() => router.push(`/goals/${goal.id}`)}
-                className="text-[13px] font-medium text-left leading-snug transition-colors duration-300"
-                style={{ color: completed ? 'var(--text-3)' : 'var(--text)' }}
+                className="text-[13px] font-medium text-left leading-snug"
+                style={{
+                  color: completed ? 'var(--text-3)' : 'var(--text)',
+                  textDecoration: completed ? 'line-through' : 'none',
+                  textDecorationColor: completed ? 'var(--border-2)' : undefined,
+                  transition: 'color 0.3s ease, text-decoration-color 0.3s ease',
+                }}
               >
                 {goal.title}
               </button>
@@ -170,12 +158,15 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
               )}
             </div>
 
-            {/* The "why" */}
+            {/* The "why" — motivational anchor */}
             <AnimatePresence>
               {goal.why && (
                 <motion.p
                   className="text-xs mt-0.5 italic"
-                  style={{ color: completed ? 'var(--success)' : 'var(--text-3)' }}
+                  style={{
+                    color: completed ? 'color-mix(in srgb, var(--success) 60%, var(--text-3))' : 'var(--text-3)',
+                    transition: 'color 0.3s ease',
+                  }}
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
@@ -192,7 +183,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
                 target={goal.target ?? 0}
                 unit={goal.unit}
                 onChange={handleNumericChange}
-                color={goal.color || 'var(--success)'}
+                color={accentColor}
               />
             )}
             {goal.type === 'timer' && (
@@ -201,55 +192,8 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
                 value={value}
                 target={goal.duration ?? 0}
                 onChange={handleTimerChange}
-                color={goal.color || 'var(--success)'}
+                color={accentColor}
               />
-            )}
-            {goal.type === 'milestone' && (
-              <div className="mt-1.5">
-                <button
-                  onClick={() => setExpanded(!expanded)}
-                  className="text-xs transition-colors"
-                  style={{ color: 'var(--text-3)' }}
-                >
-                  {completedMilestones}/{totalMilestones} steps
-                </button>
-                <ProgressBar
-                  value={milestoneProgress}
-                  size="sm"
-                  color={goal.color || 'var(--success)'}
-                  className="mt-1 max-w-[120px]"
-                />
-                <AnimatePresence>
-                  {expanded && (
-                    <motion.div
-                      className="mt-2.5 space-y-2"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                      {milestones?.map(m => (
-                        <label key={m.id} className="flex items-center gap-2.5 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={m.isCompleted}
-                            onChange={() => handleMilestoneToggle(m.id)}
-                            disabled={isFuture}
-                            className="w-3.5 h-3.5 rounded"
-                            style={{ accentColor: goal.color || 'var(--success)' }}
-                          />
-                          <span
-                            className="text-xs transition-all duration-200"
-                            style={{ color: m.isCompleted ? 'var(--text-3)' : 'var(--text-2)' }}
-                          >
-                            {m.title}
-                          </span>
-                        </label>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
             )}
           </div>
 
@@ -257,8 +201,11 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
           {!isFuture && (
             <button
               onClick={() => setNoteModalOpen(true)}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200 mt-0.5 hover:scale-110 active:scale-95"
-              style={{ color: entry?.note ? 'var(--accent)' : 'var(--text-3)' }}
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg mt-0.5 transition-all duration-200 hover:scale-110 active:scale-90"
+              style={{
+                color: entry?.note ? 'var(--accent)' : 'var(--text-3)',
+                backgroundColor: entry?.note ? 'var(--accent-2)' : 'transparent',
+              }}
               title="Note"
             >
               <MessageSquare size={13} />
@@ -279,9 +226,9 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <TrendingUp size={11} style={{ color: goal.color || 'var(--success)', flexShrink: 0 }} />
+              <TrendingUp size={11} style={{ color: accentColor, flexShrink: 0 }} />
               <span className="text-[11px] flex-1" style={{ color: 'var(--text-2)' }}>
-                Target exceeded — push to{' '}
+                Target exceeded &mdash; push to{' '}
                 <strong style={{ color: 'var(--text)' }}>
                   {stretchTarget}{goal.unit ? ` ${goal.unit}` : ''}
                 </strong>?
@@ -289,7 +236,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
               <button
                 onClick={handleAcceptStretch}
                 className="text-[11px] font-semibold px-2.5 py-1 rounded-md transition-all active:scale-95"
-                style={{ color: 'white', backgroundColor: goal.color || 'var(--success)' }}
+                style={{ color: 'white', backgroundColor: accentColor }}
               >
                 Stretch
               </button>
@@ -299,7 +246,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
                 style={{ color: 'var(--text-3)' }}
                 aria-label="Dismiss"
               >
-                ×
+                &times;
               </button>
             </motion.div>
           )}

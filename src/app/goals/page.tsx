@@ -1,12 +1,11 @@
 'use client';
 import React, { useState } from 'react';
-import { Search, Plus, FolderPlus } from 'lucide-react';
+import { Search, FolderPlus, Flame } from 'lucide-react';
 import { useAllGoals } from '@/hooks/useGoals';
 import { useFolders } from '@/hooks/useFolders';
-import { useAllGoalStats } from '@/hooks/useStats';
+import { useAllGoalStats, useOverallStreak } from '@/hooks/useStats';
 import { FolderSection } from '@/components/folders/FolderSection';
 import { Modal } from '@/components/ui/Modal';
-import { GoalForm } from '@/components/goals/GoalForm';
 import { FolderForm } from '@/components/folders/FolderForm';
 import type { Goal, GoalStatus } from '@/types';
 
@@ -22,9 +21,9 @@ export default function GoalsPage() {
   const goals    = useAllGoals();
   const folders  = useFolders();
   const allStats = useAllGoalStats();
+  const streak   = useOverallStreak();
   const [search, setSearch]             = useState('');
   const [statusFilter, setStatusFilter] = useState<GoalStatus | 'all'>('active');
-  const [goalFormOpen, setGoalFormOpen]   = useState(false);
   const [folderFormOpen, setFolderFormOpen] = useState(false);
 
   const statsMap = new Map(allStats?.map(s => [s.goal.id, s]) ?? []);
@@ -49,19 +48,19 @@ export default function GoalsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 animate-in">
         <h1 className="page-title">Goals</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {streak && streak.current > 0 && (
+            <div className="streak-badge">
+              <Flame size={13} className={streak.current >= 3 ? 'animate-streak-flame' : ''} />
+              <span className="tabular">{streak.current}</span>
+            </div>
+          )}
           <button
             onClick={() => setFolderFormOpen(true)}
             className="btn btn-secondary btn-icon"
             title="New folder"
           >
             <FolderPlus size={15} />
-          </button>
-          <button
-            onClick={() => setGoalFormOpen(true)}
-            className="btn btn-primary"
-          >
-            <Plus size={14} /> Goal
           </button>
         </div>
       </div>
@@ -95,7 +94,7 @@ export default function GoalsPage() {
         ))}
       </div>
 
-      {/* Goal groups */}
+      {/* Goal groups by folder — each folder shows a mini heatmap */}
       <div className="space-y-3">
         {(folders ?? []).map(folder => {
           const folderGoals = (grouped.get(folder.id) ?? []).map(g => ({
@@ -122,9 +121,6 @@ export default function GoalsPage() {
         )}
       </div>
 
-      <Modal open={goalFormOpen} onClose={() => setGoalFormOpen(false)} title="New goal">
-        <GoalForm onClose={() => setGoalFormOpen(false)} />
-      </Modal>
       <Modal open={folderFormOpen} onClose={() => setFolderFormOpen(false)} title="New folder">
         <FolderForm onClose={() => setFolderFormOpen(false)} />
       </Modal>

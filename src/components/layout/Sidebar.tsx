@@ -1,35 +1,36 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckSquare, BarChart3, Repeat, Layers, Settings } from 'lucide-react';
+import { CheckSquare, Repeat, Layers, Settings, Plus } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { useUIStore } from '@/lib/store';
 
 const navItems = [
-  { href: '/',          label: 'Today',    icon: CheckSquare },
-  { href: '/dashboard', label: 'Progress', icon: BarChart3 },
-  { href: '/routine',   label: 'Routine',  icon: Repeat },
-  { href: '/goals',     label: 'Goals',    icon: Layers },
-  { href: '/settings',  label: 'Settings', icon: Settings },
+  { href: '/',         label: 'Today',    icon: CheckSquare },
+  { href: '/goals',    label: 'Goals',    icon: Layers },
+  { href: '/routine',  label: 'Routine',  icon: Repeat },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const setAddGoalOpen = useUIStore(s => s.setAddGoalOpen);
 
   return (
     <aside
-      className="hidden md:flex flex-col h-full w-[200px] shrink-0"
+      className="hidden md:flex flex-col h-full w-[220px] shrink-0"
       style={{
         borderRight: '1px solid var(--border)',
         backgroundColor: 'var(--surface)',
       }}
     >
       {/* Wordmark */}
-      <div className="px-5 pt-7 pb-7">
-        <div className="flex items-center gap-2.5">
+      <div className="px-5 pt-8 pb-6">
+        <div className="flex items-center gap-3">
           <div
-            className="w-[26px] h-[26px] rounded-lg flex items-center justify-center shrink-0"
+            className="w-[28px] h-[28px] rounded-[9px] flex items-center justify-center shrink-0"
             style={{
-              background: 'linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, #000) 100%)',
+              background: 'linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 65%, #000) 100%)',
               boxShadow: '0 2px 8px var(--glow)',
             }}
           >
@@ -39,12 +40,23 @@ export function Sidebar() {
             </svg>
           </div>
           <span
-            className="text-[13px] font-bold tracking-tight"
-            style={{ color: 'var(--text)' }}
+            className="text-[14px] font-bold"
+            style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}
           >
             Momentum
           </span>
         </div>
+      </div>
+
+      {/* New Goal button */}
+      <div className="px-3 mb-4">
+        <button
+          onClick={() => setAddGoalOpen(true)}
+          className="btn btn-primary w-full"
+        >
+          <Plus size={15} strokeWidth={2.5} />
+          New Goal
+        </button>
       </div>
 
       {/* Nav */}
@@ -55,26 +67,32 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
-              className="relative flex items-center gap-3 px-3 py-[9px] rounded-xl transition-colors duration-150"
+              className="relative flex items-center gap-3 px-3 py-[10px] rounded-xl transition-all duration-200"
               style={{
-                backgroundColor: active ? 'var(--border)' : 'transparent',
+                backgroundColor: active ? 'var(--accent-2)' : 'transparent',
                 color: active ? 'var(--text)' : 'var(--text-3)',
               }}
             >
               <Icon
                 size={16}
                 strokeWidth={active ? 2.2 : 1.65}
-                className="shrink-0 transition-all duration-150"
+                className="shrink-0 transition-all duration-200"
                 style={{ color: active ? 'var(--accent)' : 'var(--text-3)' }}
               />
               <span
                 className={cn(
-                  'text-[13px] transition-all duration-150',
+                  'text-[13px] transition-all duration-200',
                   active ? 'font-semibold' : 'font-normal',
                 )}
               >
                 {label}
               </span>
+              {active && (
+                <div
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full"
+                  style={{ backgroundColor: 'var(--accent)' }}
+                />
+              )}
             </Link>
           );
         })}

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useRef, useCallback } from 'react';
 import { Check } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ParticleBurst } from '@/components/ui/Confetti';
 
 interface BinaryEntryProps {

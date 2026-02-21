@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
@@ -14,24 +15,27 @@ interface ModalProps {
 
 export function Modal({ open, onClose, title, children, className, size = 'md' }: ModalProps) {
   const scrollYRef = useRef(0);
+  const [mounted, setMounted] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef(0);
+  const dragDelta = useRef(0);
+  const isDragging = useRef(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!open) return;
-
-    // iOS Safari ignores overflow:hidden on body — use position:fixed instead
     scrollYRef.current = window.scrollY;
     const body = document.body;
     body.style.position = 'fixed';
     body.style.top      = `-${scrollYRef.current}px`;
     body.style.left     = '0';
     body.style.right    = '0';
-
     return () => {
       body.style.position = '';
       body.style.top      = '';
       body.style.left     = '';
       body.style.right    = '';
-      // Restore scroll position
       window.scrollTo(0, scrollYRef.current);
     };
   }, [open]);
@@ -42,52 +46,83 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  if (!open) return null;
+  // Swipe-to-dismiss handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    isDragging.current = true;
+    dragStartY.current = e.touches[0].clientY;
+    dragDelta.current = 0;
+    if (sheetRef.current) sheetRef.current.style.transition = 'none';
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging.current) return;
+    const delta = e.touches[0].clientY - dragStartY.current;
+    dragDelta.current = Math.max(0, delta); // Only allow dragging down
+    if (sheetRef.current) {
+      sheetRef.current.style.transform = `translateY(${dragDelta.current}px)`;
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    if (dragDelta.current > 80) {
+      // Dismiss — animate out then close
+      if (sheetRef.current) {
+        sheetRef.current.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+        sheetRef.current.style.transform = 'translateY(100%)';
+      }
+      setTimeout(onClose, 250);
+    } else {
+      // Snap back
+      if (sheetRef.current) {
+        sheetRef.current.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        sheetRef.current.style.transform = '';
+      }
+    }
+    dragDelta.current = 0;
+  }, [onClose]);
+
+  if (!open || !mounted) return null;
 
   const maxWidths = { sm: 'sm:max-w-sm', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl' };
 
-  return (
+  const content = (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center sm:p-4"
-      // Prevent pointer events from falling through to content beneath
       style={{ touchAction: 'none' }}
     >
-      {/* Backdrop — no blur, just a dark overlay. Blur is expensive on mobile. */}
       <div
         className="absolute inset-0 animate-in"
         style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
         onClick={onClose}
       />
 
-      {/* Sheet on mobile / dialog on desktop */}
       <div
+        ref={sheetRef}
         className={cn(
-          // Layout
           'relative w-full flex flex-col',
-          // Entrance animation
           'animate-in slide-in-from-bottom-4 sm:zoom-in-95',
-          // Rounded: top-only on mobile, all on desktop
           'rounded-t-[20px] sm:rounded-2xl',
-          // Desktop max-width
           maxWidths[size],
           className,
         )}
         style={{
           backgroundColor: 'var(--surface)',
-          // dvh = dynamic viewport height — shrinks when iOS keyboard appears
           maxHeight: '92dvh',
           boxShadow: '0 -2px 20px rgba(0,0,0,0.08), 0 0 0 1px var(--border)',
         }}
-        // Prevent taps on the sheet from closing via backdrop handler
         onClick={e => e.stopPropagation()}
       >
-        {/* Drag handle — visible only on mobile to signal swipe-down to close */}
+        {/* Drag handle — swipe down to close on mobile */}
         <div
-          className="sm:hidden shrink-0 flex justify-center"
+          className="sm:hidden shrink-0 flex justify-center cursor-grab active:cursor-grabbing"
           style={{ paddingTop: '10px', paddingBottom: '4px' }}
-          onClick={onClose}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           role="button"
-          aria-label="Close"
+          aria-label="Drag down to close"
         >
           <div
             className="w-9 h-[5px] rounded-full"
@@ -118,14 +153,11 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
           </div>
         )}
 
-        {/* Scrollable content — overscroll-contain stops the page behind from scrolling */}
         <div
           className="flex-1 overflow-y-auto"
           style={{
             overscrollBehavior: 'contain',
-            // Smooth momentum scroll on iOS
             WebkitOverflowScrolling: 'touch',
-            // Pad bottom for iOS home indicator
             paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
         >
@@ -134,4 +166,6 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 }

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronRight, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import {
   DndContext, closestCenter, DragEndEvent,
@@ -10,9 +10,11 @@ import {
   arrayMove, sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { GoalListItem } from '@/components/goals/GoalListItem';
+import { MiniHeatmap } from '@/components/goals/MiniHeatmap';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { deleteFolder, updateFolder } from '@/hooks/useFolders';
 import { reorderGoals } from '@/hooks/useGoals';
+import { useFolderHeatmap } from '@/hooks/useStats';
 import type { Folder, Goal } from '@/types';
 
 interface GoalWithStats extends Goal { completionRate7?: number; }
@@ -31,6 +33,9 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
   const [localGoals, setLocalGoals] = useState<GoalWithStats[]>(goals);
 
   useEffect(() => { setLocalGoals(goals); }, [goals]);
+
+  const goalIds = useMemo(() => localGoals.map(g => g.id), [localGoals]);
+  const heatmapData = useFolderHeatmap(goalIds);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -91,7 +96,7 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
           />
         )}
 
-        <span className="text-[11px] ml-2 tabular shrink-0" style={{ color: 'var(--text-3)' }}>
+        <span className="text-[11px] ml-auto tabular shrink-0" style={{ color: 'var(--text-3)' }}>
           {localGoals.length}
         </span>
 
@@ -131,6 +136,15 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
           </div>
         )}
       </div>
+
+      {expanded && localGoals.length > 0 && heatmapData && heatmapData.length > 0 && (
+        <div
+          className="px-4 py-3"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <MiniHeatmap data={heatmapData} />
+        </div>
+      )}
 
       {expanded && (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

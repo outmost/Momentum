@@ -21,81 +21,100 @@
 @layer base {
   :root {
     /* ── Surfaces ── */
-    --bg:            #F4F3F0;
+    --bg:            #F5F4F1;
     --surface:       #FFFFFF;
-    --surface-2:     #F9F8F6;
-    --border:        #E8E6E0;
-    --border-2:      #D0CEC8;
+    --surface-2:     #FAF9F7;
+    --surface-3:     #F0EFEC;
+    --border:        #E8E6E1;
+    --border-2:      #D2D0CA;
 
     /* ── Text ── */
-    --text:          #0E0E0E;
-    --text-2:        #555550;
-    --text-3:        #A8A8A0;
+    --text:          #1A1A18;
+    --text-2:        #5C5C56;
+    --text-3:        #A0A098;
 
     /* ── Brand ── */
-    --accent:        #0052CC;
-    --accent-2:      rgba(0, 82, 204, 0.08);
-    --accent-hover:  #003D99;
+    --accent:        #2563EB;
+    --accent-2:      rgba(37, 99, 235, 0.07);
+    --accent-hover:  #1D4ED8;
+    --accent-glow:   rgba(37, 99, 235, 0.18);
 
     /* ── Progress / Success ── */
     --progress:      #16A34A;
     --success:       #16A34A;
-    --success-soft:  rgba(22, 163, 74, 0.09);
-    --success-glow:  rgba(22, 163, 74, 0.22);
+    --success-soft:  rgba(22, 163, 74, 0.08);
+    --success-glow:  rgba(22, 163, 74, 0.20);
+
+    /* ── Streak / Warmth ── */
+    --streak:        #F59E0B;
+    --streak-soft:   rgba(245, 158, 11, 0.10);
+    --streak-glow:   rgba(245, 158, 11, 0.25);
 
     /* ── Danger ── */
     --danger:        #DC2626;
-    --danger-soft:   rgba(220, 38, 38, 0.08);
+    --danger-soft:   rgba(220, 38, 38, 0.07);
 
     /* ── Shadows ── */
-    --shadow-xs:     0 1px 2px rgba(0,0,0,0.05);
-    --shadow-sm:     0 2px 6px rgba(0,0,0,0.07);
-    --shadow-md:     0 4px 16px rgba(0,0,0,0.09);
-    --shadow-lg:     0 8px 32px rgba(0,0,0,0.12);
-    --glow:          rgba(0, 82, 204, 0.20);
+    --shadow-xs:     0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02);
+    --shadow-sm:     0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md:     0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    --shadow-lg:     0 12px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-xl:     0 20px 60px rgba(0,0,0,0.12), 0 8px 20px rgba(0,0,0,0.08);
+    --glow:          rgba(37, 99, 235, 0.22);
 
     /* ── Geometry ── */
     --radius:        16px;
     --radius-sm:     10px;
     --radius-lg:     24px;
     --nav-height:    80px;
+
+    /* ── Timing ── */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth:   cubic-bezier(0.25, 0.1, 0.25, 1);
   }
 
   .dark {
-    --bg:            #090908;
-    --surface:       #111110;
-    --surface-2:     #171715;
-    --border:        #1E1E1B;
-    --border-2:      #2C2C28;
+    --bg:            #0A0A09;
+    --surface:       #131312;
+    --surface-2:     #1A1A18;
+    --surface-3:     #222220;
+    --border:        #1F1F1C;
+    --border-2:      #2E2E2A;
 
-    --text:          #F0F0EC;
-    --text-2:        #86867E;
-    --text-3:        #3E3E38;
+    --text:          #F2F2EE;
+    --text-2:        #8A8A82;
+    --text-3:        #454540;
 
-    --accent:        #4B8BFF;
-    --accent-2:      rgba(75, 139, 255, 0.10);
-    --accent-hover:  #6BA3FF;
+    --accent:        #5B9AFF;
+    --accent-2:      rgba(91, 154, 255, 0.10);
+    --accent-hover:  #7DB1FF;
+    --accent-glow:   rgba(91, 154, 255, 0.22);
 
     --progress:      #22C55E;
     --success:       #22C55E;
     --success-soft:  rgba(34, 197, 94, 0.10);
-    --success-glow:  rgba(34, 197, 94, 0.28);
+    --success-glow:  rgba(34, 197, 94, 0.25);
+
+    --streak:        #FBBF24;
+    --streak-soft:   rgba(251, 191, 36, 0.12);
+    --streak-glow:   rgba(251, 191, 36, 0.30);
 
     --danger:        #F87171;
     --danger-soft:   rgba(248, 113, 113, 0.10);
 
-    --shadow-xs:     0 1px 2px rgba(0,0,0,0.25);
-    --shadow-sm:     0 2px 6px rgba(0,0,0,0.35);
-    --shadow-md:     0 4px 16px rgba(0,0,0,0.45);
-    --shadow-lg:     0 8px 32px rgba(0,0,0,0.55);
-    --glow:          rgba(75, 139, 255, 0.28);
+    --shadow-xs:     0 1px 2px rgba(0,0,0,0.30);
+    --shadow-sm:     0 2px 8px rgba(0,0,0,0.35);
+    --shadow-md:     0 4px 16px rgba(0,0,0,0.40);
+    --shadow-lg:     0 12px 40px rgba(0,0,0,0.50);
+    --shadow-xl:     0 20px 60px rgba(0,0,0,0.60);
+    --glow:          rgba(91, 154, 255, 0.30);
   }
 
   * { box-sizing: border-box; }
 
   html {
     -webkit-tap-highlight-color: transparent;
-    /* Prevent elastic bounce-scroll on iOS at root level */
     overscroll-behavior: none;
   }
 
@@ -109,11 +128,6 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /*
-    Kills the 300ms tap delay on mobile. Without this, every tap on a button
-    or link must wait to check for a potential double-tap zoom, causing a
-    perceptible lag. `manipulation` tells the browser: single-tap only, fire now.
-  */
   button, a, [role="button"], input[type="submit"], input[type="button"],
   input[type="reset"], label, select {
     touch-action: manipulation;
@@ -124,7 +138,6 @@
 
 /* ─────────────────────────────────────────────────────────
    Design system — component classes
-   Use these instead of scattering inline styles everywhere.
 ──────────────────────────────────────────────────────────── */
 
 @layer components {
@@ -138,7 +151,6 @@
     box-shadow: var(--shadow-xs);
   }
 
-  /* Card with overflow:hidden (for grouped lists) */
   .card-overflow {
     background-color: var(--surface);
     border: 1px solid var(--border);
@@ -147,7 +159,6 @@
     overflow: hidden;
   }
 
-  /* Compact card */
   .card-sm {
     background-color: var(--surface);
     border: 1px solid var(--border);
@@ -155,35 +166,51 @@
     box-shadow: var(--shadow-xs);
   }
 
-  /* Inset / secondary card */
   .card-inset {
     background-color: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
   }
 
-  /* Hover-able card (adds transition) */
   .card-interactive {
     background-color: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow-xs);
-    transition: box-shadow 0.2s, border-color 0.2s;
+    transition: box-shadow 0.25s var(--ease-smooth), border-color 0.25s var(--ease-smooth), transform 0.2s var(--ease-smooth);
     cursor: pointer;
   }
   .card-interactive:hover {
     box-shadow: var(--shadow-sm);
     border-color: var(--border-2);
   }
+  .card-interactive:active {
+    transform: scale(0.985);
+  }
+
+  /* Elevated card — for featured/highlighted content */
+  .card-elevated {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
 
   /* ── Typography ─────────────────────────────────────── */
 
   .page-title {
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 700;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.035em;
     line-height: 1.05;
     color: var(--text);
+  }
+
+  .page-subtitle {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text-3);
+    line-height: 1.45;
   }
 
   .section-label {
@@ -204,24 +231,29 @@
     height: 36px;
     padding: 0 14px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 550;
     border-radius: var(--radius-sm);
     border: none;
     cursor: pointer;
     white-space: nowrap;
-    transition: opacity 0.15s, transform 0.1s, background-color 0.15s, border-color 0.15s;
+    transition: all 0.2s var(--ease-smooth);
     outline: none;
     text-decoration: none;
+    position: relative;
   }
 
-  .btn:active { transform: scale(0.97); }
-  .btn:disabled { opacity: 0.45; pointer-events: none; }
+  .btn:active { transform: scale(0.96); }
+  .btn:disabled { opacity: 0.4; pointer-events: none; }
 
   .btn-primary {
     background-color: var(--accent);
     color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
   }
-  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:hover {
+    background-color: var(--accent-hover);
+    box-shadow: 0 2px 8px var(--accent-glow);
+  }
 
   .btn-secondary {
     background-color: transparent;
@@ -234,13 +266,14 @@
     background-color: transparent;
     color: var(--text-2);
   }
-  .btn-ghost:hover { color: var(--text); background-color: var(--border); }
+  .btn-ghost:hover { color: var(--text); background-color: var(--surface-3); }
 
   .btn-danger {
     background-color: var(--danger);
     color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
   }
-  .btn-danger:hover { opacity: 0.88; }
+  .btn-danger:hover { background-color: #B91C1C; }
 
   .btn-sm {
     height: 30px;
@@ -282,11 +315,14 @@
     font-size: 13px;
     font-family: inherit;
     color: var(--text);
-    transition: border-color 0.15s;
+    transition: border-color 0.2s var(--ease-smooth), box-shadow 0.2s var(--ease-smooth);
     outline: none;
   }
 
-  .field:focus { border-color: var(--accent); }
+  .field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-2);
+  }
   .field::placeholder { color: var(--text-3); }
 
   .field-sm {
@@ -310,10 +346,10 @@
     background-color: transparent;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.15s;
+    transition: all 0.2s var(--ease-smooth);
   }
   .chip:hover { border-color: var(--border-2); color: var(--text-2); }
-  .chip:active { transform: scale(0.97); }
+  .chip:active { transform: scale(0.96); }
 
   .chip-active {
     background-color: var(--text);
@@ -325,19 +361,14 @@
   /* ── Pressable ───────────────────────────────────────── */
 
   .pressable {
-    transition: opacity 0.15s, transform 0.1s;
+    transition: opacity 0.15s, transform 0.15s var(--ease-smooth);
   }
   .pressable:active {
-    transform: scale(0.97);
+    transform: scale(0.96);
     opacity: 0.8;
   }
 
   /* ── App shell main area ─────────────────────────────── */
-  /*
-    Responsive bottom padding for the floating nav pill on mobile.
-    Using a CSS class (not inline style) so the @media override works.
-    calc() adds safe-area-inset-bottom for iPhone home indicator clearance.
-  */
   .shell-main {
     padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
   }
@@ -347,15 +378,18 @@
     }
   }
 
-  /* ── FAB position ────────────────────────────────────── */
-  /* Above the floating nav on mobile, normal 24px on desktop */
-  .fab {
-    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-  }
-  @media (min-width: 768px) {
-    .fab {
-      bottom: 24px;
-    }
+  /* ── Streak badge ──────────────────────────────────── */
+  .streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px 3px 8px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--streak);
+    background-color: var(--streak-soft);
+    letter-spacing: -0.01em;
   }
 }
 
@@ -367,33 +401,33 @@
   .tabular { font-variant-numeric: tabular-nums; }
 
   /* ── Entry animations ── */
-  .animate-in             { animation: fadeIn  0.15s ease-out; }
-  .slide-in-from-bottom-4 { animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1); }
-  .zoom-in-95             { animation: zoomIn  0.18s cubic-bezier(0.16, 1, 0.3, 1); }
+  .animate-in             { animation: fadeIn  0.2s var(--ease-out-expo); }
+  .slide-in-from-bottom-4 { animation: slideUp 0.3s var(--ease-out-expo); }
+  .zoom-in-95             { animation: zoomIn  0.22s var(--ease-out-expo); }
 
   /* ── Celebration animations ── */
-  .animate-check-pop      { animation: checkPop       0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  .animate-check-ring     { animation: checkRing      0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .animate-check-pop      { animation: checkPop       0.45s var(--ease-spring); }
+  .animate-check-ring     { animation: checkRing      0.65s var(--ease-out-expo) forwards; }
   .animate-success-glow   { animation: successGlow    1s ease-out; }
-  .animate-card-complete  { animation: cardComplete   0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-  .animate-number-bump    { animation: numberBump     0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-card-complete  { animation: cardComplete   0.6s var(--ease-out-expo); }
+  .animate-number-bump    { animation: numberBump     0.35s var(--ease-spring); }
   .animate-number-down    { animation: numberDown     0.2s ease-out; }
   .animate-streak-flame   { animation: streakFlame    1.5s ease-in-out infinite; }
-  .animate-progress-fill  { animation: progressFill   0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+  .animate-progress-fill  { animation: progressFill   0.7s var(--ease-out-expo); }
   .animate-ring-pulse     { animation: ringPulse      2.5s ease-in-out infinite; }
-  .animate-all-done-ring  { animation: allDoneRing    0.9s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  .animate-float-up       { animation: floatUp        0.55s cubic-bezier(0.16, 1, 0.3, 1); }
+  .animate-all-done-ring  { animation: allDoneRing    0.9s var(--ease-spring); }
+  .animate-float-up       { animation: floatUp        0.55s var(--ease-out-expo); }
   .animate-confetti-fall  { animation: confettiFall   var(--fall-duration, 2s) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
-  .animate-stagger-in     { animation: staggerIn      0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .animate-counter-up     { animation: counterUp      0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-stagger-in     { animation: staggerIn      0.4s var(--ease-out-expo) both; }
+  .animate-counter-up     { animation: counterUp      0.4s var(--ease-spring); }
   .animate-shimmer        { animation: shimmer        2s ease-in-out infinite; }
-  .animate-bounce-subtle  { animation: bounceSubtle   0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  .animate-celebration-burst { animation: celebrationBurst 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-  .animate-slide-down     { animation: slideDown      0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-  .animate-fab-pop        { animation: fabPop         0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-bounce-subtle  { animation: bounceSubtle   0.5s var(--ease-spring); }
+  .animate-celebration-burst { animation: celebrationBurst 0.7s var(--ease-out-expo) forwards; }
+  .animate-slide-down     { animation: slideDown      0.3s var(--ease-out-expo); }
+  .animate-fab-pop        { animation: fabPop         0.35s var(--ease-spring); }
   .animate-shooting-star  { animation: shootingStar   1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
-  .animate-why-reveal     { animation: whyReveal      0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-  .animate-scale-in       { animation: scaleIn        0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .animate-why-reveal     { animation: whyReveal      0.4s var(--ease-out-expo) forwards; }
+  .animate-scale-in       { animation: scaleIn        0.35s var(--ease-spring) both; }
 
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -404,8 +438,8 @@
 ──────────────────────────────────────────────────────────── */
 
 @keyframes fadeIn  { from { opacity: 0; }                              to { opacity: 1; }                }
-@keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-@keyframes zoomIn  { from { transform: scale(0.96); opacity: 0; }      to { transform: scale(1); opacity: 1; }      }
+@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes zoomIn  { from { transform: scale(0.95); opacity: 0; }     to { transform: scale(1); opacity: 1; }      }
 
 @keyframes checkPop {
   0%   { transform: scale(0.5); opacity: 0; }
@@ -420,7 +454,7 @@
 
 @keyframes successGlow {
   0%   { box-shadow: 0 0 0 0 var(--success-glow); }
-  35%  { box-shadow: 0 0 0 8px var(--success-glow); }
+  35%  { box-shadow: 0 0 0 10px var(--success-glow); }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 
@@ -444,9 +478,9 @@
 
 @keyframes streakFlame {
   0%, 100% { transform: scale(1) rotate(-2deg); }
-  25%  { transform: scale(1.12) rotate(2deg); }
+  25%  { transform: scale(1.15) rotate(2deg); }
   50%  { transform: scale(1) rotate(-1deg); }
-  75%  { transform: scale(1.06) rotate(1deg); }
+  75%  { transform: scale(1.08) rotate(1deg); }
 }
 
 @keyframes progressFill {
@@ -456,7 +490,7 @@
 
 @keyframes ringPulse {
   0%, 100% { opacity: 1; filter: brightness(1); }
-  50%      { opacity: 0.8; filter: brightness(1.2); }
+  50%      { opacity: 0.8; filter: brightness(1.15); }
 }
 
 @keyframes allDoneRing {
@@ -527,4 +561,9 @@
 @keyframes scaleIn {
   from { transform: scale(0.85); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 6px var(--accent-glow); }
 }

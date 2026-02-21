@@ -29,6 +29,13 @@ export function useActiveGoals() {
   );
 }
 
+/** Goals for the Today/day view — includes completed goals so they still show on past dates. */
+export function useTodayViewGoals() {
+  return useLiveQuery(() =>
+    db.goals.where('status').anyOf(['active', 'completed']).sortBy('sortOrder')
+  );
+}
+
 export function useGoal(id: string) {
   return useLiveQuery(async () => {
     const goal = await db.goals.get(id);

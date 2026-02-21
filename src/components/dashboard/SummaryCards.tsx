@@ -17,8 +17,8 @@ function StatBlock({ value, label, sub, accent, delay = 0 }: StatBlockProps) {
       className="card p-5 flex flex-col justify-between animate-stagger-in"
       style={{
         animationDelay: `${delay}ms`,
-        border: accent
-          ? '1px solid color-mix(in srgb, var(--success) 30%, var(--border))'
+        borderColor: accent
+          ? 'color-mix(in srgb, var(--success) 30%, var(--border))'
           : undefined,
       }}
     >
@@ -53,27 +53,27 @@ export function SummaryCards() {
   return (
     <div className="grid grid-cols-2 gap-3">
       <StatBlock
-        value={totalToday > 0 ? `${completedToday}/${totalToday}` : '—'}
+        value={totalToday > 0 ? `${completedToday}/${totalToday}` : '\u2014'}
         label="Today"
         accent={allDone}
-        sub={allDone && totalToday > 0 ? 'All done ✓' : undefined}
+        sub={allDone && totalToday > 0 ? 'All done' : undefined}
         delay={0}
       />
       <StatBlock
-        value={consistency30 > 0 ? `${consistency30}%` : '—'}
+        value={consistency30 > 0 ? `${consistency30}%` : '\u2014'}
         label="Consistency"
         sub="last 30 days"
         accent={consistency30 >= 80}
         delay={50}
       />
       <StatBlock
-        value={totalThisMonth > 0 ? String(totalThisMonth) : '—'}
+        value={totalThisMonth > 0 ? String(totalThisMonth) : '\u2014'}
         label="This month"
         sub="completions"
         delay={100}
       />
       <StatBlock
-        value={daysActiveThisWeek > 0 ? `${daysActiveThisWeek}/7` : '—'}
+        value={daysActiveThisWeek > 0 ? `${daysActiveThisWeek}/7` : '\u2014'}
         label="This week"
         sub="active days"
         delay={150}

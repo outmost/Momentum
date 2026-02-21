@@ -1,19 +1,20 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckSquare, BarChart3, Repeat, Layers, Settings } from 'lucide-react';
+import { CheckSquare, Repeat, Layers, Settings, Plus } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { useUIStore } from '@/lib/store';
 
 const navItems = [
-  { href: '/',          label: 'Today',    icon: CheckSquare },
-  { href: '/dashboard', label: 'Progress', icon: BarChart3 },
-  { href: '/routine',   label: 'Routine',  icon: Repeat },
-  { href: '/goals',     label: 'Goals',    icon: Layers },
-  { href: '/settings',  label: 'Settings', icon: Settings },
+  { href: '/',         label: 'Today',    icon: CheckSquare },
+  { href: '/goals',    label: 'Goals',    icon: Layers },
+  { href: '/routine',  label: 'Routine',  icon: Repeat },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const setAddGoalOpen = useUIStore(s => s.setAddGoalOpen);
 
   return (
     <aside
@@ -24,7 +25,7 @@ export function Sidebar() {
       }}
     >
       {/* Wordmark */}
-      <div className="px-5 pt-8 pb-8">
+      <div className="px-5 pt-8 pb-6">
         <div className="flex items-center gap-3">
           <div
             className="w-[28px] h-[28px] rounded-[9px] flex items-center justify-center shrink-0"
@@ -45,6 +46,17 @@ export function Sidebar() {
             Momentum
           </span>
         </div>
+      </div>
+
+      {/* New Goal button */}
+      <div className="px-3 mb-4">
+        <button
+          onClick={() => setAddGoalOpen(true)}
+          className="btn btn-primary w-full"
+        >
+          <Plus size={15} strokeWidth={2.5} />
+          New Goal
+        </button>
       </div>
 
       {/* Nav */}

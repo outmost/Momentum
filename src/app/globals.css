@@ -378,16 +378,6 @@
     }
   }
 
-  /* ── FAB position ────────────────────────────────────── */
-  .fab {
-    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-  }
-  @media (min-width: 768px) {
-    .fab {
-      bottom: 24px;
-    }
-  }
-
   /* ── Streak badge ──────────────────────────────────── */
   .streak-badge {
     display: inline-flex;

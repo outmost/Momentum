@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
@@ -14,6 +15,9 @@ interface ModalProps {
 
 export function Modal({ open, onClose, title, children, className, size = 'md' }: ModalProps) {
   const scrollYRef = useRef(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -42,11 +46,11 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const maxWidths = { sm: 'sm:max-w-sm', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl' };
 
-  return (
+  const content = (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center sm:p-4"
       // Prevent pointer events from falling through to content beneath
@@ -134,4 +138,7 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
       </div>
     </div>
   );
+
+  // Render via portal to escape any stacking context issues (e.g. iOS overflow scrolling)
+  return createPortal(content, document.body);
 }

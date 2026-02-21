@@ -26,6 +26,9 @@ interface UIStore {
   
   welcomeBackDismissed: boolean;
   setWelcomeBackDismissed: (dismissed: boolean) => void;
+
+  addGoalOpen: boolean;
+  setAddGoalOpen: (open: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -50,4 +53,7 @@ export const useUIStore = create<UIStore>((set) => ({
   
   welcomeBackDismissed: false,
   setWelcomeBackDismissed: (dismissed) => set({ welcomeBackDismissed: dismissed }),
+
+  addGoalOpen: false,
+  setAddGoalOpen: (open) => set({ addGoalOpen: open }),
 }));

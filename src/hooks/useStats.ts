@@ -294,6 +294,43 @@ export function useOverallStreak() {
   });
 }
 
+/**
+ * Per-folder heatmap data — returns daily completion rates for goals within a folder.
+ * Used by FolderSection to show an inline mini heatmap.
+ */
+export function useFolderHeatmap(goalIds: string[], days: number = 28) {
+  const key = goalIds.join(',');
+  return useLiveQuery(async () => {
+    if (goalIds.length === 0) return [];
+
+    const today = new Date();
+    const dates: string[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      dates.push(format(subDays(today, i), 'yyyy-MM-dd'));
+    }
+
+    const goals = await db.goals.where('id').anyOf(goalIds).toArray();
+    const entries = await db.entries
+      .where('goalId').anyOf(goalIds)
+      .toArray();
+    const entryMap = new Map(entries.map(e => [`${e.goalId}:${e.date}`, e]));
+
+    return dates.map(date => {
+      const scheduled = goals.filter(g =>
+        isScheduledForDate(date, g.frequency, g.customDays)
+      );
+      if (scheduled.length === 0) return { date, rate: null as number | null };
+
+      const completed = scheduled.filter(g => {
+        const entry = entryMap.get(`${g.id}:${date}`);
+        return entry && entry.completed;
+      }).length;
+
+      return { date, rate: Math.round((completed / scheduled.length) * 100) };
+    });
+  }, [key, days]);
+}
+
 export function useTotalStats() {
   return useLiveQuery(async () => {
     const today = new Date();

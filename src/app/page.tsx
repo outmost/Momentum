@@ -13,8 +13,6 @@ import { initializeSettings } from '@/lib/db';
 import { isScheduledForDate } from '@/lib/utils';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { WeekStrip } from '@/components/today/WeekStrip';
-import { Modal } from '@/components/ui/Modal';
-import { GoalForm } from '@/components/goals/GoalForm';
 import { Confetti } from '@/components/ui/Confetti';
 import { AllDoneCelebration } from '@/components/ui/AllDoneCelebration';
 import type { Goal } from '@/types';
@@ -43,8 +41,7 @@ const BANNER_QUOTES = [
 ];
 
 export default function TodayPage() {
-  const { selectedDate, setSelectedDate } = useUIStore();
-  const [goalFormOpen, setGoalFormOpen] = useState(false);
+  const { selectedDate, setSelectedDate, setAddGoalOpen } = useUIStore();
   const goals         = useActiveGoals();
   const entries       = useEntriesForDate(selectedDate);
   const routineBlocks = useRoutineBlocks();
@@ -306,11 +303,11 @@ export default function TodayPage() {
                 Small, repeated actions build momentum over time.
               </p>
               <button
-                onClick={() => setGoalFormOpen(true)}
+                onClick={() => setAddGoalOpen(true)}
                 className="btn btn-primary btn-lg"
               >
                 <Plus size={16} strokeWidth={2.5} />
-                Add your first habit
+                Add your first goal
               </button>
             </>
           ) : (
@@ -433,28 +430,6 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* ── FAB ── */}
-      {!isSelectedFuture && (
-        <motion.button
-          onClick={() => setGoalFormOpen(true)}
-          className="fab fixed right-4 md:right-6 w-[52px] h-[52px] rounded-full flex items-center justify-center z-30 text-white"
-          style={{
-            backgroundColor: 'var(--accent)',
-            boxShadow: '0 4px 20px var(--glow), var(--shadow-md)',
-          }}
-          initial={{ scale: 0, rotate: -45 }}
-          animate={{ scale: 1, rotate: 0 }}
-          whileHover={{ scale: 1.06 }}
-          whileTap={{ scale: 0.92 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-        >
-          <Plus size={22} strokeWidth={2.5} />
-        </motion.button>
-      )}
-
-      <Modal open={goalFormOpen} onClose={() => setGoalFormOpen(false)} title="New habit" size="md">
-        <GoalForm onClose={() => setGoalFormOpen(false)} />
-      </Modal>
     </div>
   );
 }

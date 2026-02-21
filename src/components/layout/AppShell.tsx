@@ -3,9 +3,14 @@ import React from 'react';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { useTheme } from '@/hooks/useTheme';
+import { useUIStore } from '@/lib/store';
+import { Modal } from '@/components/ui/Modal';
+import { GoalForm } from '@/components/goals/GoalForm';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   useTheme();
+  const { addGoalOpen, setAddGoalOpen } = useUIStore();
+
   return (
     <div className="flex overflow-hidden" style={{ backgroundColor: 'var(--bg)', height: '100dvh' }}>
       <Sidebar />
@@ -21,6 +26,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </main>
       <BottomNav />
+
+      {/* Global add goal modal — triggered from bottom nav (+) or sidebar button */}
+      <Modal open={addGoalOpen} onClose={() => setAddGoalOpen(false)} title="New goal" size="md">
+        <GoalForm onClose={() => setAddGoalOpen(false)} />
+      </Modal>
     </div>
   );
 }

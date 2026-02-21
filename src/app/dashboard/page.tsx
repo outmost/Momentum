@@ -7,13 +7,8 @@ import { GoalBreakdown } from '@/components/dashboard/GoalBreakdown';
 export default function DashboardPage() {
   return (
     <div>
-      <h1
-        className="text-2xl font-semibold tracking-tight mb-7 animate-in"
-        style={{ color: 'var(--text)' }}
-      >
-        Progress
-      </h1>
-      <div className="space-y-5">
+      <h1 className="page-title mb-7 animate-in">Progress</h1>
+      <div className="space-y-4">
         <SummaryCards />
         <CompletionChart />
         <GoalBreakdown />

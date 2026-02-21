@@ -6,11 +6,11 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/cn';
 
 const navItems = [
-  { href: '/', label: 'Today', icon: CheckSquare },
+  { href: '/',          label: 'Today',    icon: CheckSquare },
   { href: '/dashboard', label: 'Progress', icon: BarChart3 },
-  { href: '/routine', label: 'Routine', icon: Repeat },
-  { href: '/goals', label: 'Goals', icon: Layers },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/routine',   label: 'Routine',  icon: Repeat },
+  { href: '/goals',     label: 'Goals',    icon: Layers },
+  { href: '/settings',  label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -18,23 +18,29 @@ export function Sidebar() {
 
   return (
     <aside
-      className="hidden md:flex flex-col h-full w-48 shrink-0"
-      style={{ borderRight: '1px solid var(--border)', backgroundColor: 'var(--surface)' }}
+      className="hidden md:flex flex-col h-full w-[200px] shrink-0"
+      style={{
+        borderRight: '1px solid var(--border)',
+        backgroundColor: 'var(--surface)',
+      }}
     >
       {/* Wordmark */}
-      <div className="px-5 pt-7 pb-6">
+      <div className="px-5 pt-7 pb-7">
         <div className="flex items-center gap-2.5">
           <div
-            className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-            style={{ backgroundColor: 'var(--accent)' }}
+            className="w-[26px] h-[26px] rounded-lg flex items-center justify-center shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, #000) 100%)',
+              boxShadow: '0 2px 8px var(--glow)',
+            }}
           >
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M2 9C2 9 4 5.5 6.5 5.5C9 5.5 11 9 11 9" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <circle cx="6.5" cy="3" r="1.5" fill="white"/>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2.5 10C2.5 10 4.5 6 7 6C9.5 6 11.5 10 11.5 10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="7" cy="3.5" r="1.75" fill="white"/>
             </svg>
           </div>
           <span
-            className="text-sm font-bold tracking-tight"
+            className="text-[13px] font-bold tracking-tight"
             style={{ color: 'var(--text)' }}
           >
             Momentum
@@ -50,14 +56,13 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
-              className="relative flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors duration-150"
+              className="relative flex items-center gap-3 px-3 py-[9px] rounded-xl transition-colors duration-150"
               style={{ color: active ? 'var(--text)' : 'var(--text-3)' }}
             >
-              {/* Active background pill — spring-animated between items */}
               {active && (
                 <motion.div
                   layoutId="sidebar-active-bg"
-                  className="absolute inset-0 rounded-lg"
+                  className="absolute inset-0 rounded-xl"
                   style={{ backgroundColor: 'var(--border)' }}
                   transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
@@ -65,13 +70,13 @@ export function Sidebar() {
 
               <Icon
                 size={16}
-                strokeWidth={active ? 2.2 : 1.7}
+                strokeWidth={active ? 2.25 : 1.65}
                 className="relative z-10 shrink-0 transition-all duration-150"
                 style={{ color: active ? 'var(--accent)' : 'var(--text-3)' }}
               />
               <span
                 className={cn(
-                  'relative z-10 text-sm transition-all duration-150',
+                  'relative z-10 text-[13px] transition-all duration-150',
                   active ? 'font-semibold' : 'font-normal',
                 )}
               >
@@ -82,7 +87,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Version footer */}
+      {/* Footer */}
       <div className="px-5 pb-5">
         <span className="text-[10px] tabular" style={{ color: 'var(--text-3)' }}>v1.0</span>
       </div>

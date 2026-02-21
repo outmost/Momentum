@@ -1,7 +1,6 @@
 'use client';
 import React from 'react';
 import { Modal } from './Modal';
-import { Button } from './Button';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -26,15 +25,19 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Modal open={open} onClose={onClose} title={title} size="sm">
-      <div className="px-6 py-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400">{message}</p>
-        <div className="flex justify-end gap-3 mt-6">
-          <Button variant="ghost" onClick={onClose} disabled={loading}>
+      <div className="px-5 py-5">
+        <p className="text-[13px]" style={{ color: 'var(--text-2)' }}>{message}</p>
+        <div className="flex justify-end gap-2 mt-5">
+          <button onClick={onClose} disabled={loading} className="btn btn-secondary btn-sm">
             Cancel
-          </Button>
-          <Button variant={variant} onClick={onConfirm} loading={loading}>
-            {confirmLabel}
-          </Button>
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className={variant === 'danger' ? 'btn btn-danger btn-sm' : 'btn btn-primary btn-sm'}
+          >
+            {loading ? 'Working…' : confirmLabel}
+          </button>
         </div>
       </div>
     </Modal>

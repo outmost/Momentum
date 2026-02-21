@@ -21,11 +21,11 @@
 @layer base {
   :root {
     /* ── Surfaces ── */
-    --bg:            #F4F3F0;   /* Warm off-white — not cold gray */
+    --bg:            #F4F3F0;
     --surface:       #FFFFFF;
-    --surface-2:     #F9F8F6;   /* Slightly elevated surface */
-    --border:        #E8E6E0;   /* Warm border */
-    --border-2:      #D0CEC8;   /* Stronger border */
+    --surface-2:     #F9F8F6;
+    --border:        #E8E6E0;
+    --border-2:      #D0CEC8;
 
     /* ── Text ── */
     --text:          #0E0E0E;
@@ -33,12 +33,11 @@
     --text-3:        #A8A8A0;
 
     /* ── Brand ── */
-    --accent:        #0052CC;   /* Deep, premium blue */
+    --accent:        #0052CC;
     --accent-2:      rgba(0, 82, 204, 0.08);
     --accent-hover:  #003D99;
 
-    /* ── Positive / Progress — ONLY green, never amber/orange ── */
-    /* Any progress, no matter how small, is encouraging. */
+    /* ── Progress / Success ── */
     --progress:      #16A34A;
     --success:       #16A34A;
     --success-soft:  rgba(22, 163, 74, 0.09);
@@ -54,6 +53,12 @@
     --shadow-md:     0 4px 16px rgba(0,0,0,0.09);
     --shadow-lg:     0 8px 32px rgba(0,0,0,0.12);
     --glow:          rgba(0, 82, 204, 0.20);
+
+    /* ── Geometry ── */
+    --radius:        16px;
+    --radius-sm:     10px;
+    --radius-lg:     24px;
+    --nav-height:    80px;
   }
 
   .dark {
@@ -102,6 +107,221 @@
   ::selection { background: var(--accent-2); }
 }
 
+/* ─────────────────────────────────────────────────────────
+   Design system — component classes
+   Use these instead of scattering inline styles everywhere.
+──────────────────────────────────────────────────────────── */
+
+@layer components {
+
+  /* ── Cards ─────────────────────────────────────────── */
+
+  .card {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-xs);
+  }
+
+  /* Card with overflow:hidden (for grouped lists) */
+  .card-overflow {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
+  }
+
+  /* Compact card */
+  .card-sm {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-xs);
+  }
+
+  /* Inset / secondary card */
+  .card-inset {
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Hover-able card (adds transition) */
+  .card-interactive {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow 0.2s, border-color 0.2s;
+    cursor: pointer;
+  }
+  .card-interactive:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--border-2);
+  }
+
+  /* ── Typography ─────────────────────────────────────── */
+
+  .page-title {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    color: var(--text);
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  /* ── Buttons ────────────────────────────────────────── */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s, transform 0.1s, background-color 0.15s, border-color 0.15s;
+    outline: none;
+    text-decoration: none;
+  }
+
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.45; pointer-events: none; }
+
+  .btn-primary {
+    background-color: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+
+  .btn-secondary {
+    background-color: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-2);
+  }
+  .btn-secondary:hover { border-color: var(--border-2); color: var(--text); }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--text-2);
+  }
+  .btn-ghost:hover { color: var(--text); background-color: var(--border); }
+
+  .btn-danger {
+    background-color: var(--danger);
+    color: #fff;
+  }
+  .btn-danger:hover { opacity: 0.88; }
+
+  .btn-sm {
+    height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  .btn-lg {
+    height: 44px;
+    padding: 0 20px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .btn-icon-sm {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 8px;
+  }
+
+  /* ── Form fields ─────────────────────────────────────── */
+
+  .field {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    background-color: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+
+  .field:focus { border-color: var(--accent); }
+  .field::placeholder { color: var(--text-3); }
+
+  .field-sm {
+    height: 34px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  /* ── Filter chips / pills ────────────────────────────── */
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    color: var(--text-3);
+    background-color: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .chip:hover { border-color: var(--border-2); color: var(--text-2); }
+  .chip:active { transform: scale(0.97); }
+
+  .chip-active {
+    background-color: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+  }
+  .chip-active:hover { background-color: var(--text); border-color: var(--text); color: var(--bg); }
+
+  /* ── Pressable ───────────────────────────────────────── */
+
+  .pressable {
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .pressable:active {
+    transform: scale(0.97);
+    opacity: 0.8;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Utility classes
+──────────────────────────────────────────────────────────── */
+
 @layer utilities {
   .tabular { font-variant-numeric: tabular-nums; }
 
@@ -111,126 +331,76 @@
   .zoom-in-95             { animation: zoomIn  0.18s cubic-bezier(0.16, 1, 0.3, 1); }
 
   /* ── Celebration animations ── */
-  .animate-check-pop {
-    animation: checkPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .animate-check-ring {
-    animation: checkRing 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  .animate-success-glow {
-    animation: successGlow 1s ease-out;
-  }
-  .animate-card-complete {
-    animation: cardComplete 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .animate-number-bump {
-    animation: numberBump 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .animate-number-down {
-    animation: numberDown 0.2s ease-out;
-  }
-  .animate-streak-flame {
-    animation: streakFlame 1.5s ease-in-out infinite;
-  }
-  .animate-progress-fill {
-    animation: progressFill 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .animate-ring-pulse {
-    animation: ringPulse 2.5s ease-in-out infinite;
-  }
-  .animate-all-done-ring {
-    animation: allDoneRing 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .animate-float-up {
-    animation: floatUp 0.55s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .animate-confetti-fall {
-    animation: confettiFall var(--fall-duration, 2s) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  }
-  .animate-stagger-in {
-    animation: staggerIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-  .animate-counter-up {
-    animation: counterUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .animate-shimmer {
-    animation: shimmer 2s ease-in-out infinite;
-  }
-  .animate-bounce-subtle {
-    animation: bounceSubtle 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .animate-celebration-burst {
-    animation: celebrationBurst 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  .animate-slide-down {
-    animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .animate-fab-pop {
-    animation: fabPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .animate-shooting-star {
-    animation: shootingStar 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  }
-  .animate-why-reveal {
-    animation: whyReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  .animate-scale-in {
-    animation: scaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  }
+  .animate-check-pop      { animation: checkPop       0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-check-ring     { animation: checkRing      0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .animate-success-glow   { animation: successGlow    1s ease-out; }
+  .animate-card-complete  { animation: cardComplete   0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+  .animate-number-bump    { animation: numberBump     0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-number-down    { animation: numberDown     0.2s ease-out; }
+  .animate-streak-flame   { animation: streakFlame    1.5s ease-in-out infinite; }
+  .animate-progress-fill  { animation: progressFill   0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+  .animate-ring-pulse     { animation: ringPulse      2.5s ease-in-out infinite; }
+  .animate-all-done-ring  { animation: allDoneRing    0.9s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-float-up       { animation: floatUp        0.55s cubic-bezier(0.16, 1, 0.3, 1); }
+  .animate-confetti-fall  { animation: confettiFall   var(--fall-duration, 2s) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+  .animate-stagger-in     { animation: staggerIn      0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-counter-up     { animation: counterUp      0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-shimmer        { animation: shimmer        2s ease-in-out infinite; }
+  .animate-bounce-subtle  { animation: bounceSubtle   0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-celebration-burst { animation: celebrationBurst 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .animate-slide-down     { animation: slideDown      0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+  .animate-fab-pop        { animation: fabPop         0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-shooting-star  { animation: shootingStar   1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+  .animate-why-reveal     { animation: whyReveal      0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .animate-scale-in       { animation: scaleIn        0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 
-  /* Hide native scrollbar but keep scrollability */
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
 }
 
-/* ── Keyframes ── */
+/* ─────────────────────────────────────────────────────────
+   Keyframes
+──────────────────────────────────────────────────────────── */
 
 @keyframes fadeIn  { from { opacity: 0; }                              to { opacity: 1; }                }
 @keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes zoomIn  { from { transform: scale(0.96); opacity: 0; }      to { transform: scale(1); opacity: 1; }      }
 
-/* Checkbox pop — elastic overshoot for satisfying completion feel */
 @keyframes checkPop {
   0%   { transform: scale(0.5); opacity: 0; }
   55%  { transform: scale(1.25); }
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Ring burst that expands out from checkbox on completion */
 @keyframes checkRing {
   0%   { transform: scale(0.8); opacity: 0.9; }
   100% { transform: scale(2.4); opacity: 0; }
 }
 
-/* Soft glow on the card when a habit is completed */
 @keyframes successGlow {
   0%   { box-shadow: 0 0 0 0 var(--success-glow); }
   35%  { box-shadow: 0 0 0 8px var(--success-glow); }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 
-/* Card background flash on completion */
 @keyframes cardComplete {
   0%   { background-color: var(--surface); }
   25%  { background-color: color-mix(in srgb, var(--success) 7%, var(--surface)); }
   100% { background-color: var(--surface); }
 }
 
-/* Number increment bounce */
 @keyframes numberBump {
   0%   { transform: translateY(0) scale(1); }
   40%  { transform: translateY(-5px) scale(1.18); }
   100% { transform: translateY(0) scale(1); }
 }
 
-/* Number decrement settle */
 @keyframes numberDown {
   0%   { transform: translateY(0); }
   40%  { transform: translateY(3px); }
   100% { transform: translateY(0); }
 }
 
-/* Flame wiggle for active streaks */
 @keyframes streakFlame {
   0%, 100% { transform: scale(1) rotate(-2deg); }
   25%  { transform: scale(1.12) rotate(2deg); }
@@ -238,63 +408,53 @@
   75%  { transform: scale(1.06) rotate(1deg); }
 }
 
-/* Progress bar fill from left */
 @keyframes progressFill {
   from { transform: scaleX(0); transform-origin: left; }
   to   { transform: scaleX(1); transform-origin: left; }
 }
 
-/* Subtle pulse on the progress ring */
 @keyframes ringPulse {
   0%, 100% { opacity: 1; filter: brightness(1); }
   50%      { opacity: 0.8; filter: brightness(1.2); }
 }
 
-/* All-done celebration ring */
 @keyframes allDoneRing {
   0%   { transform: scale(0.75) rotate(-90deg); opacity: 0; }
   60%  { transform: scale(1.12) rotate(-90deg); }
   100% { transform: scale(1) rotate(-90deg); opacity: 1; }
 }
 
-/* Float up for celebration emoji */
 @keyframes floatUp {
   0%   { transform: translateY(24px) scale(0.4); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-/* Confetti fall */
 @keyframes confettiFall {
   0%   { transform: translateY(var(--start-y, -20px)) translateX(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(var(--end-y, 100px)) translateX(var(--drift-x, 30px)) rotate(var(--end-rotation, 720deg)); opacity: 0; }
 }
 
-/* Stagger in for lists */
 @keyframes staggerIn {
   from { transform: translateY(10px); opacity: 0; }
   to   { transform: translateY(0); opacity: 1; }
 }
 
-/* Counter animate up */
 @keyframes counterUp {
   0%   { transform: translateY(10px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
 }
 
-/* Shimmer effect */
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
-/* Subtle bounce for interactive elements */
 @keyframes bounceSubtle {
   0%   { transform: scale(1); }
   40%  { transform: scale(1.10); }
   100% { transform: scale(1); }
 }
 
-/* Celebration burst for all-done screen */
 @keyframes celebrationBurst {
   0%   { transform: scale(0.8); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
@@ -305,14 +465,12 @@
   to   { transform: translateY(0); opacity: 1; }
 }
 
-/* FAB entrance */
 @keyframes fabPop {
   0%   { transform: scale(0) rotate(-45deg); }
   75%  { transform: scale(1.1) rotate(0deg); }
   100% { transform: scale(1) rotate(0deg); }
 }
 
-/* Shooting star diagonal sweep */
 @keyframes shootingStar {
   0%   { transform: translate(-10vw, 50vh) rotate(-40deg) scale(0.5); opacity: 0; }
   10%  { opacity: 1; }
@@ -320,13 +478,11 @@
   100% { transform: translate(110vw, -20vh) rotate(-40deg) scale(1.2); opacity: 0; }
 }
 
-/* "Why" text reveal */
 @keyframes whyReveal {
   from { transform: translateY(-4px); opacity: 0; }
   to   { transform: translateY(0); opacity: 1; }
 }
 
-/* Scale in from small */
 @keyframes scaleIn {
   from { transform: scale(0.85); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }

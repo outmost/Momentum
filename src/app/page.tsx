@@ -25,40 +25,13 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// Momentum messages — positive, never discouraging
 const MOMENTUM_MESSAGES = {
-  zero: [
-    'Ready when you are.',
-    'Every legend starts somewhere.',
-    'Today\'s the day. Go.',
-  ],
-  starting: [
-    'You\'re moving. Keep going.',
-    'First one down — momentum is building.',
-    'The hardest step is the first.',
-  ],
-  building: [
-    'You\'re in it now.',
-    'Consistency compounds.',
-    'Each one matters.',
-  ],
-  halfway: [
-    'Over halfway. Finish strong.',
-    'More done than left.',
-    'The momentum is real.',
-  ],
-  almost: [
-    'Almost. Don\'t stop.',
-    'So close. One more.',
-    'Push through.',
-  ],
-  done: [
-    'You showed up. That\'s everything.',
-    'Perfect day. No excuses needed.',
-    'All done — you earned this.',
-    'Legendary. Nothing left but pride.',
-    '100%. Pure momentum.',
-  ],
+  zero:     ['Ready when you are.', 'Every legend starts somewhere.', "Today's the day. Go."],
+  starting: ["You're moving. Keep going.", 'First one down — momentum is building.', 'The hardest step is the first.'],
+  building: ["You're in it now.", 'Consistency compounds.', 'Each one matters.'],
+  halfway:  ['Over halfway. Finish strong.', 'More done than left.', 'The momentum is real.'],
+  almost:   ["Almost. Don't stop.", 'So close. One more.', 'Push through.'],
+  done:     ['You showed up. That\'s everything.', 'Perfect day. No excuses needed.', 'All done — you earned this.', '100%. Pure momentum.'],
 };
 
 function getMomentumMessage(completed: number, total: number, allDone: boolean): string {
@@ -68,11 +41,12 @@ function getMomentumMessage(completed: number, total: number, allDone: boolean):
     return msgs[Math.floor(Date.now() / 10000) % msgs.length];
   }
   const pct = completed / total;
-  if (pct === 0) return MOMENTUM_MESSAGES.zero[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.zero.length];
-  if (pct < 0.25) return MOMENTUM_MESSAGES.starting[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.starting.length];
-  if (pct < 0.5) return MOMENTUM_MESSAGES.building[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.building.length];
-  if (pct < 0.75) return MOMENTUM_MESSAGES.halfway[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.halfway.length];
-  return MOMENTUM_MESSAGES.almost[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.almost.length];
+  const pick = (arr: string[]) => arr[Math.floor(Date.now() / 10000) % arr.length];
+  if (pct === 0)    return pick(MOMENTUM_MESSAGES.zero);
+  if (pct < 0.25)  return pick(MOMENTUM_MESSAGES.starting);
+  if (pct < 0.5)   return pick(MOMENTUM_MESSAGES.building);
+  if (pct < 0.75)  return pick(MOMENTUM_MESSAGES.halfway);
+  return pick(MOMENTUM_MESSAGES.almost);
 }
 
 export default function TodayPage() {
@@ -83,7 +57,6 @@ export default function TodayPage() {
   const settings = useSettings();
   const routineBlocks = useRoutineBlocks();
 
-  // Celebration state
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const wasAllDone = useRef(false);
@@ -95,7 +68,7 @@ export default function TodayPage() {
     const ws = startOfWeek(sel, { weekStartsOn });
     return {
       rangeStart: format(subDays(ws, 7), 'yyyy-MM-dd'),
-      rangeEnd: format(addDays(ws, 13), 'yyyy-MM-dd'),
+      rangeEnd:   format(addDays(ws, 13), 'yyyy-MM-dd'),
     };
   }, [selectedDate, weekStartsOn]);
   const completionMap = useDateRangeProgress(rangeStart, rangeEnd);
@@ -106,7 +79,7 @@ export default function TodayPage() {
   }, []);
 
   const today = localToday();
-  const isSelectedToday = selectedDate === today;
+  const isSelectedToday  = selectedDate === today;
   const isSelectedFuture = selectedDate > today;
 
   const scheduledGoals = (goals ?? [])
@@ -115,9 +88,8 @@ export default function TodayPage() {
 
   const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
 
-  // Group goals by routine block
-  const blocks = routineBlocks ?? [];
-  const grouped = new Map<string, Goal[]>();
+  const blocks    = routineBlocks ?? [];
+  const grouped   = new Map<string, Goal[]>();
   const ungrouped: Goal[] = [];
 
   for (const goal of scheduledGoals) {
@@ -131,14 +103,13 @@ export default function TodayPage() {
 
   const completedCount = scheduledGoals.filter(g => entryMap.get(g.id)?.completed).length;
   const allDone = scheduledGoals.length > 0 && completedCount === scheduledGoals.length;
-  const pct = scheduledGoals.length > 0 ? completedCount / scheduledGoals.length : 0;
+  const pct     = scheduledGoals.length > 0 ? completedCount / scheduledGoals.length : 0;
+  const circumference = 2 * Math.PI * 16;
 
-  // Update momentum message when state changes
   useEffect(() => {
     setMomentumMsg(getMomentumMessage(completedCount, scheduledGoals.length, allDone));
   }, [completedCount, scheduledGoals.length, allDone]);
 
-  // Trigger celebration when all goals complete
   useEffect(() => {
     if (allDone && !wasAllDone.current && scheduledGoals.length > 0) {
       setShowConfetti(true);
@@ -149,45 +120,36 @@ export default function TodayPage() {
     wasAllDone.current = allDone;
   }, [allDone, scheduledGoals.length]);
 
-  // Track stagger index across all goal cards
   let staggerIndex = 0;
-
-  const circumference = 2 * Math.PI * 16;
 
   return (
     <div>
       <Confetti active={showConfetti} count={60} />
-      <AllDoneCelebration
-        active={showCelebration}
-        message={momentumMsg}
-      />
+      <AllDoneCelebration active={showCelebration} message={momentumMsg} />
 
-      {/* Header — date with impact */}
+      {/* ── Header ── */}
       <motion.div
-        className="mb-3"
+        className="mb-4"
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       >
-        <h1
-          className="text-3xl font-bold tracking-tight leading-none"
-          style={{ color: 'var(--text)' }}
-        >
+        <h1 className="page-title">
           {isSelectedToday
             ? format(new Date(), 'EEEE')
             : format(parseISO(selectedDate), 'EEEE')}
         </h1>
-        <p className="mt-1 text-sm font-medium" style={{ color: 'var(--text-3)' }}>
+        <p
+          className="mt-1 text-xs font-medium"
+          style={{ color: 'var(--text-3)' }}
+        >
           {isSelectedToday
-            ? format(new Date(), 'MMMM d')
+            ? format(new Date(), 'MMMM d') + ' · Today'
             : format(parseISO(selectedDate), 'MMMM d')}
-          {isSelectedToday && (
-            <span> · Today</span>
-          )}
         </p>
       </motion.div>
 
-      {/* Week strip */}
+      {/* ── Week strip ── */}
       <WeekStrip
         selectedDate={selectedDate}
         onSelectDate={setSelectedDate}
@@ -195,7 +157,7 @@ export default function TodayPage() {
         completionMap={completionMap}
       />
 
-      {/* Progress section — ring + message */}
+      {/* ── Progress row ── */}
       {scheduledGoals.length > 0 && (
         <motion.div
           className="flex items-center gap-4 mb-7 px-1"
@@ -203,38 +165,39 @@ export default function TodayPage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.4 }}
         >
-          {/* Ring */}
-          <div className="relative w-14 h-14 shrink-0">
+          {/* Progress ring */}
+          <div className="relative w-[52px] h-[52px] shrink-0">
             <svg viewBox="0 0 40 40" className="w-full h-full -rotate-90">
-              {/* Track */}
               <circle
                 cx="20" cy="20" r="16"
                 fill="none"
                 stroke="var(--border)"
-                strokeWidth="3.5"
+                strokeWidth="3"
               />
-              {/* Progress arc — always green, no orange */}
               <motion.circle
                 cx="20" cy="20" r="16"
                 fill="none"
-                stroke={allDone ? 'var(--success)' : completedCount > 0 ? 'var(--success)' : 'var(--border-2)'}
-                strokeWidth="3.5"
+                stroke={completedCount > 0 ? 'var(--success)' : 'var(--border-2)'}
+                strokeWidth="3"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
                 animate={{
                   strokeDashoffset: circumference * (1 - pct),
-                  filter: allDone ? 'drop-shadow(0 0 6px var(--success-glow))' : 'none',
+                  filter: allDone ? 'drop-shadow(0 0 5px var(--success-glow))' : 'none',
                 }}
                 transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                 style={{ strokeDashoffset: circumference }}
               />
             </svg>
-            {/* Count inside ring */}
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.span
                 key={completedCount}
-                className="text-xs font-bold tabular"
-                style={{ color: allDone ? 'var(--success)' : 'var(--text)' }}
+                className="tabular"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: allDone ? 'var(--success)' : 'var(--text)',
+                }}
                 initial={{ scale: 0.7, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
@@ -249,20 +212,22 @@ export default function TodayPage() {
             <AnimatePresence mode="wait">
               <motion.p
                 key={momentumMsg}
-                className="text-base font-semibold leading-snug"
+                className="text-[15px] font-semibold leading-snug"
                 style={{ color: allDone ? 'var(--success)' : 'var(--text)' }}
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.25 }}
+                transition={{ duration: 0.22 }}
               >
                 {momentumMsg}
               </motion.p>
             </AnimatePresence>
 
-            {/* Flame — only when making progress (not done) */}
             {completedCount > 0 && !allDone && (
-              <span className="animate-streak-flame inline-block text-sm mt-0.5" style={{ transformOrigin: 'bottom center' }}>
+              <span
+                className="animate-streak-flame inline-block text-sm mt-0.5"
+                style={{ transformOrigin: 'bottom center' }}
+              >
                 🔥
               </span>
             )}
@@ -280,7 +245,7 @@ export default function TodayPage() {
         </motion.div>
       )}
 
-      {/* Goal list */}
+      {/* ── Goal list ── */}
       {scheduledGoals.length === 0 ? (
         <motion.div
           className="text-center py-16"
@@ -291,7 +256,10 @@ export default function TodayPage() {
           {goals?.length === 0 ? (
             <>
               <p className="text-4xl mb-4">🌱</p>
-              <p className="text-base font-semibold mb-1.5" style={{ color: 'var(--text)' }}>
+              <p
+                className="text-[15px] font-semibold mb-1.5"
+                style={{ color: 'var(--text)' }}
+              >
                 Start your first habit
               </p>
               <p className="text-sm mb-6" style={{ color: 'var(--text-3)' }}>
@@ -299,11 +267,8 @@ export default function TodayPage() {
               </p>
               <button
                 onClick={() => setGoalFormOpen(true)}
-                className="px-5 py-2.5 text-sm font-semibold rounded-xl text-white transition-all active:scale-95 hover:opacity-90"
-                style={{
-                  backgroundColor: 'var(--accent)',
-                  boxShadow: '0 4px 14px var(--glow)',
-                }}
+                className="btn btn-primary btn-lg"
+                style={{ boxShadow: '0 4px 14px var(--glow)' }}
               >
                 Add habit
               </button>
@@ -329,8 +294,8 @@ export default function TodayPage() {
             if (!blockGoals || blockGoals.length === 0) return null;
 
             const blockCompleted = blockGoals.filter(g => entryMap.get(g.id)?.completed).length;
-            const blockDone = blockCompleted === blockGoals.length;
-            const blockStartIndex = staggerIndex;
+            const blockDone      = blockCompleted === blockGoals.length;
+            const blockStartIdx  = staggerIndex;
             staggerIndex += blockGoals.length;
 
             return (
@@ -338,20 +303,20 @@ export default function TodayPage() {
                 key={block.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: blockStartIndex * 0.04, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ delay: blockStartIdx * 0.04, duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
               >
-                <div className="flex items-center gap-2 mb-2 px-1">
+                {/* Block label */}
+                <div className="flex items-center gap-2 mb-2.5 px-1">
                   <span className="text-sm">{block.emoji}</span>
                   <h2
-                    className="text-[11px] font-bold uppercase tracking-widest transition-colors duration-300"
-                    style={{ color: blockDone ? 'var(--success)' : 'var(--text-3)' }}
+                    className="section-label transition-colors duration-300"
+                    style={{ color: blockDone ? 'var(--success)' : undefined }}
                   >
                     {block.name}
                   </h2>
                   {blockDone && (
                     <motion.span
-                      className="text-[10px] font-semibold"
-                      style={{ color: 'var(--success)' }}
+                      style={{ fontSize: '10px', fontWeight: 600, color: 'var(--success)' }}
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 25 }}
@@ -362,13 +327,11 @@ export default function TodayPage() {
                 </div>
 
                 <div
-                  className="rounded-card overflow-hidden transition-shadow duration-500"
+                  className="card-overflow transition-shadow duration-500"
                   style={{
-                    backgroundColor: 'var(--surface)',
-                    border: '1px solid var(--border)',
                     boxShadow: blockDone
-                      ? '0 0 0 1px color-mix(in srgb, var(--success) 25%, transparent), var(--shadow-sm)'
-                      : 'var(--shadow-xs)',
+                      ? '0 0 0 1px color-mix(in srgb, var(--success) 20%, transparent), var(--shadow-sm)'
+                      : undefined,
                   }}
                 >
                   {blockGoals.map((goal, i) => (
@@ -380,7 +343,7 @@ export default function TodayPage() {
                       isBackdated={!isSelectedToday && !isSelectedFuture}
                       isFuture={isSelectedFuture}
                       isLast={i === blockGoals.length - 1}
-                      animationDelay={(blockStartIndex + i) * 40}
+                      animationDelay={(blockStartIdx + i) * 40}
                     />
                   ))}
                 </div>
@@ -388,32 +351,20 @@ export default function TodayPage() {
             );
           })}
 
-          {/* Ungrouped goals (anytime) */}
+          {/* Ungrouped / Anytime */}
           {ungrouped.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: staggerIndex * 0.04, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ delay: staggerIndex * 0.04, duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             >
               {blocks.length > 0 && grouped.size > 0 && (
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <h2
-                    className="text-[11px] font-bold uppercase tracking-widest"
-                    style={{ color: 'var(--text-3)' }}
-                  >
-                    Anytime
-                  </h2>
+                <div className="flex items-center gap-2 mb-2.5 px-1">
+                  <h2 className="section-label">Anytime</h2>
                 </div>
               )}
 
-              <div
-                className="rounded-card overflow-hidden"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  boxShadow: 'var(--shadow-xs)',
-                }}
-              >
+              <div className="card-overflow">
                 {ungrouped.map((goal, i) => {
                   const delay = staggerIndex * 40;
                   staggerIndex++;
@@ -436,11 +387,11 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* FAB — add habit */}
+      {/* ── FAB ── */}
       {!isSelectedFuture && (
         <motion.button
           onClick={() => setGoalFormOpen(true)}
-          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-13 h-13 w-[52px] h-[52px] rounded-full flex items-center justify-center z-30 text-white"
+          className="fixed bottom-[88px] right-4 md:bottom-6 md:right-6 w-[52px] h-[52px] rounded-full flex items-center justify-center z-30 text-white"
           style={{
             backgroundColor: 'var(--accent)',
             boxShadow: '0 4px 20px var(--glow)',

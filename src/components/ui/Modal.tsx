@@ -30,37 +30,34 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      {/* Backdrop with fade-in */}
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-[2px] animate-in"
+        className="absolute inset-0 bg-black/25 backdrop-blur-[3px] animate-in"
         onClick={onClose}
       />
-      {/* Modal panel */}
+
+      {/* Panel */}
       <div
         className={cn(
-          'relative w-full rounded-xl overflow-hidden',
+          'relative w-full card-overflow',
           'animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95',
           sizes[size],
-          className
+          className,
         )}
-        style={{
-          backgroundColor: 'var(--surface)',
-          border: '1px solid var(--border)',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
-        }}
+        style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.15)' }}
       >
         {title && (
           <div
-            className="flex items-center justify-between px-5 py-3.5"
+            className="flex items-center justify-between px-5 py-4"
             style={{ borderBottom: '1px solid var(--border)' }}
           >
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
+            <h2 className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded transition-all duration-200 hover:scale-110 active:scale-90"
+              className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:bg-[var(--border)] active:scale-90"
               style={{ color: 'var(--text-3)' }}
             >
-              <X size={15} />
+              <X size={14} />
             </button>
           </div>
         )}

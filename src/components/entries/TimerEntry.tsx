@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { useUIStore } from '@/lib/store';
 import { formatDuration } from '@/lib/utils';
@@ -13,13 +13,14 @@ interface TimerEntryProps {
   color?: string;
 }
 
-// OKR-inspired: 80 % of target time is the "great work" threshold.
 const SUCCESS_THRESHOLD = 0.8;
 
 export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' }: TimerEntryProps) {
   const { activeTimer, setActiveTimer } = useUIStore();
   const isRunning = activeTimer?.goalId === goalId;
   const [display, setDisplay] = useState(value);
+  const [justHitTarget, setJustHitTarget] = useState(false);
+  const prevDisplay = useRef(value);
 
   useEffect(() => {
     if (!isRunning) { setDisplay(value); return; }
@@ -30,9 +31,18 @@ export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' 
     return () => clearInterval(interval);
   }, [isRunning, activeTimer, value]);
 
+  // Detect target hit
+  useEffect(() => {
+    if (target > 0 && prevDisplay.current < target && display >= target) {
+      setJustHitTarget(true);
+      setTimeout(() => setJustHitTarget(false), 600);
+    }
+    prevDisplay.current = display;
+  }, [display, target]);
+
   const progress = target > 0 ? Math.min(100, Math.round((display / target) * 100)) : 0;
-  const isSuccess = target > 0 && display >= target * SUCCESS_THRESHOLD; // ≥ 80 %
-  const isComplete = target > 0 ? display >= target : display > 0;       // 100 %
+  const isSuccess = target > 0 && display >= target * SUCCESS_THRESHOLD;
+  const isComplete = target > 0 ? display >= target : display > 0;
 
   function handleToggle() {
     if (isRunning) {
@@ -47,26 +57,32 @@ export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' 
   return (
     <div className="space-y-1.5 mt-1.5">
       <div className="flex items-center gap-2.5">
-        {/* Play/pause */}
+        {/* Play/pause — with pulse animation while running */}
         <button
           onClick={handleToggle}
-          className="w-6 h-6 rounded flex items-center justify-center transition-all"
+          className={`w-6 h-6 rounded flex items-center justify-center transition-all duration-200 active:scale-90 ${
+            isRunning ? 'animate-ring-pulse' : ''
+          }`}
           style={{
             backgroundColor: isRunning ? color : 'transparent',
             border: `1px solid ${isRunning ? color : 'var(--border)'}`,
             color: isRunning ? 'white' : 'var(--text-2)',
+            boxShadow: isRunning ? `0 0 8px ${color}30` : 'none',
           }}
         >
           {isRunning ? <Pause size={10} /> : <Play size={10} />}
         </button>
 
-        {/* Time display — colour graduates at 80 % just like NumericEntry */}
+        {/* Time display */}
         <div className="flex items-baseline gap-1">
           <span
-            className="text-lg font-semibold tabular leading-none transition-colors duration-200"
+            className={`text-lg font-semibold tabular leading-none transition-all duration-200 ${
+              justHitTarget ? 'animate-bounce-subtle' : ''
+            }`}
             style={{
               color: isComplete ? color : isSuccess ? color : 'var(--text)',
               fontVariantNumeric: 'tabular-nums',
+              textShadow: justHitTarget ? `0 0 12px ${color}40` : 'none',
             }}
           >
             {formatDuration(display)}
@@ -81,7 +97,7 @@ export function TimerEntry({ goalId, value, target, onChange, color = '#16A34A' 
         {/* Reset */}
         <button
           onClick={() => { setActiveTimer(null); onChange(0); setDisplay(0); }}
-          className="transition-colors"
+          className="transition-all duration-200 hover:scale-110 active:scale-90"
           style={{ color: 'var(--text-3)' }}
           title="Reset"
         >

@@ -13,16 +13,24 @@ interface ProgressBarProps {
 
 export function ProgressBar({ value, className, color = '#16A34A', showLabel = false, size = 'md', milestone }: ProgressBarProps) {
   const clamped = Math.min(100, Math.max(0, value));
-  const height = size === 'sm' ? 'h-px' : 'h-0.5';
+  const height = size === 'sm' ? 'h-[2px]' : 'h-1';
+  const isFull = clamped >= 100;
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <div className={cn('flex-1 rounded-full relative', height)} style={{ backgroundColor: 'var(--border)', overflow: 'hidden' }}>
+      <div
+        className={cn('flex-1 rounded-full relative', height)}
+        style={{ backgroundColor: 'var(--border)', overflow: 'hidden' }}
+      >
         <div
-          className="h-full rounded-full transition-all duration-300 ease-out"
-          style={{ width: `${clamped}%`, backgroundColor: color }}
+          className="h-full rounded-full transition-all duration-500 ease-out"
+          style={{
+            width: `${clamped}%`,
+            backgroundColor: color,
+            boxShadow: isFull ? `0 0 6px ${color}40` : 'none',
+          }}
         />
-        {/* OKR milestone divider — a thin contrasting line marks the success threshold */}
+        {/* OKR milestone divider */}
         {milestone !== undefined && milestone > 0 && milestone < 100 && (
           <div
             className="absolute inset-y-0 w-px"

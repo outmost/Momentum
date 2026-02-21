@@ -14,21 +14,22 @@ function cellColor(rate: number | null, isFuture: boolean): string {
 }
 
 export function CompletionChart() {
-  // 35 days covers our 5-week window with some buffer
   const trend = useCompletionTrend(35);
 
   if (!trend) return (
-    <div className="h-40 rounded-lg animate-pulse" style={{ backgroundColor: 'var(--border)' }} />
+    <div
+      className="h-40 rounded-xl animate-pulse"
+      style={{ backgroundColor: 'var(--border)' }}
+    />
   );
 
   const rateMap = new Map(trend.map(d => [d.date, d.rate]));
 
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
-  // Monday-first day index (Mon=0, Sun=6)
   const todayDow = (getDay(today) + 6) % 7;
   const thisMonday = subDays(today, todayDow);
-  const startDate = subDays(thisMonday, 28); // 5 weeks back
+  const startDate = subDays(thisMonday, 28);
 
   const grid = Array.from({ length: 5 }, (_, week) =>
     Array.from({ length: 7 }, (_, day) => {
@@ -43,13 +44,18 @@ export function CompletionChart() {
     })
   );
 
-  // Summary line
   const pastCells = grid.flat().filter(c => !c.isFuture && c.rate !== null);
   const activeDays = pastCells.filter(c => (c.rate ?? 0) > 0).length;
   const perfectDays = pastCells.filter(c => c.rate === 100).length;
 
+  // Flatten for stagger animation
+  let cellIndex = 0;
+
   return (
-    <div className="rounded-lg p-5" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+    <div
+      className="rounded-xl p-5 animate-stagger-in"
+      style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', animationDelay: '200ms' }}
+    >
       <div className="flex items-baseline justify-between mb-4">
         <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>
           Activity
@@ -68,25 +74,31 @@ export function CompletionChart() {
         ))}
       </div>
 
-      {/* 5×7 cell grid */}
+      {/* 5x7 cell grid */}
       {grid.map((week, wi) => (
         <div key={wi} className="grid grid-cols-7 gap-1 mb-1">
-          {week.map(({ date, rate, isToday, isFuture }) => (
-            <div
-              key={date}
-              className="aspect-square rounded-sm"
-              title={isFuture ? '' : `${date}: ${rate ?? 0}%`}
-              style={{
-                backgroundColor: cellColor(rate, isFuture),
-                border: isToday
-                  ? '1.5px solid var(--accent)'
-                  : isFuture || rate === null
-                  ? '1px solid var(--border)'
-                  : 'none',
-                opacity: isFuture ? 0.25 : 1,
-              }}
-            />
-          ))}
+          {week.map(({ date, rate, isToday, isFuture }) => {
+            const idx = cellIndex++;
+            const isPerfect = rate === 100 && !isFuture;
+            return (
+              <div
+                key={date}
+                className="aspect-square rounded-sm transition-all duration-300"
+                title={isFuture ? '' : `${date}: ${rate ?? 0}%`}
+                style={{
+                  backgroundColor: cellColor(rate, isFuture),
+                  border: isToday
+                    ? '1.5px solid var(--accent)'
+                    : isFuture || rate === null
+                    ? '1px solid var(--border)'
+                    : 'none',
+                  opacity: isFuture ? 0.25 : 1,
+                  boxShadow: isPerfect ? '0 0 4px var(--success-glow)' : 'none',
+                  animationDelay: `${idx * 15}ms`,
+                }}
+              />
+            );
+          })}
         </div>
       ))}
 

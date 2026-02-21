@@ -35,7 +35,6 @@ export default function GoalsPage() {
       if (search && !g.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     })
-    // Sort by sortOrder so drag reorder is reflected immediately
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const grouped = new Map<string | null, Goal[]>();
@@ -48,12 +47,12 @@ export default function GoalsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 animate-in">
         <h1 className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--text)' }}>Goals</h1>
         <div className="flex gap-1.5">
           <button
             onClick={() => setFolderFormOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 active:scale-90"
             style={{ color: 'var(--text-3)', border: '1px solid var(--border)' }}
             title="New folder"
           >
@@ -61,7 +60,7 @@ export default function GoalsPage() {
           </button>
           <button
             onClick={() => setGoalFormOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95"
             style={{ backgroundColor: 'var(--accent)', color: 'white' }}
           >
             <Plus size={14} /> Goal
@@ -70,24 +69,28 @@ export default function GoalsPage() {
       </div>
 
       {/* Search */}
-      <div className="relative mb-4">
+      <div className="relative mb-4 animate-in">
         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-3)' }} />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search goals…"
-          className="w-full pl-8 pr-3 py-2 rounded-lg text-sm focus:outline-none"
-          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+          className="w-full pl-8 pr-3 py-2 rounded-xl text-sm focus:outline-none transition-all duration-200"
+          style={{
+            backgroundColor: 'var(--surface)',
+            border: '1px solid var(--border)',
+            color: 'var(--text)',
+          }}
         />
       </div>
 
       {/* Status filter */}
-      <div className="flex gap-1 mb-6 overflow-x-auto">
+      <div className="flex gap-1 mb-6 overflow-x-auto scrollbar-hide">
         {STATUS_FILTERS.map(({ label, value }) => (
           <button
             key={value}
             onClick={() => setStatusFilter(value)}
-            className="px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors"
+            className="px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200 active:scale-95"
             style={{
               backgroundColor: statusFilter === value ? 'var(--text)' : 'transparent',
               color: statusFilter === value ? 'var(--bg)' : 'var(--text-3)',
@@ -118,9 +121,11 @@ export default function GoalsPage() {
         )}
 
         {filteredGoals.length === 0 && (
-          <p className="text-sm text-center py-12" style={{ color: 'var(--text-3)' }}>
-            {search ? 'No goals match your search.' : 'No goals here.'}
-          </p>
+          <div className="text-center py-12 animate-in">
+            <p className="text-sm" style={{ color: 'var(--text-3)' }}>
+              {search ? 'No goals match your search.' : 'No goals here.'}
+            </p>
+          </div>
         )}
       </div>
 

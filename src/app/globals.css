@@ -31,6 +31,8 @@
     --accent-2: rgba(0, 87, 255, 0.07);
     --success:  #16A34A;
     --danger:   #DC2626;
+    --glow:     rgba(0, 87, 255, 0.15);
+    --success-glow: rgba(22, 163, 74, 0.15);
   }
 
   .dark {
@@ -45,6 +47,8 @@
     --accent-2: rgba(59, 130, 246, 0.10);
     --success:  #22C55E;
     --danger:   #EF4444;
+    --glow:     rgba(59, 130, 246, 0.2);
+    --success-glow: rgba(34, 197, 94, 0.2);
   }
 
   * { box-sizing: border-box; }
@@ -66,15 +70,200 @@
 @layer utilities {
   .tabular { font-variant-numeric: tabular-nums; }
 
+  /* ── Entry animations ── */
   .animate-in             { animation: fadeIn  0.15s ease-out; }
   .slide-in-from-bottom-4 { animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
   .zoom-in-95             { animation: zoomIn  0.18s cubic-bezier(0.16, 1, 0.3, 1); }
+
+  /* ── Celebration animations ── */
+  .animate-check-pop {
+    animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .animate-check-ring {
+    animation: checkRing 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-success-glow {
+    animation: successGlow 0.8s ease-out;
+  }
+  .animate-card-complete {
+    animation: cardComplete 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-number-bump {
+    animation: numberBump 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .animate-number-down {
+    animation: numberDown 0.2s ease-out;
+  }
+  .animate-streak-flame {
+    animation: streakFlame 1.5s ease-in-out infinite;
+  }
+  .animate-progress-fill {
+    animation: progressFill 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-ring-pulse {
+    animation: ringPulse 2s ease-in-out infinite;
+  }
+  .animate-all-done-ring {
+    animation: allDoneRing 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .animate-float-up {
+    animation: floatUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-confetti-fall {
+    animation: confettiFall var(--fall-duration, 2s) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+  .animate-stagger-in {
+    animation: staggerIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-counter-up {
+    animation: counterUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+  }
+  .animate-bounce-subtle {
+    animation: bounceSubtle 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .animate-celebration-burst {
+    animation: celebrationBurst 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-slide-down {
+    animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-fab-pop {
+    animation: fabPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
 
   /* Hide native scrollbar but keep scrollability */
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
 }
 
+/* ── Keyframes ── */
+
 @keyframes fadeIn  { from { opacity: 0; }                              to { opacity: 1; }                }
 @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes zoomIn  { from { transform: scale(0.97); opacity: 0; }      to { transform: scale(1); opacity: 1; }      }
+
+/* Checkbox pop — elastic overshoot for satisfying completion feel */
+@keyframes checkPop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Ring burst that expands out from checkbox on completion */
+@keyframes checkRing {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Soft glow on the card when a habit is completed */
+@keyframes successGlow {
+  0%   { box-shadow: 0 0 0 0 var(--success-glow); }
+  40%  { box-shadow: 0 0 0 6px var(--success-glow); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Card background flash on completion */
+@keyframes cardComplete {
+  0%   { background-color: var(--surface); }
+  30%  { background-color: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+  100% { background-color: var(--surface); }
+}
+
+/* Number increment bounce */
+@keyframes numberBump {
+  0%   { transform: translateY(0) scale(1); }
+  40%  { transform: translateY(-4px) scale(1.15); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* Number decrement settle */
+@keyframes numberDown {
+  0%   { transform: translateY(0); }
+  40%  { transform: translateY(2px); }
+  100% { transform: translateY(0); }
+}
+
+/* Flame wiggle for active streaks */
+@keyframes streakFlame {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  25%  { transform: scale(1.1) rotate(2deg); }
+  50%  { transform: scale(1) rotate(-1deg); }
+  75%  { transform: scale(1.05) rotate(1deg); }
+}
+
+/* Progress bar fill from left */
+@keyframes progressFill {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
+}
+
+/* Subtle pulse on the progress ring */
+@keyframes ringPulse {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50%      { opacity: 0.85; filter: brightness(1.15); }
+}
+
+/* All-done celebration ring */
+@keyframes allDoneRing {
+  0%   { transform: scale(0.8) rotate(-90deg); opacity: 0; }
+  60%  { transform: scale(1.1) rotate(-90deg); }
+  100% { transform: scale(1) rotate(-90deg); opacity: 1; }
+}
+
+/* Float up for celebration emoji */
+@keyframes floatUp {
+  0%   { transform: translateY(20px) scale(0.5); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Confetti fall */
+@keyframes confettiFall {
+  0%   { transform: translateY(var(--start-y, -20px)) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(var(--end-y, 100px)) translateX(var(--drift-x, 30px)) rotate(var(--end-rotation, 720deg)); opacity: 0; }
+}
+
+/* Stagger in for lists */
+@keyframes staggerIn {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* Counter animate up */
+@keyframes counterUp {
+  0%   { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Shimmer effect for loading or celebration */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Subtle bounce for interactive elements */
+@keyframes bounceSubtle {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* Celebration burst for all-done screen */
+@keyframes celebrationBurst {
+  0%   { transform: scale(0); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* FAB entrance */
+@keyframes fabPop {
+  0%   { transform: scale(0) rotate(-45deg); }
+  80%  { transform: scale(1.1) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}

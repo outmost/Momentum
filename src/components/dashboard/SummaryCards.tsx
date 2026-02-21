@@ -8,13 +8,19 @@ interface StatBlockProps {
   label: string;
   sub?: string;
   accent?: boolean;
+  delay?: number;
 }
 
-function StatBlock({ value, label, sub, accent }: StatBlockProps) {
+function StatBlock({ value, label, sub, accent, delay = 0 }: StatBlockProps) {
   return (
     <div
-      className="rounded-lg p-5 flex flex-col justify-between"
-      style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+      className="rounded-xl p-5 flex flex-col justify-between animate-stagger-in transition-all duration-300"
+      style={{
+        backgroundColor: 'var(--surface)',
+        border: accent ? '1px solid color-mix(in srgb, var(--success) 30%, var(--border))' : '1px solid var(--border)',
+        animationDelay: `${delay}ms`,
+        boxShadow: accent ? '0 0 0 1px color-mix(in srgb, var(--success) 10%, transparent)' : 'none',
+      }}
     >
       <p
         className="text-4xl font-semibold tabular tracking-tight leading-none"
@@ -54,22 +60,26 @@ export function SummaryCards() {
         label="Today"
         accent={allDone}
         sub={allDone && totalToday > 0 ? 'All done ✓' : undefined}
+        delay={0}
       />
       <StatBlock
         value={consistency30 > 0 ? `${consistency30}%` : '—'}
         label="Consistency"
         sub="last 30 days"
         accent={consistency30 >= 80}
+        delay={50}
       />
       <StatBlock
         value={totalThisMonth > 0 ? String(totalThisMonth) : '—'}
         label="This month"
         sub="completions"
+        delay={100}
       />
       <StatBlock
         value={daysActiveThisWeek > 0 ? `${daysActiveThisWeek}/7` : '—'}
         label="This week"
         sub="active days"
+        delay={150}
       />
     </div>
   );

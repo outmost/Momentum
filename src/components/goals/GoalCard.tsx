@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, TrendingUp } from 'lucide-react';
 import { BinaryEntry } from '@/components/entries/BinaryEntry';
@@ -20,27 +20,39 @@ interface GoalCardProps {
   isBackdated?: boolean;
   isFuture?: boolean;
   isLast?: boolean;
+  animationDelay?: number;
 }
 
 /** Round a number up to the nearest "nice" increment for clean stretch targets. */
 function niceStretchTarget(original: number, exceeded: number): number {
-  // 25 % above original target, rounded to a contextually clean number
   const raw = Math.max(original * 1.25, exceeded * 1.1);
   const magnitude = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
   const step = magnitude >= 5 ? magnitude : magnitude * 5;
   return Math.ceil(raw / step) * step;
 }
 
-export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: GoalCardProps) {
+export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, animationDelay = 0 }: GoalCardProps) {
   const router = useRouter();
   const milestones = useMilestones(goal.id);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [stretchDismissed, setStretchDismissed] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
+  const prevCompletedRef = useRef<boolean | null>(null);
 
   const color = goal.color || '#16A34A';
   const completed = entry?.completed ?? false;
   const value = entry?.value ?? 0;
+
+  // Detect transition from incomplete to complete for celebration animation
+  useEffect(() => {
+    if (prevCompletedRef.current === false && completed === true) {
+      setJustCompleted(true);
+      const timer = setTimeout(() => setJustCompleted(false), 800);
+      return () => clearTimeout(timer);
+    }
+    prevCompletedRef.current = completed;
+  }, [completed]);
 
   async function handleBinaryChange(done: boolean) {
     if (isFuture) return;
@@ -78,7 +90,6 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
 
   const hasBinaryCheck = goal.type === 'binary' || goal.type === 'milestone';
 
-  // Stretch-goal suggestion: surfaces automatically when a numeric goal exceeds its target.
   const showStretchBanner =
     !isFuture &&
     !stretchDismissed &&
@@ -94,26 +105,41 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
     setStretchDismissed(true);
   }
 
-  // Left accent bar communicates progress state at a glance:
-  //  · done        → goal color, full opacity
-  //  · in progress → goal color, 45% opacity
-  //  · not started → var(--border) (hairline, barely visible)
   const hasProgress = value > 0 || completed;
   const accentOpacity = completed ? 1 : hasProgress ? 0.45 : 0.2;
 
   return (
     <>
       <div
-        className={cn('relative', isFuture && 'opacity-40 pointer-events-none')}
-        style={{ borderBottom: isLast && !showStretchBanner ? 'none' : '1px solid var(--border)' }}
+        className={cn(
+          'relative animate-stagger-in',
+          isFuture && 'opacity-40 pointer-events-none',
+          justCompleted && 'animate-card-complete',
+        )}
+        style={{
+          borderBottom: isLast && !showStretchBanner ? 'none' : '1px solid var(--border)',
+          animationDelay: `${animationDelay}ms`,
+        }}
       >
-        {/* Left color accent — state-aware */}
+        {/* Left color accent — animated width on completion */}
         <div
-          className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r transition-all duration-300"
-          style={{ backgroundColor: color, opacity: accentOpacity }}
+          className="absolute left-0 top-3 bottom-3 rounded-r transition-all duration-500"
+          style={{
+            backgroundColor: color,
+            opacity: accentOpacity,
+            width: completed ? 3 : 2,
+          }}
         />
 
-        <div className="flex items-start pl-5 pr-3 py-3.5 gap-2">
+        {/* Success glow overlay */}
+        {justCompleted && (
+          <div
+            className="absolute inset-0 rounded-none pointer-events-none animate-success-glow"
+            style={{ zIndex: 0 }}
+          />
+        )}
+
+        <div className="flex items-start pl-5 pr-3 py-3.5 gap-2 relative z-[1]">
           {/* Checkbox for binary / milestone */}
           {hasBinaryCheck && (
             <BinaryEntry
@@ -128,10 +154,12 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
             <div className="flex items-baseline gap-2 flex-wrap">
               <button
                 onClick={() => router.push(`/goals/${goal.id}`)}
-                className="text-sm font-medium text-left leading-snug transition-colors"
+                className={cn(
+                  'text-sm font-medium text-left leading-snug transition-all duration-300',
+                  completed && 'line-through',
+                )}
                 style={{
                   color: completed ? 'var(--text-3)' : 'var(--text)',
-                  textDecoration: completed ? 'line-through' : 'none',
                 }}
               >
                 {goal.title}
@@ -173,7 +201,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
                 </button>
                 <ProgressBar value={milestoneProgress} size="sm" color={color} className="mt-1 max-w-[120px]" />
                 {expanded && (
-                  <div className="mt-2.5 space-y-2">
+                  <div className="mt-2.5 space-y-2 animate-slide-down">
                     {milestones?.map(m => (
                       <label key={m.id} className="flex items-center gap-2.5 cursor-pointer">
                         <input
@@ -185,7 +213,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
                           style={{ accentColor: color }}
                         />
                         <span
-                          className="text-xs"
+                          className="text-xs transition-all duration-200"
                           style={{
                             color: m.isCompleted ? 'var(--text-3)' : 'var(--text-2)',
                             textDecoration: m.isCompleted ? 'line-through' : 'none',
@@ -205,7 +233,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
           {!isFuture && (
             <button
               onClick={() => setNoteModalOpen(true)}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors mt-0.5"
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded transition-all duration-200 mt-0.5 hover:scale-110 active:scale-95"
               style={{ color: entry?.note ? 'var(--accent)' : 'var(--text-3)' }}
               title="Note"
             >
@@ -214,12 +242,10 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
           )}
         </div>
 
-        {/* ── Stretch-goal banner ──────────────────────────────────────────────
-            Surfaces automatically when a numeric goal's value exceeds its target.
-            Offers a one-tap raise to the next clean milestone (OKR "stretch").   */}
+        {/* Stretch-goal banner */}
         {showStretchBanner && (
           <div
-            className="flex items-center gap-2 px-5 py-2"
+            className="flex items-center gap-2 px-5 py-2 animate-slide-down"
             style={{
               borderTop: '1px solid var(--border)',
               backgroundColor: 'var(--surface)',
@@ -235,7 +261,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast }: G
             </span>
             <button
               onClick={handleAcceptStretch}
-              className="text-[11px] font-semibold px-2 py-0.5 rounded transition-colors"
+              className="text-[11px] font-semibold px-2 py-0.5 rounded transition-all active:scale-95"
               style={{ color: 'white', backgroundColor: color }}
             >
               Stretch

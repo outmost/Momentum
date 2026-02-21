@@ -180,6 +180,6 @@ export async function clearAllAppData() {
     await db.folders.clear();
     await db.routineBlocks.clear();
     // Reset seeded flag so sample data can be loaded again
-    await db.settings.toCollection().modify({ seeded: false });
+    await db.settings.update('settings', { seeded: false, updatedAt: Date.now() });
   });
 }

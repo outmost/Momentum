@@ -49,7 +49,8 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
   useEffect(() => {
     if (prevCompletedRef.current === false && completed === true) {
       setJustCompleted(true);
-      const timer = setTimeout(() => setJustCompleted(false), 900);
+      // 700ms — matches the glow animation duration so exit is clean
+      const timer = setTimeout(() => setJustCompleted(false), 700);
       return () => clearTimeout(timer);
     }
     prevCompletedRef.current = completed;
@@ -150,7 +151,7 @@ export function GoalCard({ goal, entry, date, isBackdated, isFuture, isLast, ani
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.35 }}
             />
           )}
         </AnimatePresence>

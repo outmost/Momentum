@@ -23,23 +23,12 @@ export function Sidebar() {
     >
       {/* Wordmark */}
       <div className="px-5 pt-7 pb-6">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-            style={{ backgroundColor: 'var(--accent)' }}
-          >
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M2 9C2 9 4 5.5 6.5 5.5C9 5.5 11 9 11 9" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <circle cx="6.5" cy="3" r="1.5" fill="white"/>
-            </svg>
-          </div>
-          <span
-            className="text-sm font-bold tracking-tight"
-            style={{ color: 'var(--text)' }}
-          >
-            Momentum
-          </span>
-        </div>
+        <span
+          className="text-sm font-bold tracking-tight"
+          style={{ color: 'var(--text)' }}
+        >
+          Momentum
+        </span>
       </div>
 
       {/* Nav */}

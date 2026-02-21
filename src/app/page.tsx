@@ -17,7 +17,6 @@ import { WeekStrip } from '@/components/today/WeekStrip';
 import { Modal } from '@/components/ui/Modal';
 import { GoalForm } from '@/components/goals/GoalForm';
 import { Confetti } from '@/components/ui/Confetti';
-import { AllDoneCelebration } from '@/components/ui/AllDoneCelebration';
 import type { Goal } from '@/types';
 
 function localToday(): string {
@@ -25,54 +24,32 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// Momentum messages — positive, never discouraging
 const MOMENTUM_MESSAGES = {
-  zero: [
-    'Ready when you are.',
-    'Every legend starts somewhere.',
-    'Today\'s the day. Go.',
-  ],
-  starting: [
-    'You\'re moving. Keep going.',
-    'First one down — momentum is building.',
-    'The hardest step is the first.',
-  ],
-  building: [
-    'You\'re in it now.',
-    'Consistency compounds.',
-    'Each one matters.',
-  ],
-  halfway: [
-    'Over halfway. Finish strong.',
-    'More done than left.',
-    'The momentum is real.',
-  ],
-  almost: [
-    'Almost. Don\'t stop.',
-    'So close. One more.',
-    'Push through.',
-  ],
-  done: [
-    'You showed up. That\'s everything.',
-    'Perfect day. No excuses needed.',
-    'All done — you earned this.',
-    'Legendary. Nothing left but pride.',
-    '100%. Pure momentum.',
-  ],
+  zero:     ['Ready when you are.', 'Today is full of possibility.', 'Your future self is watching.'],
+  starting: ['You\'re moving. Keep going.', 'First one down — keep it rolling.', 'The hardest step is the first.'],
+  building: ['You\'re in it now.', 'Consistency compounds.', 'Each one makes the next easier.'],
+  halfway:  ['Over halfway. Finish strong.', 'More done than left.', 'The momentum is real.'],
+  almost:   ['Almost. Don\'t stop.', 'So close. One more push.', 'You\'ve come too far to stop now.'],
+  done:     ['You showed up. That\'s everything.', 'Perfect day.', 'All done — you earned this.', 'Nothing left but pride.'],
 };
 
-function getMomentumMessage(completed: number, total: number, allDone: boolean): string {
+// Seeded from date string so the message is stable for the day, not random on re-render
+function seededIndex(seed: string, length: number): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  return Math.abs(h) % length;
+}
+
+function getMomentumMessage(completed: number, total: number, allDone: boolean, date: string): string {
   if (total === 0) return '';
-  if (allDone) {
-    const msgs = MOMENTUM_MESSAGES.done;
-    return msgs[Math.floor(Date.now() / 10000) % msgs.length];
-  }
-  const pct = completed / total;
-  if (pct === 0) return MOMENTUM_MESSAGES.zero[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.zero.length];
-  if (pct < 0.25) return MOMENTUM_MESSAGES.starting[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.starting.length];
-  if (pct < 0.5) return MOMENTUM_MESSAGES.building[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.building.length];
-  if (pct < 0.75) return MOMENTUM_MESSAGES.halfway[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.halfway.length];
-  return MOMENTUM_MESSAGES.almost[Math.floor(Date.now() / 10000) % MOMENTUM_MESSAGES.almost.length];
+  const bucket = allDone ? 'done'
+    : completed === 0 ? 'zero'
+    : completed / total < 0.25 ? 'starting'
+    : completed / total < 0.5 ? 'building'
+    : completed / total < 0.75 ? 'halfway'
+    : 'almost';
+  const msgs = MOMENTUM_MESSAGES[bucket];
+  return msgs[seededIndex(`${date}-${completed}-${total}`, msgs.length)];
 }
 
 export default function TodayPage() {
@@ -83,11 +60,9 @@ export default function TodayPage() {
   const settings = useSettings();
   const routineBlocks = useRoutineBlocks();
 
-  // Celebration state
   const [showConfetti, setShowConfetti] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const wasAllDone = useRef(false);
-  const [momentumMsg, setMomentumMsg] = useState('');
+  // Track which dates already triggered the celebration so revisiting doesn't replay it
+  const celebratedDates = useRef<Set<string>>(new Set());
 
   const weekStartsOn = settings?.weekStartsOn ?? 0;
   const { rangeStart, rangeEnd } = useMemo(() => {
@@ -115,7 +90,6 @@ export default function TodayPage() {
 
   const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
 
-  // Group goals by routine block
   const blocks = routineBlocks ?? [];
   const grouped = new Map<string, Goal[]>();
   const ungrouped: Goal[] = [];
@@ -132,42 +106,34 @@ export default function TodayPage() {
   const completedCount = scheduledGoals.filter(g => entryMap.get(g.id)?.completed).length;
   const allDone = scheduledGoals.length > 0 && completedCount === scheduledGoals.length;
   const pct = scheduledGoals.length > 0 ? completedCount / scheduledGoals.length : 0;
-
-  // Update momentum message when state changes
-  useEffect(() => {
-    setMomentumMsg(getMomentumMessage(completedCount, scheduledGoals.length, allDone));
-  }, [completedCount, scheduledGoals.length, allDone]);
-
-  // Trigger celebration when all goals complete
-  useEffect(() => {
-    if (allDone && !wasAllDone.current && scheduledGoals.length > 0) {
-      setShowConfetti(true);
-      setShowCelebration(true);
-      setTimeout(() => setShowConfetti(false), 3500);
-      setTimeout(() => setShowCelebration(false), 5500);
-    }
-    wasAllDone.current = allDone;
-  }, [allDone, scheduledGoals.length]);
-
-  // Track stagger index across all goal cards
-  let staggerIndex = 0;
-
   const circumference = 2 * Math.PI * 16;
+
+  const momentumMsg = useMemo(
+    () => getMomentumMessage(completedCount, scheduledGoals.length, allDone, selectedDate),
+    [completedCount, scheduledGoals.length, allDone, selectedDate],
+  );
+
+  // Celebration — fires once per date, not on revisit
+  useEffect(() => {
+    if (allDone && scheduledGoals.length > 0 && !celebratedDates.current.has(selectedDate)) {
+      celebratedDates.current.add(selectedDate);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+    }
+  }, [allDone, scheduledGoals.length, selectedDate]);
+
+  let staggerIndex = 0;
 
   return (
     <div>
-      <Confetti active={showConfetti} count={60} />
-      <AllDoneCelebration
-        active={showCelebration}
-        message={momentumMsg}
-      />
+      <Confetti active={showConfetti} count={55} />
 
-      {/* Header — date with impact */}
+      {/* Header */}
       <motion.div
         className="mb-3"
-        initial={{ opacity: 0, y: -8 }}
+        initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       >
         <h1
           className="text-3xl font-bold tracking-tight leading-none"
@@ -177,13 +143,10 @@ export default function TodayPage() {
             ? format(new Date(), 'EEEE')
             : format(parseISO(selectedDate), 'EEEE')}
         </h1>
-        <p className="mt-1 text-sm font-medium" style={{ color: 'var(--text-3)' }}>
+        <p className="mt-1.5 text-sm" style={{ color: 'var(--text-3)' }}>
           {isSelectedToday
             ? format(new Date(), 'MMMM d')
             : format(parseISO(selectedDate), 'MMMM d')}
-          {isSelectedToday && (
-            <span> · Today</span>
-          )}
         </p>
       </motion.div>
 
@@ -195,49 +158,38 @@ export default function TodayPage() {
         completionMap={completionMap}
       />
 
-      {/* Progress section — ring + message */}
+      {/* Progress — ring + message */}
       {scheduledGoals.length > 0 && (
-        <motion.div
-          className="flex items-center gap-4 mb-7 px-1"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-        >
+        <div className="flex items-center gap-4 mb-7 px-1">
           {/* Ring */}
           <div className="relative w-14 h-14 shrink-0">
             <svg viewBox="0 0 40 40" className="w-full h-full -rotate-90">
-              {/* Track */}
-              <circle
-                cx="20" cy="20" r="16"
-                fill="none"
-                stroke="var(--border)"
-                strokeWidth="3.5"
-              />
-              {/* Progress arc — always green, no orange */}
+              <circle cx="20" cy="20" r="16" fill="none" stroke="var(--border)" strokeWidth="3" />
               <motion.circle
                 cx="20" cy="20" r="16"
                 fill="none"
-                stroke={allDone ? 'var(--success)' : completedCount > 0 ? 'var(--success)' : 'var(--border-2)'}
-                strokeWidth="3.5"
+                strokeWidth="3"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
                 animate={{
+                  stroke: pct > 0 ? 'var(--success)' : 'var(--border-2)',
                   strokeDashoffset: circumference * (1 - pct),
-                  filter: allDone ? 'drop-shadow(0 0 6px var(--success-glow))' : 'none',
+                  filter: allDone ? 'drop-shadow(0 0 5px var(--success-glow))' : 'none',
                 }}
-                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                 style={{ strokeDashoffset: circumference }}
               />
             </svg>
-            {/* Count inside ring */}
+
+            {/* Counter */}
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.span
                 key={completedCount}
-                className="text-xs font-bold tabular"
+                className="text-[11px] font-bold tabular"
                 style={{ color: allDone ? 'var(--success)' : 'var(--text)' }}
-                initial={{ scale: 0.7, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                initial={{ scale: 0.75, opacity: 0 }}
+                animate={{ scale: allDone ? 1.1 : 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 28 }}
               >
                 {completedCount}/{scheduledGoals.length}
               </motion.span>
@@ -245,48 +197,36 @@ export default function TodayPage() {
           </div>
 
           {/* Message */}
-          <div>
+          <div className="min-w-0">
             <AnimatePresence mode="wait">
               <motion.p
                 key={momentumMsg}
                 className="text-base font-semibold leading-snug"
                 style={{ color: allDone ? 'var(--success)' : 'var(--text)' }}
-                initial={{ opacity: 0, y: 4 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.25 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.22 }}
               >
                 {momentumMsg}
               </motion.p>
             </AnimatePresence>
-
-            {/* Flame — only when making progress (not done) */}
             {completedCount > 0 && !allDone && (
-              <span className="animate-streak-flame inline-block text-sm mt-0.5" style={{ transformOrigin: 'bottom center' }}>
+              <span className="animate-streak-flame inline-block text-base mt-0.5" style={{ transformOrigin: 'bottom center' }}>
                 🔥
               </span>
             )}
-            {allDone && (
-              <motion.span
-                className="inline-block text-sm mt-0.5"
-                initial={{ scale: 0, rotate: -20 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-              >
-                ✅
-              </motion.span>
-            )}
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Goal list */}
       {scheduledGoals.length === 0 ? (
         <motion.div
           className="text-center py-16"
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.4 }}
+          transition={{ delay: 0.1, duration: 0.35 }}
         >
           {goals?.length === 0 ? (
             <>
@@ -300,10 +240,7 @@ export default function TodayPage() {
               <button
                 onClick={() => setGoalFormOpen(true)}
                 className="px-5 py-2.5 text-sm font-semibold rounded-xl text-white transition-all active:scale-95 hover:opacity-90"
-                style={{
-                  backgroundColor: 'var(--accent)',
-                  boxShadow: '0 4px 14px var(--glow)',
-                }}
+                style={{ backgroundColor: 'var(--accent)', boxShadow: '0 4px 14px var(--glow)' }}
               >
                 Add habit
               </button>
@@ -316,14 +253,13 @@ export default function TodayPage() {
               <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
                 {isSelectedFuture
                   ? 'Check-ins are only available for today and past dates.'
-                  : 'Nothing on the schedule. Enjoy the rest.'}
+                  : 'No habits scheduled for this day. Enjoy the rest.'}
               </p>
             </>
           )}
         </motion.div>
       ) : (
         <div className="space-y-5">
-          {/* Routine-block groups */}
           {blocks.map(block => {
             const blockGoals = grouped.get(block.id);
             if (!blockGoals || blockGoals.length === 0) return null;
@@ -338,7 +274,7 @@ export default function TodayPage() {
                 key={block.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: blockStartIndex * 0.04, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ delay: blockStartIndex * 0.04, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="flex items-center gap-2 mb-2 px-1">
                   <span className="text-sm">{block.emoji}</span>
@@ -362,12 +298,12 @@ export default function TodayPage() {
                 </div>
 
                 <div
-                  className="rounded-card overflow-hidden transition-shadow duration-500"
+                  className="rounded-card overflow-hidden"
                   style={{
                     backgroundColor: 'var(--surface)',
                     border: '1px solid var(--border)',
                     boxShadow: blockDone
-                      ? '0 0 0 1px color-mix(in srgb, var(--success) 25%, transparent), var(--shadow-sm)'
+                      ? '0 0 0 1px color-mix(in srgb, var(--success) 20%, transparent), var(--shadow-sm)'
                       : 'var(--shadow-xs)',
                   }}
                 >
@@ -388,12 +324,11 @@ export default function TodayPage() {
             );
           })}
 
-          {/* Ungrouped goals (anytime) */}
           {ungrouped.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: staggerIndex * 0.04, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ delay: staggerIndex * 0.04, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
               {blocks.length > 0 && grouped.size > 0 && (
                 <div className="flex items-center gap-2 mb-2 px-1">
@@ -436,11 +371,11 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* FAB — add habit */}
+      {/* FAB */}
       {!isSelectedFuture && (
         <motion.button
           onClick={() => setGoalFormOpen(true)}
-          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-13 h-13 w-[52px] h-[52px] rounded-full flex items-center justify-center z-30 text-white"
+          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-[52px] h-[52px] rounded-full flex items-center justify-center z-30 text-white"
           style={{
             backgroundColor: 'var(--accent)',
             boxShadow: '0 4px 20px var(--glow)',
@@ -448,7 +383,7 @@ export default function TodayPage() {
           initial={{ scale: 0, rotate: -45 }}
           animate={{ scale: 1, rotate: 0 }}
           whileHover={{ scale: 1.06 }}
-          whileTap={{ scale: 0.92 }}
+          whileTap={{ scale: 0.9 }}
           transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
           <Plus size={22} strokeWidth={2.5} />

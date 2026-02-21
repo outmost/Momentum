@@ -10,7 +10,6 @@ import { useRoutineBlocks } from '@/hooks/useRoutine';
 import { useDateRangeProgress } from '@/hooks/useStats';
 import { seedDefaultRoutineBlocks } from '@/hooks/useRoutine';
 import { initializeSettings } from '@/lib/db';
-import { seedDemoData } from '@/lib/seed';
 import { isScheduledForDate } from '@/lib/utils';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { WeekStrip } from '@/components/today/WeekStrip';
@@ -57,7 +56,6 @@ export default function TodayPage() {
   useEffect(() => {
     initializeSettings();
     seedDefaultRoutineBlocks();
-    seedDemoData();
   }, []);
 
   const today = localToday();

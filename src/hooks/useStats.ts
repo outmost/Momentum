@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { format, subDays, parseISO } from 'date-fns';
+import { format, subDays, addDays, parseISO } from 'date-fns';
 import type { Goal, Entry } from '@/types';
 import { isScheduledForDate } from '@/lib/utils';
 
@@ -153,6 +153,42 @@ export function useCompletionTrend(days: number = 30) {
       return { date, rate: Math.round((completed / scheduled.length) * 100) };
     });
   }, [days]);
+}
+
+// Completion data for a range of dates — used by WeekStrip for at-a-glance dots.
+export function useDateRangeProgress(startDate: string, endDate: string) {
+  return useLiveQuery(async () => {
+    const goals = await db.goals.where('status').equals('active').toArray();
+    if (goals.length === 0) return new Map<string, { completed: number; total: number }>();
+
+    const entries = await db.entries
+      .where('date')
+      .between(startDate, endDate, true, true)
+      .toArray();
+
+    const entryByKey = new Map(entries.map(e => [`${e.goalId}:${e.date}`, e]));
+    const result = new Map<string, { completed: number; total: number }>();
+
+    let d = parseISO(startDate);
+    const end = parseISO(endDate);
+
+    while (d <= end) {
+      const dateStr = format(d, 'yyyy-MM-dd');
+      const scheduled = goals.filter(g =>
+        isScheduledForDate(dateStr, g.frequency, g.customDays)
+      );
+      const completed = scheduled.filter(g =>
+        entryByKey.get(`${g.id}:${dateStr}`)?.completed
+      ).length;
+
+      if (scheduled.length > 0) {
+        result.set(dateStr, { completed, total: scheduled.length });
+      }
+      d = addDays(d, 1);
+    }
+
+    return result;
+  }, [startDate, endDate]);
 }
 
 // Lightweight stats for Goals list page and Progress dashboard.

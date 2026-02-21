@@ -6,20 +6,21 @@ interface WeekStripProps {
   selectedDate: string;
   onSelectDate: (date: string) => void;
   weekStartsOn?: 0 | 1;
+  completionMap?: Map<string, { completed: number; total: number }>;
 }
 
 const DAY_LABELS_SUN = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_LABELS_MON = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0 }: WeekStripProps) {
+export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0, completionMap }: WeekStripProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const todayRef = useRef<HTMLButtonElement>(null);
+  const selectedRef = useRef<HTMLButtonElement>(null);
 
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
   const selected = parseISO(selectedDate);
 
-  // Show 3 weeks: previous, current, next — enough for easy navigation
+  // Show 3 weeks: previous, current, next
   const currentWeekStart = startOfWeek(selected, { weekStartsOn });
   const rangeStart = subDays(currentWeekStart, 7);
   const days: Date[] = [];
@@ -31,9 +32,9 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0 }: Week
 
   // Scroll to center the selected date on mount / change
   useEffect(() => {
-    if (todayRef.current && scrollRef.current) {
+    if (selectedRef.current && scrollRef.current) {
       const container = scrollRef.current;
-      const el = todayRef.current;
+      const el = selectedRef.current;
       const scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2;
       container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
     }
@@ -42,7 +43,7 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0 }: Week
   return (
     <div className="mb-6">
       {/* Day-of-week labels */}
-      <div className="flex justify-between px-1 mb-1.5">
+      <div className="flex justify-between px-1 mb-1">
         {dayLabels.map((label, i) => (
           <span
             key={i}
@@ -60,7 +61,6 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0 }: Week
         className="flex gap-0 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
         style={{ scrollSnapType: 'x mandatory' }}
       >
-        {/* Each "page" is one week (7 days) */}
         {[0, 1, 2].map(weekIdx => (
           <div
             key={weekIdx}
@@ -73,13 +73,18 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0 }: Week
               const isFuture = dateStr > todayStr;
               const dayNum = day.getDate();
 
+              // Completion data for dot
+              const progress = completionMap?.get(dateStr);
+              const hasDot = progress && progress.total > 0 && !isFuture;
+              const dotPct = progress ? progress.completed / progress.total : 0;
+
               return (
                 <button
                   key={dateStr}
-                  ref={isSelected ? todayRef : undefined}
+                  ref={isSelected ? selectedRef : undefined}
                   onClick={() => !isFuture && onSelectDate(dateStr)}
                   disabled={isFuture}
-                  className="flex flex-col items-center justify-center w-10 h-10 rounded-full transition-all"
+                  className="flex flex-col items-center justify-center w-10 h-12 rounded-full transition-all"
                   style={{
                     backgroundColor: isSelected
                       ? 'var(--accent)'
@@ -98,6 +103,23 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0 }: Week
                   }}
                 >
                   <span className="text-sm leading-none tabular">{dayNum}</span>
+                  {/* Completion dot */}
+                  {hasDot ? (
+                    <span
+                      className="w-[5px] h-[5px] rounded-full mt-1 transition-colors"
+                      style={{
+                        backgroundColor: isSelected
+                          ? 'rgba(255,255,255,0.7)'
+                          : dotPct >= 1
+                          ? 'var(--success)'
+                          : dotPct > 0
+                          ? 'var(--accent)'
+                          : 'var(--border-2)',
+                      }}
+                    />
+                  ) : (
+                    <span className="w-[5px] h-[5px] mt-1" />
+                  )}
                 </button>
               );
             })}

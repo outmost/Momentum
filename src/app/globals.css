@@ -69,6 +69,10 @@
   .animate-in             { animation: fadeIn  0.15s ease-out; }
   .slide-in-from-bottom-4 { animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
   .zoom-in-95             { animation: zoomIn  0.18s cubic-bezier(0.16, 1, 0.3, 1); }
+
+  /* Hide native scrollbar but keep scrollability */
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 }
 
 @keyframes fadeIn  { from { opacity: 0; }                              to { opacity: 1; }                }

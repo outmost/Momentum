@@ -18,8 +18,6 @@ function makeRng(seed: number) {
  * Returns true if seeded, false if data already present.
  */
 export async function seedDemoData(): Promise<boolean> {
-  // Check the persistent seeded flag first — it survives clearAllAppData()
-  // so navigating back to Today after a clear won't re-seed.
   const settings = await db.settings.get('settings');
   if (settings?.seeded) return false;
 
@@ -134,14 +132,14 @@ export async function seedDemoData(): Promise<boolean> {
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayIsWeekday = (() => { const d = getDay(new Date()); return d >= 1 && d <= 5; })();
 
-  entries.push({ id: nanoid(), goalId: meditateId, date: today, completed: true,  createdAt: now, updatedAt: now });               // done ✓
-  entries.push({ id: nanoid(), goalId: pushupsId,  date: today, completed: false, value: 18,   createdAt: now, updatedAt: now });   // in progress
-  entries.push({ id: nanoid(), goalId: waterId,    date: today, completed: false, value: 5,    createdAt: now, updatedAt: now });   // in progress
+  entries.push({ id: nanoid(), goalId: meditateId, date: today, completed: true,  createdAt: now, updatedAt: now });
+  entries.push({ id: nanoid(), goalId: pushupsId,  date: today, completed: false, value: 18,   createdAt: now, updatedAt: now });
+  entries.push({ id: nanoid(), goalId: waterId,    date: today, completed: false, value: 5,    createdAt: now, updatedAt: now });
   if (todayIsWeekday) {
-    entries.push({ id: nanoid(), goalId: deepworkId, date: today, completed: false, value: 2700, createdAt: now, updatedAt: now }); // 45 / 90 min
+    entries.push({ id: nanoid(), goalId: deepworkId, date: today, completed: false, value: 2700, createdAt: now, updatedAt: now });
   }
-  entries.push({ id: nanoid(), goalId: readId,    date: today, completed: true,  value: 24,   createdAt: now, updatedAt: now });   // done ✓
-  entries.push({ id: nanoid(), goalId: spanishId, date: today, completed: false, value: 720,  createdAt: now, updatedAt: now });   // 12 / 15 min
+  entries.push({ id: nanoid(), goalId: readId,    date: today, completed: true,  value: 24,   createdAt: now, updatedAt: now });
+  entries.push({ id: nanoid(), goalId: spanishId, date: today, completed: false, value: 720,  createdAt: now, updatedAt: now });
 
   await db.entries.bulkAdd(entries);
 
@@ -165,7 +163,7 @@ export async function seedDemoData(): Promise<boolean> {
     await db.goals.update(spanishId, { routineBlockId: eveningBlock.id });
   }
 
-  // Mark as seeded so clear-all won't trigger another seed on next visit.
+  // Mark as seeded
   await db.settings.update('settings', { seeded: true, updatedAt: Date.now() });
 
   return true;
@@ -181,6 +179,7 @@ export async function clearAllAppData() {
     await db.goals.clear();
     await db.folders.clear();
     await db.routineBlocks.clear();
-    // Keep settings (theme preference etc)
+    // Reset seeded flag so sample data can be loaded again
+    await db.settings.toCollection().modify({ seeded: false });
   });
 }

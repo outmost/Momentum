@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { format, parseISO, subDays } from 'date-fns';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@/lib/store';
 import { useActiveGoals } from '@/hooks/useGoals';
@@ -24,6 +24,14 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+const BANNER_QUOTES = [
+  { text: 'We are what we repeatedly do.', attr: 'Aristotle' },
+  { text: 'Discipline is remembering what you want.', attr: 'David Campbell' },
+  { text: 'Consistency is the compound interest of self-improvement.', attr: 'James Clear' },
+  { text: 'Small improvements every day add up to something remarkable.', attr: null },
+  { text: "You don't rise to your goals. You fall to your systems.", attr: 'James Clear' },
+];
+
 export default function TodayPage() {
   const { selectedDate, setSelectedDate } = useUIStore();
   const [goalFormOpen, setGoalFormOpen] = useState(false);
@@ -33,8 +41,11 @@ export default function TodayPage() {
 
   const [showConfetti,    setShowConfetti]    = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const wasAllDone        = useRef(false);
   const hasSeenIncomplete = useRef(false);
+  // Pick a quote once per session (stable ref)
+  const bannerQuote = useRef(BANNER_QUOTES[Math.floor(Math.random() * BANNER_QUOTES.length)]);
 
   // Completion data for the week strip (last 28 days → today)
   const rangeStart = useMemo(() => format(subDays(new Date(), 28), 'yyyy-MM-dd'), []);
@@ -103,8 +114,14 @@ export default function TodayPage() {
   const allDone = scheduledGoals.length > 0 && completedCount === scheduledGoals.length;
   const pct     = scheduledGoals.length > 0 ? completedCount / scheduledGoals.length : 0;
 
+  // Reset banner when switching days
+  useEffect(() => { setBannerDismissed(false); }, [selectedDate]);
+
   useEffect(() => {
-    if (!allDone) hasSeenIncomplete.current = true;
+    if (!allDone) {
+      hasSeenIncomplete.current = true;
+      setBannerDismissed(false); // un-dismiss if user un-completes a goal
+    }
     if (allDone && hasSeenIncomplete.current && !wasAllDone.current && scheduledGoals.length > 0) {
       setShowConfetti(true);
       setShowCelebration(true);
@@ -119,7 +136,7 @@ export default function TodayPage() {
   return (
     <div>
       <Confetti active={showConfetti} count={60} />
-      <AllDoneCelebration active={showCelebration} message={allDone ? 'You showed up. That\'s everything.' : ''} />
+      <AllDoneCelebration active={showCelebration} />
 
       {/* ── Header ── */}
       <div className="mb-4">
@@ -181,6 +198,64 @@ export default function TodayPage() {
           />
         </div>
       )}
+
+      {/* ── All-done banner ── */}
+      <AnimatePresence>
+        {allDone && !bannerDismissed && scheduledGoals.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            className="mb-5 rounded-2xl overflow-hidden"
+            style={{
+              border: '1px solid color-mix(in srgb, var(--success) 28%, var(--border))',
+              backgroundColor: 'color-mix(in srgb, var(--success) 6%, var(--surface))',
+            }}
+          >
+            <div className="flex items-start gap-3.5 px-4 py-3.5">
+              {/* Checkmark */}
+              <div
+                className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--success) 14%, transparent)' }}
+              >
+                <span style={{ fontSize: '14px' }}>✓</span>
+              </div>
+
+              {/* Text */}
+              <div className="flex-1 min-w-0">
+                <p
+                  className="text-sm font-semibold leading-snug"
+                  style={{ color: 'var(--success)' }}
+                >
+                  All done for today
+                </p>
+                <p
+                  className="text-xs mt-0.5 leading-relaxed"
+                  style={{ color: 'var(--text-2)', fontStyle: 'italic' }}
+                >
+                  &ldquo;{bannerQuote.current.text}&rdquo;
+                  {bannerQuote.current.attr && (
+                    <span style={{ fontStyle: 'normal', color: 'var(--text-3)' }}>
+                      {' '}— {bannerQuote.current.attr}
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              {/* Dismiss */}
+              <button
+                onClick={() => setBannerDismissed(true)}
+                className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg transition-colors"
+                style={{ color: 'var(--text-3)' }}
+                aria-label="Dismiss"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Goal list ── */}
       {scheduledGoals.length === 0 ? (

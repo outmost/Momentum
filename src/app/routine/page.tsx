@@ -1,21 +1,25 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Trash2, Clock, Edit2 } from 'lucide-react';
-import { useRoutineBlocks, createRoutineBlock, updateRoutineBlock, deleteRoutineBlock, updateDayTypeMap } from '@/hooks/useRoutine';
-import { useSettings } from '@/hooks/useSettings';
+import { Plus, Trash2, Edit2, Calendar } from 'lucide-react';
+import { useRoutineBlocks, createRoutineBlock, updateRoutineBlock, deleteRoutineBlock } from '@/hooks/useRoutine';
 import { useActiveGoals } from '@/hooks/useGoals';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import type { DayType, RoutineBlock } from '@/types';
+import type { RoutineBlock, Goal } from '@/types';
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const BLOCK_EMOJIS = ['🌅', '☀️', '🌙', '💪', '🧠', '🎯', '☕', '🏃'];
+
+function formatTime12(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${hour} ${suffix}` : `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
+}
 
 function BlockForm({ block, onClose }: { block?: RoutineBlock; onClose: () => void }) {
   const [name, setName] = useState(block?.name ?? '');
   const [emoji, setEmoji] = useState(block?.emoji ?? '🌅');
   const [startTime, setStartTime] = useState(block?.startTime ?? '08:00');
-  const [dayTypes, setDayTypes] = useState<DayType[]>(block?.dayTypes ?? ['workday', 'restday']);
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -24,9 +28,9 @@ function BlockForm({ block, onClose }: { block?: RoutineBlock; onClose: () => vo
     setSaving(true);
     try {
       if (block) {
-        await updateRoutineBlock(block.id, { name: name.trim(), emoji, startTime, dayTypes });
+        await updateRoutineBlock(block.id, { name: name.trim(), emoji, startTime });
       } else {
-        await createRoutineBlock({ name: name.trim(), emoji, startTime, dayTypes });
+        await createRoutineBlock({ name: name.trim(), emoji, startTime });
       }
       onClose();
     } finally {
@@ -43,7 +47,7 @@ function BlockForm({ block, onClose }: { block?: RoutineBlock; onClose: () => vo
         <input
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder="e.g. Morning, After work"
+          placeholder="e.g. Morning, Lunch break, After work"
           maxLength={30}
           autoFocus
           className="w-full px-3 py-2 rounded-md text-sm focus:outline-none"
@@ -59,10 +63,11 @@ function BlockForm({ block, onClose }: { block?: RoutineBlock; onClose: () => vo
               key={e}
               type="button"
               onClick={() => setEmoji(e)}
-              className="w-8 h-8 rounded flex items-center justify-center text-lg transition-colors"
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all"
               style={{
                 border: emoji === e ? '2px solid var(--accent)' : '1px solid var(--border)',
                 backgroundColor: emoji === e ? 'var(--accent-2)' : 'transparent',
+                transform: emoji === e ? 'scale(1.08)' : 'scale(1)',
               }}
             >
               {e}
@@ -72,7 +77,7 @@ function BlockForm({ block, onClose }: { block?: RoutineBlock; onClose: () => vo
       </div>
 
       <div>
-        <label style={labelStyle}>When does this block start?</label>
+        <label style={labelStyle}>Start time</label>
         <input
           type="time"
           value={startTime}
@@ -82,38 +87,13 @@ function BlockForm({ block, onClose }: { block?: RoutineBlock; onClose: () => vo
         />
       </div>
 
-      <div>
-        <label style={labelStyle}>Applies to</label>
-        <div className="flex gap-2">
-          {(['workday', 'restday'] as DayType[]).map(dt => (
-            <button
-              key={dt}
-              type="button"
-              onClick={() => {
-                setDayTypes(prev =>
-                  prev.includes(dt) ? prev.filter(d => d !== dt) : [...prev, dt]
-                );
-              }}
-              className="px-3 py-1.5 rounded text-xs font-medium capitalize transition-colors"
-              style={{
-                backgroundColor: dayTypes.includes(dt) ? 'var(--text)' : 'transparent',
-                color: dayTypes.includes(dt) ? 'var(--bg)' : 'var(--text-3)',
-                border: dayTypes.includes(dt) ? '1px solid transparent' : '1px solid var(--border)',
-              }}
-            >
-              {dt === 'workday' ? 'Work days' : 'Rest days'}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="flex justify-end gap-2 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
         <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-md" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>
           Cancel
         </button>
         <button
           type="submit"
-          disabled={saving || !name.trim() || dayTypes.length === 0}
+          disabled={saving || !name.trim()}
           className="px-4 py-2 text-sm font-medium rounded-md text-white disabled:opacity-50"
           style={{ backgroundColor: 'var(--accent)' }}
         >
@@ -124,184 +104,219 @@ function BlockForm({ block, onClose }: { block?: RoutineBlock; onClose: () => vo
   );
 }
 
+function TimelineBlock({
+  block,
+  linkedGoals,
+  isLast,
+  onEdit,
+  onDelete,
+}: {
+  block: RoutineBlock;
+  linkedGoals: Goal[];
+  isLast: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="relative flex gap-4 group">
+      {/* Timeline spine */}
+      <div className="relative w-6 shrink-0 flex flex-col items-center">
+        <div
+          className="w-3 h-3 rounded-full shrink-0 mt-4 z-10 transition-colors"
+          style={{ backgroundColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--bg)' }}
+        />
+        {!isLast && (
+          <div
+            className="w-px flex-1 mt-1"
+            style={{ backgroundColor: 'var(--border)' }}
+          />
+        )}
+      </div>
+
+      {/* Block card */}
+      <div
+        className="flex-1 mb-4 rounded-xl transition-all"
+        style={{
+          backgroundColor: 'var(--surface)',
+          border: '1px solid var(--border)',
+        }}
+      >
+        <div className="flex items-center gap-3 px-4 py-3">
+          <span className="text-xl">{block.emoji}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold leading-tight" style={{ color: 'var(--text)' }}>
+              {block.name}
+            </p>
+            <p className="text-[11px] mt-0.5 tabular" style={{ color: 'var(--text-3)' }}>
+              {formatTime12(block.startTime)}
+            </p>
+          </div>
+          <button
+            onClick={onEdit}
+            className="w-7 h-7 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity"
+            style={{ color: 'var(--text-3)' }}
+          >
+            <Edit2 size={13} />
+          </button>
+          <button
+            onClick={onDelete}
+            className="w-7 h-7 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity"
+            style={{ color: 'var(--text-3)' }}
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+
+        {/* Linked habits */}
+        {linkedGoals.length > 0 && (
+          <div
+            className="px-4 py-2.5 flex flex-wrap gap-1.5"
+            style={{ borderTop: '1px solid var(--border)' }}
+          >
+            {linkedGoals.map(goal => (
+              <span
+                key={goal.id}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs"
+                style={{ backgroundColor: 'var(--bg)', color: 'var(--text-2)' }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: goal.color || 'var(--accent)' }}
+                />
+                {goal.title}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function RoutinePage() {
   const routineBlocks = useRoutineBlocks();
-  const settings = useSettings();
   const goals = useActiveGoals();
   const [blockFormOpen, setBlockFormOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<RoutineBlock | undefined>();
   const [deleteBlockId, setDeleteBlockId] = useState<string | null>(null);
 
-  const dayTypeMap = settings?.dayTypeMap ?? {};
+  const blocks = routineBlocks ?? [];
 
-  function toggleDayType(dow: number) {
-    const current = dayTypeMap[dow] ?? 'workday';
-    const next: DayType = current === 'workday' ? 'restday' : 'workday';
-    updateDayTypeMap({ ...dayTypeMap, [dow]: next });
-  }
-
-  // Count goals linked to each block
-  const goalsByBlock = new Map<string, number>();
+  // Group goals by block
+  const goalsByBlock = new Map<string, Goal[]>();
   for (const goal of goals ?? []) {
     if (goal.routineBlockId) {
-      goalsByBlock.set(goal.routineBlockId, (goalsByBlock.get(goal.routineBlockId) ?? 0) + 1);
+      if (!goalsByBlock.has(goal.routineBlockId)) goalsByBlock.set(goal.routineBlockId, []);
+      goalsByBlock.get(goal.routineBlockId)!.push(goal);
     }
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text)' }}>
-        Routine
+      <h1 className="text-2xl font-semibold tracking-tight mb-1" style={{ color: 'var(--text)' }}>
+        Your Day
       </h1>
       <p className="text-sm mb-8" style={{ color: 'var(--text-3)' }}>
-        Define your typical day. Habits fit around your routine.
+        Shape the rhythm of your typical day.
       </p>
 
-      <div className="space-y-8">
-        {/* ── Week shape ── */}
-        <section>
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-3)' }}>
-            Your week
+      {blocks.length === 0 ? (
+        /* ── Empty state ── */
+        <div
+          className="rounded-xl p-8 text-center"
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
+          <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+            No time blocks yet
           </p>
-          <div
-            className="rounded-lg p-4"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+          <p className="text-xs mb-5" style={{ color: 'var(--text-3)' }}>
+            Add blocks for parts of your day — morning, lunch, evening — then link habits to each one.
+          </p>
+          <button
+            onClick={() => { setEditingBlock(undefined); setBlockFormOpen(true); }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg text-white"
+            style={{ backgroundColor: 'var(--accent)' }}
           >
-            <p className="text-xs mb-3" style={{ color: 'var(--text-2)' }}>
-              Tap to toggle work / rest days
-            </p>
-            <div className="flex gap-1.5">
-              {DAY_NAMES.map((name, dow) => {
-                const dt = dayTypeMap[dow] ?? 'workday';
-                const isWork = dt === 'workday';
-                return (
-                  <button
-                    key={dow}
-                    onClick={() => toggleDayType(dow)}
-                    className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-md transition-colors"
-                    style={{
-                      backgroundColor: isWork ? 'var(--accent-2)' : 'var(--border)',
-                      border: isWork ? '1px solid var(--accent)' : '1px solid transparent',
-                    }}
-                  >
-                    <span
-                      className="text-[10px] font-semibold uppercase"
-                      style={{ color: isWork ? 'var(--accent)' : 'var(--text-3)' }}
-                    >
-                      {name}
-                    </span>
-                    <span
-                      className="text-[9px]"
-                      style={{ color: isWork ? 'var(--accent)' : 'var(--text-3)' }}
-                    >
-                      {isWork ? 'work' : 'rest'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <Plus size={14} /> Add first block
+          </button>
+        </div>
+      ) : (
+        /* ── Timeline ── */
+        <div>
+          <div className="pl-1">
+            {blocks.map((block, i) => (
+              <TimelineBlock
+                key={block.id}
+                block={block}
+                linkedGoals={goalsByBlock.get(block.id) ?? []}
+                isLast={i === blocks.length - 1}
+                onEdit={() => { setEditingBlock(block); setBlockFormOpen(true); }}
+                onDelete={() => setDeleteBlockId(block.id)}
+              />
+            ))}
           </div>
-        </section>
 
-        {/* ── Time blocks ── */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>
-              Time blocks
-            </p>
+          {/* Add block */}
+          <div className="flex gap-4 pl-1">
+            <div className="w-6 shrink-0 flex justify-center">
+              <div
+                className="w-3 h-3 rounded-full mt-1 border-2 border-dashed"
+                style={{ borderColor: 'var(--border-2)' }}
+              />
+            </div>
             <button
               onClick={() => { setEditingBlock(undefined); setBlockFormOpen(true); }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium"
-              style={{ backgroundColor: 'var(--accent)', color: 'white' }}
+              className="flex items-center gap-1.5 text-xs font-medium transition-colors"
+              style={{ color: 'var(--text-3)' }}
             >
-              <Plus size={12} /> Block
+              <Plus size={12} /> Add time block
             </button>
           </div>
+        </div>
+      )}
 
-          <p className="text-xs mb-4" style={{ color: 'var(--text-2)' }}>
-            When you add a habit, link it to a time block. Think: &quot;When it&apos;s [morning], I will [meditate].&quot;
+      {/* ── Guide ── */}
+      <div className="mt-10 space-y-4">
+        <div
+          className="rounded-xl p-5"
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-3)' }}>
+            How it works
           </p>
-
-          {(!routineBlocks || routineBlocks.length === 0) ? (
-            <div
-              className="rounded-lg p-6 text-center"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <p className="text-sm" style={{ color: 'var(--text-3)' }}>No blocks yet. Add your first time block.</p>
-            </div>
-          ) : (
-            <div
-              className="rounded-lg overflow-hidden"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              {routineBlocks.map((block, i) => {
-                const count = goalsByBlock.get(block.id) ?? 0;
-                return (
-                  <div
-                    key={block.id}
-                    className="flex items-center gap-3 px-4 py-3.5"
-                    style={{ borderBottom: i < routineBlocks.length - 1 ? '1px solid var(--border)' : 'none' }}
-                  >
-                    <span className="text-lg">{block.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{block.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-3)' }}>
-                          <Clock size={9} /> {block.startTime}
-                        </span>
-                        <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>
-                          {block.dayTypes.map(dt => dt === 'workday' ? 'Work' : 'Rest').join(' + ')}
-                        </span>
-                        {count > 0 && (
-                          <span className="text-[10px] font-medium" style={{ color: 'var(--accent)' }}>
-                            {count} habit{count !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => { setEditingBlock(block); setBlockFormOpen(true); }}
-                      className="w-7 h-7 flex items-center justify-center rounded transition-colors"
-                      style={{ color: 'var(--text-3)' }}
-                    >
-                      <Edit2 size={13} />
-                    </button>
-                    <button
-                      onClick={() => setDeleteBlockId(block.id)}
-                      className="w-7 h-7 flex items-center justify-center rounded transition-colors"
-                      style={{ color: 'var(--text-3)' }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* ── How it works ── */}
-        <section>
-          <div
-            className="rounded-lg p-5"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-3)' }}>
-              How routines build habits
+          <div className="space-y-2.5 text-xs" style={{ color: 'var(--text-2)' }}>
+            <p>
+              <strong style={{ color: 'var(--text)' }}>1.</strong>{' '}
+              Create time blocks for parts of your day
             </p>
-            <div className="space-y-2.5 text-xs" style={{ color: 'var(--text-2)' }}>
-              <p><strong style={{ color: 'var(--text)' }}>1.</strong> Define your week shape above (work vs rest days)</p>
-              <p><strong style={{ color: 'var(--text)' }}>2.</strong> Create time blocks for parts of your day</p>
-              <p><strong style={{ color: 'var(--text)' }}>3.</strong> When adding a habit, link it to a block</p>
-              <p style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>
-                &quot;When it&apos;s [morning], I will [meditate for 10 min].&quot;
-              </p>
-              <p className="pt-1" style={{ color: 'var(--text-3)' }}>
-                Anchoring habits to time and context makes them stick.
-              </p>
-            </div>
+            <p>
+              <strong style={{ color: 'var(--text)' }}>2.</strong>{' '}
+              When adding a habit, link it to a block
+            </p>
+            <p>
+              <strong style={{ color: 'var(--text)' }}>3.</strong>{' '}
+              Your Today view groups habits by when they happen
+            </p>
+            <p className="pt-1 italic" style={{ color: 'var(--text-3)' }}>
+              &quot;When it&apos;s morning, I will meditate for 10 minutes.&quot;
+            </p>
           </div>
-        </section>
+        </div>
+
+        <div
+          className="rounded-xl p-5 flex items-start gap-3"
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
+          <Calendar size={16} className="shrink-0 mt-0.5" style={{ color: 'var(--text-3)' }} />
+          <div>
+            <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-2)' }}>
+              Coming soon
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+              Connect your calendar to automatically fit habits around meetings and commitments.
+            </p>
+          </div>
+        </div>
       </div>
 
       <Modal
@@ -323,7 +338,7 @@ export default function RoutinePage() {
           setDeleteBlockId(null);
         }}
         title="Delete time block"
-        message="Habits linked to this block will move to 'Anytime'. This cannot be undone."
+        message="Habits linked to this block will move to Anytime. This can't be undone."
         confirmLabel="Delete"
         variant="danger"
       />

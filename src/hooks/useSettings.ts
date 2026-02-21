@@ -17,10 +17,6 @@ export async function updateSettings(data: Partial<Omit<AppSettings, 'id'>>) {
       weekStartsOn: 0,
       defaultView: 'today',
       notificationsEnabled: false,
-      dayTypeMap: {
-        0: 'restday', 1: 'workday', 2: 'workday', 3: 'workday',
-        4: 'workday', 5: 'workday', 6: 'restday',
-      },
       ...data,
       createdAt: Date.now(),
       updatedAt: Date.now(),

@@ -1,16 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { Folder, Goal, Milestone, Entry, AppSettings, RoutineBlock } from '@/types';
 
-const DEFAULT_DAY_TYPE_MAP = {
-  0: 'restday' as const,  // Sun
-  1: 'workday' as const,  // Mon
-  2: 'workday' as const,  // Tue
-  3: 'workday' as const,  // Wed
-  4: 'workday' as const,  // Thu
-  5: 'workday' as const,  // Fri
-  6: 'restday' as const,  // Sat
-};
-
 class MomentumDB extends Dexie {
   folders!: Table<Folder>;
   goals!: Table<Goal>;
@@ -51,13 +41,7 @@ export async function initializeSettings() {
       weekStartsOn: 0,
       defaultView: 'today',
       notificationsEnabled: false,
-      dayTypeMap: DEFAULT_DAY_TYPE_MAP,
       createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-  } else if (!existing.dayTypeMap) {
-    await db.settings.update('settings', {
-      dayTypeMap: DEFAULT_DAY_TYPE_MAP,
       updatedAt: Date.now(),
     });
   }

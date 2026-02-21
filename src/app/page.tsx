@@ -1,12 +1,14 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import { format, parseISO } from 'date-fns';
+import React, { useEffect, useState, useMemo } from 'react';
+import { format, parseISO, subDays, addDays, startOfWeek } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { useUIStore } from '@/lib/store';
 import { useActiveGoals } from '@/hooks/useGoals';
 import { useEntriesForDate } from '@/hooks/useEntries';
 import { useSettings } from '@/hooks/useSettings';
-import { useRoutineBlocksForDate, useDayType, seedDefaultRoutineBlocks } from '@/hooks/useRoutine';
+import { useRoutineBlocks } from '@/hooks/useRoutine';
+import { useDateRangeProgress } from '@/hooks/useStats';
+import { seedDefaultRoutineBlocks } from '@/hooks/useRoutine';
 import { initializeSettings } from '@/lib/db';
 import { seedDemoData } from '@/lib/seed';
 import { isScheduledForDate } from '@/lib/utils';
@@ -21,7 +23,6 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// Positive encouragement messages based on progress
 function getMomentumMessage(completed: number, total: number, allDone: boolean): string {
   if (total === 0) return '';
   if (allDone) return 'You crushed it today';
@@ -39,8 +40,19 @@ export default function TodayPage() {
   const goals = useActiveGoals();
   const entries = useEntriesForDate(selectedDate);
   const settings = useSettings();
-  const routineBlocks = useRoutineBlocksForDate(selectedDate);
-  const dayType = useDayType(selectedDate);
+  const routineBlocks = useRoutineBlocks();
+
+  // Compute date range for WeekStrip completion dots
+  const weekStartsOn = settings?.weekStartsOn ?? 0;
+  const { rangeStart, rangeEnd } = useMemo(() => {
+    const sel = parseISO(selectedDate);
+    const ws = startOfWeek(sel, { weekStartsOn });
+    return {
+      rangeStart: format(subDays(ws, 7), 'yyyy-MM-dd'),
+      rangeEnd: format(addDays(ws, 13), 'yyyy-MM-dd'),
+    };
+  }, [selectedDate, weekStartsOn]);
+  const completionMap = useDateRangeProgress(rangeStart, rangeEnd);
 
   useEffect(() => {
     initializeSettings();
@@ -58,7 +70,7 @@ export default function TodayPage() {
 
   const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
 
-  // Group goals by routine block (time-based grouping)
+  // Group goals by routine block
   const blocks = routineBlocks ?? [];
   const grouped = new Map<string, Goal[]>();
   const ungrouped: Goal[] = [];
@@ -80,48 +92,33 @@ export default function TodayPage() {
     <div>
       {/* ── Header ── */}
       <div className="mb-2">
-        <div className="flex items-baseline justify-between gap-4">
-          <div>
-            <h1
-              className="text-2xl font-semibold tracking-tight leading-none"
-              style={{ color: 'var(--text)' }}
-            >
-              {isSelectedToday
-                ? format(new Date(), 'EEEE')
-                : format(parseISO(selectedDate), 'EEEE')}
-            </h1>
-            <p className="mt-1 text-sm" style={{ color: 'var(--text-3)' }}>
-              {isSelectedToday
-                ? format(new Date(), 'MMMM d')
-                : format(parseISO(selectedDate), 'MMMM d')}
-              {dayType && (
-                <span
-                  className="ml-2 text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded"
-                  style={{
-                    backgroundColor: dayType === 'workday' ? 'var(--accent-2)' : 'var(--border)',
-                    color: dayType === 'workday' ? 'var(--accent)' : 'var(--text-3)',
-                  }}
-                >
-                  {dayType === 'workday' ? 'work' : 'rest'}
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
+        <h1
+          className="text-2xl font-semibold tracking-tight leading-none"
+          style={{ color: 'var(--text)' }}
+        >
+          {isSelectedToday
+            ? format(new Date(), 'EEEE')
+            : format(parseISO(selectedDate), 'EEEE')}
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: 'var(--text-3)' }}>
+          {isSelectedToday
+            ? format(new Date(), 'MMMM d')
+            : format(parseISO(selectedDate), 'MMMM d')}
+        </p>
       </div>
 
-      {/* ── Week strip — Apple Calendar style ── */}
+      {/* ── Week strip ── */}
       <WeekStrip
         selectedDate={selectedDate}
         onSelectDate={setSelectedDate}
-        weekStartsOn={settings?.weekStartsOn ?? 0}
+        weekStartsOn={weekStartsOn}
+        completionMap={completionMap}
       />
 
       {/* ── Progress + momentum message ── */}
       {scheduledGoals.length > 0 && (
         <div className="flex items-center gap-3 mb-6">
-          {/* Progress ring */}
-          <div className="relative w-12 h-12 shrink-0">
+          <div className="relative w-11 h-11 shrink-0">
             <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
               <circle
                 cx="18" cy="18" r="15.5"
@@ -140,7 +137,7 @@ export default function TodayPage() {
               />
             </svg>
             <span
-              className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular"
+              className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular"
               style={{ color: allDone ? 'var(--success)' : 'var(--text)' }}
             >
               {completedCount}/{scheduledGoals.length}
@@ -155,7 +152,7 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* ── Goal list grouped by routine blocks ── */}
+      {/* ── Goal list ── */}
       {scheduledGoals.length === 0 ? (
         <div className="text-center py-16">
           {goals?.length === 0 ? (
@@ -164,7 +161,7 @@ export default function TodayPage() {
               <p className="text-sm mb-6" style={{ color: 'var(--text-3)' }}>Small steps build big momentum.</p>
               <button
                 onClick={() => setGoalFormOpen(true)}
-                className="px-4 py-2 text-sm font-medium rounded-md text-white"
+                className="px-4 py-2 text-sm font-medium rounded-lg text-white"
                 style={{ backgroundColor: 'var(--accent)' }}
               >
                 Add habit
@@ -173,18 +170,18 @@ export default function TodayPage() {
           ) : (
             <>
               <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>
-                {isSelectedFuture ? 'Future date' : 'Rest day'}
+                {isSelectedFuture ? 'Future date' : 'Nothing scheduled'}
               </p>
               <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
                 {isSelectedFuture
                   ? 'Check-ins are only available for today and past dates.'
-                  : 'No habits scheduled. Enjoy the downtime.'}
+                  : 'No habits scheduled for this day. Enjoy the downtime.'}
               </p>
             </>
           )}
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Routine-block groups */}
           {blocks.map(block => {
             const blockGoals = grouped.get(block.id);
@@ -195,7 +192,7 @@ export default function TodayPage() {
 
             return (
               <div key={block.id}>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 px-1">
                   <span className="text-sm">{block.emoji}</span>
                   <h2
                     className="text-[11px] font-semibold uppercase tracking-widest"
@@ -203,12 +200,6 @@ export default function TodayPage() {
                   >
                     {block.name}
                   </h2>
-                  <span
-                    className="text-[10px] tabular"
-                    style={{ color: 'var(--text-3)' }}
-                  >
-                    {block.startTime}
-                  </span>
                   {blockDone && (
                     <span className="text-[10px] font-medium" style={{ color: 'var(--success)' }}>
                       done
@@ -217,7 +208,7 @@ export default function TodayPage() {
                 </div>
 
                 <div
-                  className="rounded-lg overflow-hidden"
+                  className="rounded-xl overflow-hidden"
                   style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
                 >
                   {blockGoals.map((goal, i) => (
@@ -239,8 +230,8 @@ export default function TodayPage() {
           {/* Ungrouped goals (anytime) */}
           {ungrouped.length > 0 && (
             <div>
-              {blocks.length > 0 && (
-                <div className="flex items-center gap-2 mb-2">
+              {blocks.length > 0 && grouped.size > 0 && (
+                <div className="flex items-center gap-2 mb-2 px-1">
                   <h2
                     className="text-[11px] font-semibold uppercase tracking-widest"
                     style={{ color: 'var(--text-3)' }}
@@ -251,7 +242,7 @@ export default function TodayPage() {
               )}
 
               <div
-                className="rounded-lg overflow-hidden"
+                className="rounded-xl overflow-hidden"
                 style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
               >
                 {ungrouped.map((goal, i) => (
@@ -275,10 +266,10 @@ export default function TodayPage() {
       {!isSelectedFuture && (
         <button
           onClick={() => setGoalFormOpen(true)}
-          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-11 h-11 rounded-full flex items-center justify-center z-30 shadow-sm transition-opacity hover:opacity-90"
+          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-12 h-12 rounded-full flex items-center justify-center z-30 shadow-lg transition-transform active:scale-95"
           style={{ backgroundColor: 'var(--accent)', color: 'white' }}
         >
-          <Plus size={18} />
+          <Plus size={20} strokeWidth={2.5} />
         </button>
       )}
 

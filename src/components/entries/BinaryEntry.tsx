@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef, useCallback } from 'react';
 import { Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ParticleBurst } from '@/components/ui/Confetti';
 
 interface BinaryEntryProps {
@@ -9,9 +10,8 @@ interface BinaryEntryProps {
   color?: string;
 }
 
-export function BinaryEntry({ completed, onChange, color = '#16A34A' }: BinaryEntryProps) {
+export function BinaryEntry({ completed, onChange, color = 'var(--success)' }: BinaryEntryProps) {
   const [showBurst, setShowBurst] = useState(false);
-  const [justCompleted, setJustCompleted] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
   const handleClick = useCallback(() => {
@@ -20,9 +20,7 @@ export function BinaryEntry({ completed, onChange, color = '#16A34A' }: BinaryEn
 
     if (next) {
       setShowBurst(true);
-      setJustCompleted(true);
       setTimeout(() => setShowBurst(false), 700);
-      setTimeout(() => setJustCompleted(false), 500);
     }
   }, [completed, onChange]);
 
@@ -35,40 +33,50 @@ export function BinaryEntry({ completed, onChange, color = '#16A34A' }: BinaryEn
       aria-label={completed ? 'Mark incomplete' : 'Mark complete'}
     >
       {/* Expanding ring on completion */}
-      {justCompleted && (
-        <span
-          className="absolute w-[18px] h-[18px] rounded-full animate-check-ring"
-          style={{ border: `2px solid ${color}`, opacity: 0 }}
-        />
-      )}
-
-      {/* The checkbox circle */}
-      <span
-        className={`w-[18px] h-[18px] rounded-full flex items-center justify-center transition-all duration-200 ${
-          justCompleted ? 'animate-check-pop' : ''
-        }`}
-        style={
-          completed
-            ? {
-                backgroundColor: color,
-                border: '1.5px solid transparent',
-                boxShadow: justCompleted ? `0 0 12px ${color}40` : 'none',
-              }
-            : {
-                border: '1.5px solid var(--border-2)',
-                backgroundColor: 'transparent',
-              }
-        }
-      >
+      <AnimatePresence>
         {completed && (
-          <Check
-            size={10}
-            strokeWidth={3}
-            color="white"
-            className={justCompleted ? 'animate-check-pop' : ''}
+          <motion.span
+            className="absolute rounded-full"
+            style={{
+              width: 22,
+              height: 22,
+              border: `2px solid ${color}`,
+            }}
+            initial={{ scale: 0.5, opacity: 0.8 }}
+            animate={{ scale: 2.2, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           />
         )}
-      </span>
+      </AnimatePresence>
+
+      {/* The checkbox circle */}
+      <motion.span
+        className="w-[22px] h-[22px] rounded-full flex items-center justify-center relative"
+        animate={{
+          backgroundColor: completed ? color : 'transparent',
+          scale: completed ? 1 : 1,
+          boxShadow: completed ? `0 0 0 3px color-mix(in srgb, ${color} 20%, transparent)` : '0 0 0 0 transparent',
+        }}
+        whileTap={{ scale: 0.85 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        style={{
+          border: completed ? 'none' : '1.5px solid var(--border-2)',
+        }}
+      >
+        <AnimatePresence>
+          {completed && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 600, damping: 30 }}
+            >
+              <Check size={11} strokeWidth={3} color="white" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.span>
 
       {/* Particle burst */}
       <ParticleBurst
@@ -76,7 +84,7 @@ export function BinaryEntry({ completed, onChange, color = '#16A34A' }: BinaryEn
         color={color}
         x={20}
         y={20}
-        count={8}
+        count={10}
       />
     </button>
   );

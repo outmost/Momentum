@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CheckSquare, Repeat, Layers, Settings, BarChart3 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/cn';
 
 const navItems = [
@@ -19,13 +20,13 @@ export function BottomNav() {
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-40"
       style={{
-        backgroundColor: 'var(--surface)',
+        backgroundColor: 'color-mix(in srgb, var(--surface) 92%, transparent)',
         borderTop: '1px solid var(--border)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
       }}
     >
-      <div className="flex">
+      <div className="flex px-2">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
@@ -33,28 +34,32 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px]',
-                'text-[10px] font-medium transition-all duration-200',
-                active && 'relative',
+                'flex-1 flex flex-col items-center justify-center gap-1 min-h-[56px] relative',
+                'text-[10px] font-medium transition-colors duration-200',
               )}
               style={{ color: active ? 'var(--accent)' : 'var(--text-3)' }}
             >
-              {/* Active dot indicator */}
+              {/* Active pill background — slides between items */}
               {active && (
-                <span
-                  className="absolute top-0 w-4 h-[2px] rounded-full animate-in"
-                  style={{ backgroundColor: 'var(--accent)' }}
+                <motion.div
+                  layoutId="bottom-nav-pill"
+                  className="absolute top-2 w-12 h-8 rounded-xl"
+                  style={{ backgroundColor: 'var(--accent-2)' }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
               )}
-              <Icon
-                size={19}
-                strokeWidth={active ? 2.2 : 1.5}
-                className={cn(
-                  'transition-all duration-200',
-                  active && 'animate-bounce-subtle',
-                )}
-              />
-              {label}
+
+              <motion.div
+                animate={active ? { scale: 1.1 } : { scale: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="relative z-10"
+              >
+                <Icon
+                  size={20}
+                  strokeWidth={active ? 2.2 : 1.6}
+                />
+              </motion.div>
+              <span className="relative z-10">{label}</span>
             </Link>
           );
         })}

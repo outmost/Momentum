@@ -33,6 +33,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const routineBlocks = useRoutineBlocks();
 
   const [title, setTitle] = useState(goal?.title ?? '');
+  const [why, setWhy] = useState(goal?.why ?? '');
   const [routineBlockId, setRoutineBlockId] = useState(goal?.routineBlockId ?? '');
   const [description, setDescription] = useState(goal?.description ?? '');
   const [type, setType] = useState<GoalType>(goal?.type ?? 'binary');
@@ -84,6 +85,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
     try {
       const data = {
         title: title.trim(),
+        why: why.trim() || undefined,
         description: description.trim() || undefined,
         type,
         status: (goal?.status ?? 'active') as Goal['status'],
@@ -158,6 +160,18 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
           autoFocus
         />
         {errors.title && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.title}</p>}
+      </div>
+
+      {/* ── Why — the emotional anchor (always visible) ── */}
+      <div>
+        <input
+          value={why}
+          onChange={e => setWhy(e.target.value)}
+          maxLength={120}
+          placeholder="Why does this matter to you? (optional)"
+          className={inputClass}
+          style={{ ...inputStyle, fontStyle: why ? 'italic' : 'normal', color: why ? 'var(--text-2)' : undefined, fontSize: '13px' }}
+        />
       </div>
 
       {/* ── Routine block — "When will you do this?" ── */}

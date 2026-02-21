@@ -18,6 +18,7 @@ export interface Folder {
 export interface Goal {
   id: string;
   title: string;
+  why?: string;         // The emotional anchor — "why does this habit matter to you?"
   description?: string;
   type: GoalType;
   status: GoalStatus;

@@ -74,8 +74,8 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
           <span
             className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
             style={{
-              color: goal.status === 'paused' ? '#B45309' : 'var(--text-3)',
-              backgroundColor: goal.status === 'paused' ? 'rgba(180,83,9,0.08)' : 'var(--border)',
+              color: 'var(--text-3)',
+              backgroundColor: 'var(--border)',
             }}
           >
             {goal.status}

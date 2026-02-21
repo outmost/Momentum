@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { createGoal, updateGoal } from '@/hooks/useGoals';
 import { useFolders, createFolder } from '@/hooks/useFolders';
+import { useRoutineBlocks } from '@/hooks/useRoutine';
 import { createMilestone, deleteMilestone } from '@/hooks/useMilestones';
 import { db } from '@/lib/db';
 import { FOLDER_COLORS, GOAL_COLORS } from '@/lib/utils';
@@ -29,8 +30,10 @@ const TYPE_LABELS: Record<GoalType, string> = {
 
 export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const folders = useFolders();
+  const routineBlocks = useRoutineBlocks();
 
   const [title, setTitle] = useState(goal?.title ?? '');
+  const [routineBlockId, setRoutineBlockId] = useState(goal?.routineBlockId ?? '');
   const [description, setDescription] = useState(goal?.description ?? '');
   const [type, setType] = useState<GoalType>(goal?.type ?? 'binary');
   const [folderId, setFolderId] = useState(goal?.folderId ?? defaultFolderId ?? '');
@@ -85,6 +88,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         type,
         status: (goal?.status ?? 'active') as Goal['status'],
         folderId: folderId || undefined,
+        routineBlockId: routineBlockId || undefined,
         target: type === 'numeric' ? Number(target) : undefined,
         unit: type === 'numeric' ? unit || undefined : undefined,
         duration: type === 'timer' ? Number(duration) * 60 : undefined,
@@ -155,6 +159,47 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         />
         {errors.title && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.title}</p>}
       </div>
+
+      {/* ── Routine block — "When will you do this?" ── */}
+      {routineBlocks && routineBlocks.length > 0 && (
+        <div>
+          <label style={labelStyle}>When?</label>
+          <div className="flex gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setRoutineBlockId('')}
+              className="px-3 py-1.5 rounded text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: routineBlockId === '' ? 'var(--text)' : 'transparent',
+                color: routineBlockId === '' ? 'var(--bg)' : 'var(--text-3)',
+                border: routineBlockId === '' ? '1px solid transparent' : '1px solid var(--border)',
+              }}
+            >
+              Anytime
+            </button>
+            {routineBlocks.map(block => (
+              <button
+                key={block.id}
+                type="button"
+                onClick={() => setRoutineBlockId(block.id)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: routineBlockId === block.id ? 'var(--text)' : 'transparent',
+                  color: routineBlockId === block.id ? 'var(--bg)' : 'var(--text-3)',
+                  border: routineBlockId === block.id ? '1px solid transparent' : '1px solid var(--border)',
+                }}
+              >
+                {block.emoji} {block.name}
+              </button>
+            ))}
+          </div>
+          {routineBlockId && (
+            <p className="text-[10px] mt-1.5 italic" style={{ color: 'var(--text-3)' }}>
+              When it&apos;s {routineBlocks.find(b => b.id === routineBlockId)?.name.toLowerCase()}, I will {title.trim() || '...'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── Goal type — four compact tiles ── */}
       <div>

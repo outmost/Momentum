@@ -1,12 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckSquare, BarChart2, Layers, Settings } from 'lucide-react';
+import { CheckSquare, Repeat, Layers, Settings } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const navItems = [
   { href: '/', label: 'Today', icon: CheckSquare },
-  { href: '/dashboard', label: 'Stats', icon: BarChart2 },
+  { href: '/routine', label: 'Routine', icon: Repeat },
   { href: '/goals', label: 'Goals', icon: Layers },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];

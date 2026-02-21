@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 
 interface NumericEntryProps {
@@ -10,19 +10,29 @@ interface NumericEntryProps {
   color?: string;
 }
 
-// OKR-inspired: 80 % is the "great work" success point.
-// Reaching it earns a dopamine hit; 100 % is the full target.
 const SUCCESS_THRESHOLD = 0.8;
 
 export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' }: NumericEntryProps) {
   const [inputMode, setInputMode] = useState(false);
   const [inputVal, setInputVal] = useState(value.toString());
+  const [bumping, setBumping] = useState<'up' | 'down' | null>(null);
+  const [justHitTarget, setJustHitTarget] = useState(false);
+  const prevValue = useRef(value);
 
   const rawProgress = target > 0 ? (value / target) * 100 : 0;
   const progress = Math.min(100, Math.round(rawProgress));
-  const isSuccess = target > 0 && value >= target * SUCCESS_THRESHOLD; // ≥ 80 %
-  const isComplete = target > 0 ? value >= target : value > 0;         // 100 %
-  const isStretch = target > 0 && value > target;                       // beyond target
+  const isSuccess = target > 0 && value >= target * SUCCESS_THRESHOLD;
+  const isComplete = target > 0 ? value >= target : value > 0;
+  const isStretch = target > 0 && value > target;
+
+  // Detect when user just hit the target
+  useEffect(() => {
+    if (target > 0 && prevValue.current < target && value >= target) {
+      setJustHitTarget(true);
+      setTimeout(() => setJustHitTarget(false), 600);
+    }
+    prevValue.current = value;
+  }, [value, target]);
 
   function handleConfirm() {
     const num = Number(inputVal);
@@ -30,7 +40,19 @@ export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' 
     setInputMode(false);
   }
 
-  // The value text colour graduates: default → success-colour at 80 %
+  function handleIncrement() {
+    setBumping('up');
+    onChange(value + 1);
+    setTimeout(() => setBumping(null), 300);
+  }
+
+  function handleDecrement() {
+    if (value <= 0) return;
+    setBumping('down');
+    onChange(Math.max(0, value - 1));
+    setTimeout(() => setBumping(null), 200);
+  }
+
   const valueColor = isComplete ? color : isSuccess ? color : 'var(--text)';
 
   return (
@@ -38,8 +60,8 @@ export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' 
       <div className="flex items-center gap-2">
         {/* Decrement */}
         <button
-          onClick={() => onChange(Math.max(0, value - 1))}
-          className="w-6 h-6 rounded flex items-center justify-center text-base leading-none transition-colors select-none"
+          onClick={handleDecrement}
+          className="w-6 h-6 rounded flex items-center justify-center text-base leading-none transition-all duration-150 select-none active:scale-90"
           style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}
         >
           −
@@ -63,18 +85,22 @@ export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' 
             className="flex items-baseline gap-1 transition-colors"
           >
             <span
-              className="text-lg font-semibold tabular leading-none transition-colors duration-200"
-              style={{ color: valueColor }}
+              className={`text-lg font-semibold tabular leading-none transition-all duration-200 ${
+                bumping === 'up' ? 'animate-number-bump' : bumping === 'down' ? 'animate-number-down' : ''
+              } ${justHitTarget ? 'animate-bounce-subtle' : ''}`}
+              style={{
+                color: valueColor,
+                textShadow: justHitTarget ? `0 0 12px ${color}40` : 'none',
+              }}
             >
               {value}
             </span>
             <span className="text-xs" style={{ color: 'var(--text-3)' }}>
               / {target}{unit ? ` ${unit}` : ''}
             </span>
-            {/* Over-target badge — shows how far past the goal the user went */}
             {isStretch && (
               <span
-                className="ml-0.5 text-[10px] font-semibold"
+                className="ml-0.5 text-[10px] font-semibold animate-float-up"
                 style={{ color: color, opacity: 0.8 }}
               >
                 +{value - target}{unit ? ` ${unit}` : ''}
@@ -85,8 +111,8 @@ export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' 
 
         {/* Increment */}
         <button
-          onClick={() => onChange(value + 1)}
-          className="w-6 h-6 rounded flex items-center justify-center text-base leading-none transition-colors select-none"
+          onClick={handleIncrement}
+          className="w-6 h-6 rounded flex items-center justify-center text-base leading-none transition-all duration-150 select-none active:scale-90"
           style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}
         >
           +
@@ -103,10 +129,9 @@ export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' 
             milestone={80}
             className="flex-1"
           />
-          {/* Subtle % label fades in once there's meaningful progress */}
           {value > 0 && (
             <span
-              className="text-[9px] tabular leading-none transition-colors duration-200"
+              className={`text-[9px] tabular leading-none transition-all duration-200 ${justHitTarget ? 'animate-counter-up' : ''}`}
               style={{ color: isSuccess ? color : 'var(--text-3)', opacity: 0.7, minWidth: 20, textAlign: 'right' }}
             >
               {progress}%

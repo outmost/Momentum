@@ -13,10 +13,11 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { formatDuration } from '@/lib/utils';
 
-function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: string; target?: number; duration?: number } }) {
+function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: string; target?: number; duration?: number; color?: string } }) {
   const today = new Date();
   const entries = useEntries(goalId);
   const entryMap = new Map((entries ?? []).map(e => [e.date, e]));
+  const accentColor = goal.color || '#16A34A';
 
   const weeks: string[][] = [];
   let week: string[] = [];
@@ -39,9 +40,9 @@ function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: strin
     else if (goal.duration) intensity = Math.min(1, (entry.value ?? 0) / goal.duration);
     else intensity = entry.completed ? 1 : 0;
     if (intensity <= 0) return 'var(--border)';
-    if (intensity < 0.33) return '#BBF7D0';
-    if (intensity < 0.66) return '#4ADE80';
-    return '#16A34A';
+    if (intensity < 0.33) return `${accentColor}40`;
+    if (intensity < 0.66) return `${accentColor}80`;
+    return accentColor;
   }
 
   return (
@@ -49,14 +50,21 @@ function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: strin
       <div className="flex gap-0.5 min-w-max">
         {weeks.map((w, wi) => (
           <div key={wi} className="flex flex-col gap-0.5">
-            {w.map(dateStr => (
-              <div
-                key={dateStr}
-                className="w-2.5 h-2.5 rounded-sm"
-                style={{ backgroundColor: getColor(dateStr) }}
-                title={dateStr}
-              />
-            ))}
+            {w.map(dateStr => {
+              const color = getColor(dateStr);
+              const isFull = color === accentColor;
+              return (
+                <div
+                  key={dateStr}
+                  className="w-2.5 h-2.5 rounded-sm transition-all duration-300"
+                  style={{
+                    backgroundColor: color,
+                    boxShadow: isFull ? `0 0 3px ${accentColor}30` : 'none',
+                  }}
+                  title={dateStr}
+                />
+              );
+            })}
           </div>
         ))}
       </div>
@@ -79,8 +87,8 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
   if (goal === null) return <div className="text-center py-12 text-sm" style={{ color: 'var(--text-3)' }}>Goal not found.</div>;
 
   const recentEntries = (entries ?? []).slice(0, 30);
+  const goalColor = goal.color || '#16A34A';
 
-  // How many consecutive non-completed entries sit at the top of history (current miss run)
   const currentMissRun = (() => {
     let n = 0;
     for (const e of recentEntries) {
@@ -104,18 +112,24 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
       {/* Back */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-1 text-sm transition-colors"
+        className="flex items-center gap-1 text-sm transition-all duration-200 active:scale-95"
         style={{ color: 'var(--text-3)' }}
       >
         <ChevronLeft size={15} /> Back
       </button>
 
       {/* Header card */}
-      <div className="rounded-lg p-5" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div
+        className="rounded-xl p-5 animate-in"
+        style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--border)', color: 'var(--text-3)' }}>
+              <span
+                className="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded"
+                style={{ backgroundColor: 'var(--border)', color: 'var(--text-3)' }}
+              >
                 {goal.type}
               </span>
               <span
@@ -134,10 +148,10 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
             )}
           </div>
           <div className="flex gap-1 shrink-0">
-            <button onClick={() => setEditOpen(true)} className="w-8 h-8 flex items-center justify-center rounded transition-colors" style={{ color: 'var(--text-3)' }}>
+            <button onClick={() => setEditOpen(true)} className="w-8 h-8 flex items-center justify-center rounded transition-all duration-200 hover:scale-110 active:scale-90" style={{ color: 'var(--text-3)' }}>
               <Edit2 size={14} />
             </button>
-            <button onClick={() => setDeleteOpen(true)} className="w-8 h-8 flex items-center justify-center rounded transition-colors" style={{ color: 'var(--text-3)' }}>
+            <button onClick={() => setDeleteOpen(true)} className="w-8 h-8 flex items-center justify-center rounded transition-all duration-200 hover:scale-110 active:scale-90" style={{ color: 'var(--text-3)' }}>
               <Trash2 size={14} />
             </button>
           </div>
@@ -146,37 +160,50 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
         {/* Actions */}
         <div className="flex gap-2 mt-4 flex-wrap">
           {goal.status === 'active' && (
-            <button onClick={() => pauseGoal(goal.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors" style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}>
+            <button onClick={() => pauseGoal(goal.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 active:scale-95" style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}>
               <Pause size={12} /> Pause
             </button>
           )}
           {goal.status === 'paused' && (
-            <button onClick={() => resumeGoal(goal.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors" style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}>
+            <button onClick={() => resumeGoal(goal.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 active:scale-95" style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}>
               <Play size={12} /> Resume
             </button>
           )}
           {goal.status === 'active' && (
-            <button onClick={() => setCompleteOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors" style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}>
+            <button onClick={() => setCompleteOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 active:scale-95" style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}>
               <CheckCircle size={12} /> Complete
             </button>
           )}
-          <button onClick={() => archiveGoal(goal.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors" style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}>
+          <button onClick={() => archiveGoal(goal.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 active:scale-95" style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}>
             <Archive size={12} /> Archive
           </button>
         </div>
       </div>
 
-      {/* Stats — rate and volume, not streaks */}
+      {/* Stats */}
       {stats && (
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: '7-day', value: `${stats.completionRate7}%` },
-            { label: '30-day', value: `${stats.completionRate30}%` },
-            { label: 'Total', value: stats.totalEntries },
-            { label: 'All-time', value: `${stats.bestStreak}d` },
-          ].map(({ label, value }) => (
-            <div key={label} className="rounded-lg p-3 text-center" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <p className="text-xl font-semibold tabular" style={{ color: 'var(--text)' }}>{value}</p>
+            { label: '7-day', value: `${stats.completionRate7}%`, accent: stats.completionRate7 >= 80 },
+            { label: '30-day', value: `${stats.completionRate30}%`, accent: stats.completionRate30 >= 80 },
+            { label: 'Total', value: stats.totalEntries, accent: false },
+            { label: 'Best', value: `${stats.bestStreak}d`, accent: stats.bestStreak >= 7 },
+          ].map(({ label, value, accent }, i) => (
+            <div
+              key={label}
+              className="rounded-xl p-3 text-center animate-stagger-in"
+              style={{
+                backgroundColor: 'var(--surface)',
+                border: accent ? `1px solid ${goalColor}30` : '1px solid var(--border)',
+                animationDelay: `${100 + i * 50}ms`,
+              }}
+            >
+              <p
+                className="text-xl font-semibold tabular"
+                style={{ color: accent ? goalColor : 'var(--text)' }}
+              >
+                {value}
+              </p>
               <p className="text-[10px] font-medium uppercase tracking-wider mt-0.5" style={{ color: 'var(--text-3)' }}>{label}</p>
             </div>
           ))}
@@ -184,18 +211,21 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
       )}
 
       {/* Heatmap */}
-      <div className="rounded-lg p-5" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div
+        className="rounded-xl p-5 animate-stagger-in"
+        style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', animationDelay: '300ms' }}
+      >
         <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>Last 90 days</p>
         <CalendarHeatmap goalId={goal.id} goal={goal} />
       </div>
 
       {/* Milestones */}
       {goal.type === 'milestone' && (
-        <div className="rounded-lg p-5" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>Milestones</p>
           <div className="space-y-2 mb-3">
             {milestones?.map(m => (
-              <div key={m.id} className="flex items-center gap-3">
+              <div key={m.id} className="flex items-center gap-3 animate-stagger-in">
                 <input
                   type="checkbox"
                   checked={m.isCompleted}
@@ -203,13 +233,13 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
                   className="w-3.5 h-3.5 rounded"
                   style={{ accentColor: 'var(--success)' }}
                 />
-                <span className="text-sm flex-1" style={{
+                <span className="text-sm flex-1 transition-all duration-200" style={{
                   color: m.isCompleted ? 'var(--text-3)' : 'var(--text-2)',
                   textDecoration: m.isCompleted ? 'line-through' : 'none',
                 }}>
                   {m.title}
                 </span>
-                <button onClick={() => deleteMilestone(m.id)} style={{ color: 'var(--text-3)' }}>
+                <button onClick={() => deleteMilestone(m.id)} className="transition-all duration-200 hover:scale-110 active:scale-90" style={{ color: 'var(--text-3)' }}>
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -218,13 +248,14 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
           <ProgressBar
             value={milestones?.length ? Math.round((milestones.filter(m => m.isCompleted).length / milestones.length) * 100) : 0}
             className="mb-3"
+            color={goalColor}
           />
           <div className="flex gap-2">
             <input
               value={newMilestone}
               onChange={e => setNewMilestone(e.target.value)}
               placeholder="Add milestone…"
-              className="flex-1 px-3 py-2 rounded-md text-sm focus:outline-none"
+              className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none"
               style={{ border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--text)' }}
               onKeyDown={async e => {
                 if (e.key === 'Enter' && newMilestone.trim()) {
@@ -240,7 +271,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
                   setNewMilestone('');
                 }
               }}
-              className="px-3 py-2 rounded-md text-sm font-medium text-white"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-white transition-all active:scale-95"
               style={{ backgroundColor: 'var(--accent)' }}
             >
               <Plus size={14} />
@@ -250,7 +281,10 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
       )}
 
       {/* History */}
-      <div className="rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div
+        className="rounded-xl overflow-hidden animate-stagger-in"
+        style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', animationDelay: '400ms' }}
+      >
         <p className="px-5 py-3 text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-3)', borderBottom: '1px solid var(--border)' }}>
           Recent history
         </p>
@@ -260,7 +294,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
           <div>
             {comebackMsg && (
               <div
-                className="px-5 py-2.5 text-xs italic"
+                className="px-5 py-2.5 text-xs italic animate-slide-down"
                 style={{
                   color: 'var(--accent)',
                   backgroundColor: 'color-mix(in srgb, var(--accent) 6%, transparent)',
@@ -273,7 +307,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
             {recentEntries.map(entry => {
               const hasPartial = !entry.completed && entry.value != null && entry.value > 0;
               const dotColor = entry.completed
-                ? 'var(--success)'
+                ? goalColor
                 : hasPartial
                   ? '#F59E0B'
                   : 'var(--border-2)';
@@ -290,7 +324,13 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
               return (
                 <div key={entry.id} className="flex items-center px-5 py-2.5 gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
                   <span className="text-xs tabular w-20 shrink-0" style={{ color: 'var(--text-3)' }}>{entry.date}</span>
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-300"
+                    style={{
+                      backgroundColor: dotColor,
+                      boxShadow: entry.completed ? `0 0 4px ${goalColor}30` : 'none',
+                    }}
+                  />
                   <span className="text-sm flex-1" style={{ color: labelColor }}>
                     {label}
                     {entry.value != null && goal.type !== 'binary' && (

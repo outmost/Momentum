@@ -30,7 +30,12 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
+      {/* Backdrop with fade-in */}
+      <div
+        className="absolute inset-0 bg-black/30 backdrop-blur-[2px] animate-in"
+        onClick={onClose}
+      />
+      {/* Modal panel */}
       <div
         className={cn(
           'relative w-full rounded-xl overflow-hidden',
@@ -38,7 +43,11 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
           sizes[size],
           className
         )}
-        style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+        style={{
+          backgroundColor: 'var(--surface)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
+        }}
       >
         {title && (
           <div
@@ -48,7 +57,7 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
             <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded transition-all duration-200 hover:scale-110 active:scale-90"
               style={{ color: 'var(--text-3)' }}
             >
               <X size={15} />

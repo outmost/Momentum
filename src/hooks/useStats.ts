@@ -298,7 +298,7 @@ export function useOverallStreak() {
  * Per-folder heatmap data — returns daily completion rates for goals within a folder.
  * Used by FolderSection to show an inline mini heatmap.
  */
-export function useFolderHeatmap(goalIds: string[], days: number = 56) {
+export function useFolderHeatmap(goalIds: string[], days: number = 35) {
   const key = goalIds.join(',');
   return useLiveQuery(async () => {
     if (goalIds.length === 0) return [];

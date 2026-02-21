@@ -2,8 +2,6 @@
 import React from 'react';
 import { format, subDays, addDays, getDay } from 'date-fns';
 
-const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
 function cellColor(rate: number | null, isFuture: boolean): string {
   if (isFuture || rate === null) return 'transparent';
   if (rate === 0)   return 'var(--border)';
@@ -24,7 +22,7 @@ export function MiniHeatmap({ data }: MiniHeatmapProps) {
   const todayStr = format(today, 'yyyy-MM-dd');
   const todayDow = (getDay(today) + 6) % 7; // Monday = 0
   const thisMonday = subDays(today, todayDow);
-  const weeks = 8;
+  const weeks = 5;
   const startDate = subDays(thisMonday, (weeks - 1) * 7);
 
   const rateMap = new Map(data.map(d => [d.date, d.rate]));
@@ -42,60 +40,53 @@ export function MiniHeatmap({ data }: MiniHeatmapProps) {
     })
   );
 
-  const pastCells  = grid.flat().filter(c => !c.isFuture && c.rate !== null);
-  const activeDays = pastCells.filter(c => (c.rate ?? 0) > 0).length;
-  const perfectDays = pastCells.filter(c => c.rate === 100).length;
+  // Headline: consistency % over the period
+  const pastCells = grid.flat().filter(c => !c.isFuture && c.rate !== null);
+  const consistency = pastCells.length > 0
+    ? Math.round(pastCells.filter(c => (c.rate ?? 0) > 0).length / pastCells.length * 100)
+    : 0;
 
   return (
-    <div>
-      {/* Day labels */}
-      <div className="flex gap-[3px] mb-[3px]">
-        {DAY_LABELS.map((d, i) => (
-          <div
-            key={i}
-            className="text-center"
-            style={{ width: 10, fontSize: '7px', fontWeight: 500, color: 'var(--text-3)' }}
-          >
-            {d}
-          </div>
-        ))}
+    <div className="flex items-center gap-4">
+      {/* Headline number */}
+      <div className="shrink-0" style={{ minWidth: 52 }}>
+        <p
+          className="tabular leading-none font-bold"
+          style={{
+            fontSize: 28,
+            letterSpacing: '-0.03em',
+            color: consistency >= 80 ? 'var(--success)' : consistency > 0 ? 'var(--text)' : 'var(--text-3)',
+          }}
+        >
+          {consistency}%
+        </p>
+        <p style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 3 }}>
+          consistency
+        </p>
       </div>
 
-      {/* Grid */}
-      <div className="flex flex-col gap-[3px]">
-        {grid.map((week, wi) => (
-          <div key={wi} className="flex gap-[3px]">
-            {week.map(({ date, rate, isFuture, isToday }) => {
-              const isPerfect = rate === 100 && !isFuture;
-              return (
-                <div
-                  key={date}
-                  className="rounded-[3px] transition-all duration-300"
-                  title={isFuture ? '' : `${date}: ${rate ?? 0}%`}
-                  style={{
-                    width: 10,
-                    height: 10,
-                    backgroundColor: cellColor(rate, isFuture),
-                    border: isToday
-                      ? '1.5px solid var(--accent)'
-                      : isFuture || rate === null
-                      ? '0.5px solid var(--border)'
-                      : 'none',
-                    opacity: isFuture ? 0.15 : 1,
-                    boxShadow: isPerfect ? '0 0 4px var(--success-glow)' : 'none',
-                  }}
-                />
-              );
-            })}
-          </div>
-        ))}
-      </div>
-
-      {/* Stats */}
-      <div className="mt-1.5">
-        <span style={{ fontSize: '9px', color: 'var(--text-3)' }}>
-          {activeDays} active &middot; {perfectDays} perfect
-        </span>
+      {/* Heatmap grid — fills remaining width */}
+      <div className="flex-1 grid grid-cols-7 gap-[3px]">
+        {grid.flat().map(({ date, rate, isFuture, isToday }) => {
+          const isPerfect = rate === 100 && !isFuture;
+          return (
+            <div
+              key={date}
+              className="rounded-[3px]"
+              style={{
+                aspectRatio: '1',
+                backgroundColor: cellColor(rate, isFuture),
+                border: isToday
+                  ? '1.5px solid var(--accent)'
+                  : isFuture || rate === null
+                  ? '1px solid var(--border)'
+                  : 'none',
+                opacity: isFuture ? 0.15 : 1,
+                boxShadow: isPerfect ? '0 0 4px var(--success-glow)' : 'none',
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { nanoid } from 'nanoid';
-import type { Goal, GoalStatus } from '@/types';
+import type { Goal, GoalStatus, GoalVisibility } from '@/types';
 
 export function useGoals(folderId?: string, status?: GoalStatus) {
   return useLiveQuery(async () => {
@@ -43,6 +43,11 @@ export function useGoal(id: string) {
   }, [id]);
 }
 
+function generateShareCode(): string {
+  // 8-char alphanumeric code, easy to type/share
+  return nanoid(8).toUpperCase().replace(/[^A-Z0-9]/g, '0').slice(0, 8);
+}
+
 export async function createGoal(data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt' | 'sortOrder'>) {
   const maxOrder = await db.goals
     .where('folderId')
@@ -50,27 +55,39 @@ export async function createGoal(data: Omit<Goal, 'id' | 'createdAt' | 'updatedA
     .toArray()
     .then(goals => goals.reduce((max, g) => Math.max(max, g.sortOrder), 0));
 
+  const visibility: GoalVisibility = data.visibility ?? 'private';
   const goal: Goal = {
     ...data,
+    visibility,
+    shareCode: visibility !== 'private' ? generateShareCode() : undefined,
     id: nanoid(),
     sortOrder: maxOrder + 1000,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
-  
+
   await db.goals.add(goal);
   return goal;
 }
 
 export async function updateGoal(id: string, data: Partial<Goal>) {
-  await db.goals.update(id, { ...data, updatedAt: Date.now() });
+  // Auto-generate shareCode when changing from private to a shareable visibility
+  const updates: Partial<Goal> = { ...data, updatedAt: Date.now() };
+  if (data.visibility && data.visibility !== 'private') {
+    const existing = await db.goals.get(id);
+    if (!existing?.shareCode) {
+      updates.shareCode = generateShareCode();
+    }
+  }
+  await db.goals.update(id, updates);
 }
 
 export async function deleteGoal(id: string) {
-  await db.transaction('rw', [db.goals, db.entries, db.milestones], async () => {
+  await db.transaction('rw', [db.goals, db.entries, db.milestones, db.invites], async () => {
     await db.goals.delete(id);
     await db.entries.where('goalId').equals(id).delete();
     await db.milestones.where('goalId').equals(id).delete();
+    await db.invites.where('goalId').equals(id).delete();
   });
 }
 

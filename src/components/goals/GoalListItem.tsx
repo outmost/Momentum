@@ -2,11 +2,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { MoreVertical, Pause, Play, Archive, Trash2, CheckCircle, GripVertical } from 'lucide-react';
+import { MoreVertical, Pause, Play, Archive, Trash2, CheckCircle, GripVertical, Share2 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ShareModal } from '@/components/sharing/ShareModal';
+import { VisibilityBadge } from '@/components/sharing/VisibilityPicker';
 import { deleteGoal, pauseGoal, resumeGoal, archiveGoal, completeGoal, resumeGoal as undoComplete } from '@/hooks/useGoals';
 import { useUIStore } from '@/lib/store';
 import type { Goal } from '@/types';
@@ -24,9 +26,10 @@ interface GoalListItemProps {
 
 export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isLast = false }: GoalListItemProps) {
   const router = useRouter();
-  const [menuOpen, setMenuOpen]     = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [menuOpen, setMenuOpen]       = useState(false);
+  const [deleteOpen, setDeleteOpen]   = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
+  const [shareOpen, setShareOpen]     = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const setToast = useUIStore(s => s.setToast);
@@ -113,6 +116,23 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
           >
             {goal.status}
           </span>
+        )}
+
+        {goal.visibility && goal.visibility !== 'private' && (
+          <span className="shrink-0">
+            <VisibilityBadge visibility={goal.visibility} />
+          </span>
+        )}
+
+        {goal.visibility && goal.visibility !== 'private' && (
+          <button
+            onClick={e => { e.stopPropagation(); setShareOpen(true); }}
+            className="shrink-0 w-6 h-6 flex items-center justify-center rounded transition-all duration-200 hover:scale-110 active:scale-90"
+            style={{ color: 'var(--accent)' }}
+            title="Share"
+          >
+            <Share2 size={12} />
+          </button>
         )}
 
         <div className="w-12 shrink-0 space-y-0.5">
@@ -208,6 +228,12 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
         message={`Mark "${goal.title}" as completed? You can undo this afterwards.`}
         confirmLabel="Mark Complete"
         variant="primary"
+      />
+
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        goal={goal}
       />
     </>
   );

@@ -5,7 +5,8 @@ import { createGoal, updateGoal } from '@/hooks/useGoals';
 import { useFolders, createFolder } from '@/hooks/useFolders';
 import { useRoutineBlocks } from '@/hooks/useRoutine';
 import { FOLDER_COLORS, GOAL_COLORS } from '@/lib/utils';
-import type { Goal, GoalType, Frequency } from '@/types';
+import { VisibilityPicker } from '@/components/sharing/VisibilityPicker';
+import type { Goal, GoalType, Frequency, GoalVisibility } from '@/types';
 
 interface GoalFormProps {
   goal?: Goal;
@@ -42,6 +43,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const [reminderEnabled, setReminderEnabled] = useState(goal?.reminderEnabled ?? false);
   const [reminderTime, setReminderTime] = useState(goal?.reminderTime ?? '08:00');
   const [color, setColor] = useState(goal?.color ?? '');
+  const [visibility, setVisibility] = useState<GoalVisibility>(goal?.visibility ?? 'private');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -84,6 +86,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         reminderEnabled,
         reminderTime: reminderEnabled ? reminderTime : undefined,
         color: color || undefined,
+        visibility,
       };
       if (goal) {
         await updateGoal(goal.id, data);
@@ -360,6 +363,17 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
                 />
               ))}
             </div>
+          </div>
+
+          {/* Visibility */}
+          <div>
+            <label style={labelStyle}>Privacy</label>
+            <VisibilityPicker value={visibility} onChange={setVisibility} />
+            <p className="text-[10px] mt-1.5 italic" style={{ color: 'var(--text-3)' }}>
+              {visibility === 'private' && 'Only you can see this challenge.'}
+              {visibility === 'invite-only' && 'You decide who joins. Manage participants in the challenge detail.'}
+              {visibility === 'public' && 'Share a QR code so anyone can join your challenge.'}
+            </p>
           </div>
 
           {/* Reminder */}

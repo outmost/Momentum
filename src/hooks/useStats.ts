@@ -210,10 +210,12 @@ export function useAllGoalStats() {
         completed: !!entryMap.get(date)?.completed,
       }));
       const completionRate7 = computeCompletionRate(goalEntries, goal, 7);
+      const totalCompletions = goalEntries.filter(e => e.completed).length;
       return {
         goal,
         completionRate7,
         last7,
+        totalCompletions,
       };
     }).sort((a, b) => b.completionRate7 - a.completionRate7); // highest momentum first
   });

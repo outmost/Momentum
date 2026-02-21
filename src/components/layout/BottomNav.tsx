@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CheckSquare, Repeat, Layers, Settings, BarChart3 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 const navItems = [
   { href: '/',          label: 'Today',    icon: CheckSquare },
@@ -17,17 +16,16 @@ export function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-5 inset-x-0 z-40 flex justify-center pointer-events-none"
+      className="md:hidden fixed inset-x-0 z-40 flex justify-center pointer-events-none"
+      style={{ bottom: 'max(20px, env(safe-area-inset-bottom, 0px))' }}
       aria-label="Main navigation"
     >
       <div
         className="flex items-center gap-0.5 pointer-events-auto px-2 py-2 rounded-full"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--surface) 95%, transparent)',
+          backgroundColor: 'var(--surface)',
           border: '1px solid var(--border)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1px 6px rgba(0,0,0,0.06)',
         }}
       >
         {navItems.map(({ href, label, icon: Icon }) => {
@@ -37,27 +35,20 @@ export function BottomNav() {
               key={href}
               href={href}
               aria-label={label}
-              className="relative flex items-center justify-center w-11 h-10 rounded-full transition-colors duration-200"
+              className="relative flex items-center justify-center w-11 h-10 rounded-full"
+              style={{
+                backgroundColor: active ? 'var(--accent-2)' : 'transparent',
+                transition: 'background-color 0.18s ease',
+              }}
             >
-              {active && (
-                <motion.span
-                  layoutId="bottom-nav-pill"
-                  className="absolute inset-0 rounded-full"
-                  style={{ backgroundColor: 'var(--accent-2)' }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                />
-              )}
-              <motion.div
-                animate={active ? { scale: 1.08 } : { scale: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                className="relative z-10"
-              >
-                <Icon
-                  size={19}
-                  strokeWidth={active ? 2.25 : 1.6}
-                  style={{ color: active ? 'var(--accent)' : 'var(--text-3)' }}
-                />
-              </motion.div>
+              <Icon
+                size={19}
+                strokeWidth={active ? 2.2 : 1.6}
+                style={{
+                  color: active ? 'var(--accent)' : 'var(--text-3)',
+                  transition: 'color 0.18s ease',
+                }}
+              />
             </Link>
           );
         })}

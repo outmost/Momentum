@@ -391,7 +391,7 @@ export default function TodayPage() {
       {!isSelectedFuture && (
         <motion.button
           onClick={() => setGoalFormOpen(true)}
-          className="fixed bottom-[88px] right-4 md:bottom-6 md:right-6 w-[52px] h-[52px] rounded-full flex items-center justify-center z-30 text-white"
+          className="fab fixed right-4 md:right-6 w-[52px] h-[52px] rounded-full flex items-center justify-center z-30 text-white"
           style={{
             backgroundColor: 'var(--accent)',
             boxShadow: '0 4px 20px var(--glow)',

@@ -92,7 +92,12 @@
   }
 
   * { box-sizing: border-box; }
-  html { -webkit-tap-highlight-color: transparent; }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent elastic bounce-scroll on iOS at root level */
+    overscroll-behavior: none;
+  }
 
   body {
     background-color: var(--bg);
@@ -102,6 +107,16 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /*
+    Kills the 300ms tap delay on mobile. Without this, every tap on a button
+    or link must wait to check for a potential double-tap zoom, causing a
+    perceptible lag. `manipulation` tells the browser: single-tap only, fire now.
+  */
+  button, a, [role="button"], input[type="submit"], input[type="button"],
+  input[type="reset"], label, select {
+    touch-action: manipulation;
   }
 
   ::selection { background: var(--accent-2); }
@@ -315,6 +330,32 @@
   .pressable:active {
     transform: scale(0.97);
     opacity: 0.8;
+  }
+
+  /* ── App shell main area ─────────────────────────────── */
+  /*
+    Responsive bottom padding for the floating nav pill on mobile.
+    Using a CSS class (not inline style) so the @media override works.
+    calc() adds safe-area-inset-bottom for iPhone home indicator clearance.
+  */
+  .shell-main {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 768px) {
+    .shell-main {
+      padding-bottom: 0;
+    }
+  }
+
+  /* ── FAB position ────────────────────────────────────── */
+  /* Above the floating nav on mobile, normal 24px on desktop */
+  .fab {
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 768px) {
+    .fab {
+      bottom: 24px;
+    }
   }
 }
 

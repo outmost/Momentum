@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CheckSquare, BarChart3, Repeat, Layers, Settings } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/cn';
 
 const navItems = [
@@ -57,26 +56,20 @@ export function Sidebar() {
               key={href}
               href={href}
               className="relative flex items-center gap-3 px-3 py-[9px] rounded-xl transition-colors duration-150"
-              style={{ color: active ? 'var(--text)' : 'var(--text-3)' }}
+              style={{
+                backgroundColor: active ? 'var(--border)' : 'transparent',
+                color: active ? 'var(--text)' : 'var(--text-3)',
+              }}
             >
-              {active && (
-                <motion.div
-                  layoutId="sidebar-active-bg"
-                  className="absolute inset-0 rounded-xl"
-                  style={{ backgroundColor: 'var(--border)' }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                />
-              )}
-
               <Icon
                 size={16}
-                strokeWidth={active ? 2.25 : 1.65}
-                className="relative z-10 shrink-0 transition-all duration-150"
+                strokeWidth={active ? 2.2 : 1.65}
+                className="shrink-0 transition-all duration-150"
                 style={{ color: active ? 'var(--accent)' : 'var(--text-3)' }}
               />
               <span
                 className={cn(
-                  'relative z-10 text-[13px] transition-all duration-150',
+                  'text-[13px] transition-all duration-150',
                   active ? 'font-semibold' : 'font-normal',
                 )}
               >

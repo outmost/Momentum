@@ -63,6 +63,7 @@ export interface AppSettings {
   weekStartsOn: 0 | 1;
   defaultView: 'today' | 'dashboard';
   notificationsEnabled: boolean;
+  seeded?: boolean;
   createdAt: number;
   updatedAt: number;
 }

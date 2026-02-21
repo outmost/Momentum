@@ -17,6 +17,11 @@ function makeRng(seed: number) {
  * Returns true if seeded, false if data already present.
  */
 export async function seedDemoData(): Promise<boolean> {
+  // Check the persistent seeded flag first — it survives clearAllAppData()
+  // so navigating back to Today after a clear won't re-seed.
+  const settings = await db.settings.get('settings');
+  if (settings?.seeded) return false;
+
   const count = await db.goals.count();
   if (count > 0) return false;
 
@@ -138,6 +143,10 @@ export async function seedDemoData(): Promise<boolean> {
   entries.push({ id: nanoid(), goalId: spanishId, date: today, completed: false, value: 720,  createdAt: now, updatedAt: now });   // 12 / 15 min
 
   await db.entries.bulkAdd(entries);
+
+  // Mark as seeded so clear-all won't trigger another seed on next visit.
+  await db.settings.update('settings', { seeded: true, updatedAt: Date.now() });
+
   return true;
 }
 

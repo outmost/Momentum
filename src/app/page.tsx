@@ -1,13 +1,13 @@
 'use client';
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { format, parseISO, subDays } from 'date-fns';
-import { Plus, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, X, Flame } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useUIStore } from '@/lib/store';
 import { useActiveGoals } from '@/hooks/useGoals';
 import { useEntriesForDate } from '@/hooks/useEntries';
 import { useRoutineBlocks } from '@/hooks/useRoutine';
-import { useDateRangeProgress } from '@/hooks/useStats';
+import { useDateRangeProgress, useOverallStreak } from '@/hooks/useStats';
 import { seedDefaultRoutineBlocks } from '@/hooks/useRoutine';
 import { initializeSettings } from '@/lib/db';
 import { isScheduledForDate } from '@/lib/utils';
@@ -24,12 +24,22 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 5)  return 'Good evening';
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 const BANNER_QUOTES = [
   { text: 'We are what we repeatedly do.', attr: 'Aristotle' },
   { text: 'Discipline is remembering what you want.', attr: 'David Campbell' },
   { text: 'Consistency is the compound interest of self-improvement.', attr: 'James Clear' },
   { text: 'Small improvements every day add up to something remarkable.', attr: null },
   { text: "You don't rise to your goals. You fall to your systems.", attr: 'James Clear' },
+  { text: 'The secret of getting ahead is getting started.', attr: 'Mark Twain' },
+  { text: 'Every action you take is a vote for the person you wish to become.', attr: 'James Clear' },
 ];
 
 export default function TodayPage() {
@@ -38,16 +48,15 @@ export default function TodayPage() {
   const goals         = useActiveGoals();
   const entries       = useEntriesForDate(selectedDate);
   const routineBlocks = useRoutineBlocks();
+  const streak        = useOverallStreak();
 
   const [showConfetti,    setShowConfetti]    = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const wasAllDone        = useRef(false);
   const hasSeenIncomplete = useRef(false);
-  // Pick a quote once per session (stable ref)
   const bannerQuote = useRef(BANNER_QUOTES[Math.floor(Math.random() * BANNER_QUOTES.length)]);
 
-  // Completion data for the week strip (last 7 days)
   const rangeStart = useMemo(() => format(subDays(new Date(), 6), 'yyyy-MM-dd'), []);
   const rangeEnd   = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
   const completionMap = useDateRangeProgress(rangeStart, rangeEnd);
@@ -66,7 +75,6 @@ export default function TodayPage() {
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
-
   const blocks = useMemo(() => routineBlocks ?? [], [routineBlocks]);
 
   // Group goals by routine block
@@ -81,8 +89,7 @@ export default function TodayPage() {
     }
   }
 
-  // ── Time-aware block ordering ────────────────────────────────
-  // Find the index of the currently active block (last one whose startTime has passed)
+  // Time-aware block ordering
   const activeBlockIdx = useMemo(() => {
     if (!isSelectedToday || blocks.length === 0) return -1;
     const n    = new Date();
@@ -94,33 +101,30 @@ export default function TodayPage() {
     return idx;
   }, [isSelectedToday, blocks]);
 
-  // Reorder: current + future first, past blocks at the bottom
   const orderedBlocks = useMemo(() => {
     if (!isSelectedToday || activeBlockIdx <= 0) return blocks;
     return [
-      ...blocks.slice(activeBlockIdx),    // current block + everything after
-      ...blocks.slice(0, activeBlockIdx), // blocks before current (past)
+      ...blocks.slice(activeBlockIdx),
+      ...blocks.slice(0, activeBlockIdx),
     ];
   }, [isSelectedToday, blocks, activeBlockIdx]);
 
-  // Track where past blocks start in the ordered list (for "Earlier" divider)
   const firstPastDisplayIdx = orderedBlocks.findIndex(b => {
     const origIdx = blocks.indexOf(b);
     return isSelectedToday && origIdx >= 0 && origIdx < activeBlockIdx;
   });
 
-  // ── Progress ─────────────────────────────────────────────────
+  // Progress
   const completedCount = scheduledGoals.filter(g => entryMap.get(g.id)?.completed).length;
   const allDone = scheduledGoals.length > 0 && completedCount === scheduledGoals.length;
   const pct     = scheduledGoals.length > 0 ? completedCount / scheduledGoals.length : 0;
 
-  // Reset banner when switching days
   useEffect(() => { setBannerDismissed(false); }, [selectedDate]);
 
   useEffect(() => {
     if (!allDone) {
       hasSeenIncomplete.current = true;
-      setBannerDismissed(false); // un-dismiss if user un-completes a goal
+      setBannerDismissed(false);
     }
     if (allDone && hasSeenIncomplete.current && !wasAllDone.current && scheduledGoals.length > 0) {
       setShowConfetti(true);
@@ -139,19 +143,36 @@ export default function TodayPage() {
       <AllDoneCelebration active={showCelebration} />
 
       {/* ── Header ── */}
-      <div className="mb-4">
-        <p
-          style={{
-            fontSize: '11px',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: 'var(--text-3)',
-            marginBottom: '2px',
-          }}
-        >
-          {format(dateObj, 'EEEE')}
-        </p>
+      <motion.div
+        className="mb-5"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <p
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--text-3)',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            {isSelectedToday ? getGreeting() : format(dateObj, 'EEEE')}
+          </p>
+          {streak && streak.current > 0 && isSelectedToday && (
+            <motion.div
+              className="streak-badge"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30, delay: 0.2 }}
+            >
+              <Flame size={13} className={streak.current >= 3 ? 'animate-streak-flame' : ''} />
+              <span className="tabular">{streak.current}</span>
+            </motion.div>
+          )}
+        </div>
+
         <div className="flex items-baseline justify-between gap-3">
           <h1 className="page-title">{format(dateObj, 'MMMM d')}</h1>
           {scheduledGoals.length > 0 && (
@@ -162,20 +183,22 @@ export default function TodayPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
+                className="tabular"
                 style={{
-                  fontSize: '13px',
-                  fontWeight: allDone ? 600 : 400,
+                  fontSize: '14px',
+                  fontWeight: allDone ? 600 : 500,
                   color: allDone ? 'var(--success)' : 'var(--text-3)',
                   flexShrink: 0,
                   whiteSpace: 'nowrap',
+                  letterSpacing: '-0.01em',
                 }}
               >
-                {allDone ? 'All done ✓' : `${completedCount} / ${scheduledGoals.length}`}
+                {allDone ? 'All done' : `${completedCount} of ${scheduledGoals.length}`}
               </motion.span>
             </AnimatePresence>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Week strip ── */}
       <WeekStrip
@@ -184,7 +207,7 @@ export default function TodayPage() {
         completionMap={completionMap}
       />
 
-      {/* ── Thin progress bar ── */}
+      {/* ── Progress bar ── */}
       {scheduledGoals.length > 0 && (
         <div
           className="mb-7 rounded-full overflow-hidden"
@@ -209,41 +232,42 @@ export default function TodayPage() {
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             className="mb-5 rounded-2xl overflow-hidden"
             style={{
-              border: '1px solid color-mix(in srgb, var(--success) 28%, var(--border))',
-              backgroundColor: 'color-mix(in srgb, var(--success) 6%, var(--surface))',
+              border: '1px solid color-mix(in srgb, var(--success) 25%, var(--border))',
+              background: 'linear-gradient(135deg, color-mix(in srgb, var(--success) 5%, var(--surface)), color-mix(in srgb, var(--success) 2%, var(--surface)))',
             }}
           >
-            <div className="flex items-start gap-3.5 px-4 py-3.5">
-              {/* Checkmark */}
-              <div
-                className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5"
+            <div className="flex items-start gap-3.5 px-4 py-4">
+              <motion.div
+                className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5"
                 style={{ backgroundColor: 'color-mix(in srgb, var(--success) 14%, transparent)' }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25, delay: 0.1 }}
               >
-                <span style={{ fontSize: '14px' }}>✓</span>
-              </div>
-
-              {/* Text */}
-              <div className="flex-1 min-w-0">
-                <p
-                  className="text-sm font-semibold leading-snug"
-                  style={{ color: 'var(--success)' }}
+                <motion.span
+                  style={{ fontSize: '15px', color: 'var(--success)', fontWeight: 700 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 600, damping: 25, delay: 0.2 }}
                 >
+                  &#10003;
+                </motion.span>
+              </motion.div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--success)' }}>
                   All done for today
                 </p>
-                <p
-                  className="text-xs mt-0.5 leading-relaxed"
-                  style={{ color: 'var(--text-2)', fontStyle: 'italic' }}
-                >
+                <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--text-2)', fontStyle: 'italic' }}>
                   &ldquo;{bannerQuote.current.text}&rdquo;
                   {bannerQuote.current.attr && (
                     <span style={{ fontStyle: 'normal', color: 'var(--text-3)' }}>
-                      {' '}— {bannerQuote.current.attr}
+                      {' '}&mdash; {bannerQuote.current.attr}
                     </span>
                   )}
                 </p>
               </div>
 
-              {/* Dismiss */}
               <button
                 onClick={() => setBannerDismissed(true)}
                 className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg transition-colors"
@@ -267,19 +291,26 @@ export default function TodayPage() {
         >
           {goals?.length === 0 ? (
             <>
-              <p className="text-4xl mb-4">🌱</p>
-              <p className="text-[15px] font-semibold mb-1.5" style={{ color: 'var(--text)' }}>
+              <motion.p
+                className="text-4xl mb-4"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.15 }}
+              >
+                &#127793;
+              </motion.p>
+              <p className="text-md font-semibold mb-1.5" style={{ color: 'var(--text)' }}>
                 Start your first habit
               </p>
-              <p className="text-sm mb-6" style={{ color: 'var(--text-3)' }}>
-                Small, repeated actions build momentum.
+              <p className="text-sm mb-6" style={{ color: 'var(--text-3)', maxWidth: 240, margin: '0 auto 24px' }}>
+                Small, repeated actions build momentum over time.
               </p>
               <button
                 onClick={() => setGoalFormOpen(true)}
                 className="btn btn-primary btn-lg"
-                style={{ boxShadow: '0 4px 14px var(--glow)' }}
               >
-                Add habit
+                <Plus size={16} strokeWidth={2.5} />
+                Add your first habit
               </button>
             </>
           ) : (
@@ -297,13 +328,11 @@ export default function TodayPage() {
         </motion.div>
       ) : (
         <div className="space-y-5">
-
-          {/* ── Anytime / ungrouped goals (always at top) ── */}
           {ungrouped.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
               {blocks.length > 0 && (
                 <div className="flex items-center gap-2 mb-2.5 px-1">
@@ -327,7 +356,6 @@ export default function TodayPage() {
             </motion.div>
           )}
 
-          {/* ── Routine-block groups (time-aware order) ── */}
           {orderedBlocks.map((block, displayIdx) => {
             const blockGoals = grouped.get(block.id);
             if (!blockGoals || blockGoals.length === 0) return null;
@@ -345,15 +373,7 @@ export default function TodayPage() {
                 {showDivider && (
                   <div className="flex items-center gap-3 pt-1">
                     <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border)' }} />
-                    <span
-                      style={{
-                        fontSize: '10px',
-                        fontWeight: 500,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: 'var(--text-3)',
-                      }}
-                    >
+                    <span style={{ fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)' }}>
                       Earlier today
                     </span>
                     <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border)' }} />
@@ -363,28 +383,14 @@ export default function TodayPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: isPastBlock ? 0.5 : 1, y: 0 }}
-                  transition={{
-                    delay: baseDelay / 1000,
-                    duration: 0.32,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
+                  transition={{ delay: baseDelay / 1000, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  {/* Block label */}
                   <div className="flex items-center gap-2 mb-2.5 px-1">
                     <span className="text-sm">{block.emoji}</span>
-                    <h2
-                      className="section-label transition-colors duration-300"
-                      style={{ color: blockDone ? 'var(--success)' : undefined }}
-                    >
+                    <h2 className="section-label transition-colors duration-300" style={{ color: blockDone ? 'var(--success)' : undefined }}>
                       {block.name}
                     </h2>
-                    <span
-                      style={{
-                        fontSize: '10px',
-                        color: 'var(--text-3)',
-                        marginLeft: 'auto',
-                      }}
-                    >
+                    <span className="tabular" style={{ fontSize: '10px', color: 'var(--text-3)', marginLeft: 'auto' }}>
                       {block.startTime}
                     </span>
                     {blockDone && (
@@ -394,7 +400,7 @@ export default function TodayPage() {
                         animate={{ scale: 1 }}
                         transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                       >
-                        ✓
+                        &#10003;
                       </motion.span>
                     )}
                   </div>
@@ -434,7 +440,7 @@ export default function TodayPage() {
           className="fab fixed right-4 md:right-6 w-[52px] h-[52px] rounded-full flex items-center justify-center z-30 text-white"
           style={{
             backgroundColor: 'var(--accent)',
-            boxShadow: '0 4px 20px var(--glow)',
+            boxShadow: '0 4px 20px var(--glow), var(--shadow-md)',
           }}
           initial={{ scale: 0, rotate: -45 }}
           animate={{ scale: 1, rotate: 0 }}

@@ -219,6 +219,81 @@ export function useAllGoalStats() {
   });
 }
 
+/**
+ * Computes the user's overall daily streak — consecutive days where
+ * every scheduled habit was completed. This is the "momentum" metric.
+ */
+export function useOverallStreak() {
+  return useLiveQuery(async () => {
+    const activeGoals = await db.goals.where('status').equals('active').toArray();
+    if (activeGoals.length === 0) return { current: 0, best: 0 };
+
+    const entries = await db.entries.toArray();
+    const entryMap = new Map(entries.map(e => [`${e.goalId}:${e.date}`, e]));
+
+    let current = 0;
+    let best = 0;
+    let counting = true;
+
+    // Walk backwards from today up to 365 days
+    for (let i = 0; i < 365; i++) {
+      const dateStr = format(subDays(new Date(), i), 'yyyy-MM-dd');
+      const scheduled = activeGoals.filter(g =>
+        isScheduledForDate(dateStr, g.frequency, g.customDays)
+      );
+
+      if (scheduled.length === 0) continue; // skip unscheduled days
+
+      const allDone = scheduled.every(g => {
+        const entry = entryMap.get(`${g.id}:${dateStr}`);
+        return entry?.completed;
+      });
+
+      if (allDone && counting) {
+        current++;
+      } else {
+        counting = false;
+      }
+    }
+
+    // Compute best streak (scan all days from first entry)
+    if (entries.length > 0) {
+      const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+      const firstDate = sorted[0].date;
+      let streak = 0;
+      let d = parseISO(firstDate);
+      const end = new Date();
+
+      while (d <= end) {
+        const dateStr = format(d, 'yyyy-MM-dd');
+        const scheduled = activeGoals.filter(g =>
+          isScheduledForDate(dateStr, g.frequency, g.customDays)
+        );
+
+        if (scheduled.length === 0) {
+          d = addDays(d, 1);
+          continue;
+        }
+
+        const allDone = scheduled.every(g => {
+          const entry = entryMap.get(`${g.id}:${dateStr}`);
+          return entry?.completed;
+        });
+
+        if (allDone) {
+          streak++;
+          best = Math.max(best, streak);
+        } else {
+          streak = 0;
+        }
+        d = addDays(d, 1);
+      }
+    }
+
+    return { current, best };
+  });
+}
+
 export function useTotalStats() {
   return useLiveQuery(async () => {
     const today = new Date();

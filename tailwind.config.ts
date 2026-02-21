@@ -14,6 +14,7 @@ const config: Config = {
         success: 'var(--success)',
         progress: 'var(--progress)',
         danger: 'var(--danger)',
+        streak: 'var(--streak)',
       },
       borderRadius: {
         card: '14px',
@@ -25,6 +26,7 @@ const config: Config = {
         sm: 'var(--shadow-sm)',
         md: 'var(--shadow-md)',
         lg: 'var(--shadow-lg)',
+        xl: 'var(--shadow-xl)',
       },
       fontFamily: {
         sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Arial', 'sans-serif'],
@@ -42,7 +44,7 @@ const config: Config = {
         smooth: 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       animation: {
-        'in': 'fadeIn 0.15s ease-out',
+        'in': 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         'scale-in': 'scaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both',
       },
     },

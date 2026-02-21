@@ -8,8 +8,9 @@ const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 function cellColor(rate: number | null, isFuture: boolean): string {
   if (isFuture || rate === null) return 'transparent';
   if (rate === 0)   return 'var(--border)';
-  if (rate < 50)    return 'rgba(0,87,255,0.16)';
-  if (rate < 100)   return 'rgba(0,87,255,0.42)';
+  if (rate < 40)    return 'color-mix(in srgb, var(--accent) 15%, transparent)';
+  if (rate < 70)    return 'color-mix(in srgb, var(--accent) 35%, transparent)';
+  if (rate < 100)   return 'color-mix(in srgb, var(--accent) 60%, transparent)';
   return 'var(--success)';
 }
 
@@ -17,7 +18,10 @@ export function CompletionChart() {
   const trend = useCompletionTrend(35);
 
   if (!trend) return (
-    <div className="card h-40 animate-pulse" style={{ backgroundColor: 'var(--border)' }} />
+    <div className="card h-40 animate-shimmer" style={{
+      background: 'linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%)',
+      backgroundSize: '200% 100%',
+    }} />
   );
 
   const rateMap = new Map(trend.map(d => [d.date, d.rate]));
@@ -50,7 +54,7 @@ export function CompletionChart() {
       <div className="flex items-baseline justify-between mb-4">
         <p className="section-label">Activity</p>
         <p style={{ fontSize: '11px', color: 'var(--text-3)' }}>
-          {activeDays} active · {perfectDays} perfect
+          {activeDays} active &middot; {perfectDays} perfect
         </p>
       </div>
 
@@ -78,9 +82,9 @@ export function CompletionChart() {
                     : isFuture || rate === null
                     ? '1px solid var(--border)'
                     : 'none',
-                  opacity:    isFuture ? 0.2 : 1,
-                  boxShadow:  isPerfect ? '0 0 4px var(--success-glow)' : 'none',
-                  borderRadius: '4px',
+                  opacity:    isFuture ? 0.15 : 1,
+                  boxShadow:  isPerfect ? '0 0 6px var(--success-glow)' : 'none',
+                  borderRadius: '5px',
                 }}
               />
             );
@@ -88,12 +92,19 @@ export function CompletionChart() {
         </div>
       ))}
 
+      {/* Legend */}
       <div className="flex items-center gap-2 mt-3">
         <span style={{ fontSize: '9px', color: 'var(--text-3)' }}>None</span>
-        {['var(--border)', 'rgba(0,87,255,0.16)', 'rgba(0,87,255,0.42)', 'var(--success)'].map((bg, i) => (
+        {[
+          'var(--border)',
+          'color-mix(in srgb, var(--accent) 15%, transparent)',
+          'color-mix(in srgb, var(--accent) 35%, transparent)',
+          'color-mix(in srgb, var(--accent) 60%, transparent)',
+          'var(--success)',
+        ].map((bg, i) => (
           <div
             key={i}
-            style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: bg }}
+            style={{ width: 10, height: 10, borderRadius: 4, backgroundColor: bg }}
           />
         ))}
         <span style={{ fontSize: '9px', color: 'var(--text-3)' }}>All</span>

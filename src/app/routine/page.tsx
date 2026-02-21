@@ -172,8 +172,8 @@ export default function RoutinePage() {
 
   return (
     <div>
-      <h1 className="page-title mb-1">Your Day</h1>
-      <p className="text-sm mb-8" style={{ color: 'var(--text-3)' }}>
+      <h1 className="page-title mb-1 animate-in">Your Day</h1>
+      <p className="page-subtitle mb-8 animate-in">
         Shape the rhythm of your typical day.
       </p>
 

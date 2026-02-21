@@ -88,7 +88,8 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="page-title mb-8">Settings</h1>
+      <h1 className="page-title mb-1 animate-in">Settings</h1>
+      <p className="page-subtitle mb-8 animate-in">Customize your experience</p>
 
       <div className="space-y-7">
         {/* Appearance */}

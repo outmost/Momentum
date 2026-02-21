@@ -47,8 +47,8 @@ export default function TodayPage() {
   // Pick a quote once per session (stable ref)
   const bannerQuote = useRef(BANNER_QUOTES[Math.floor(Math.random() * BANNER_QUOTES.length)]);
 
-  // Completion data for the week strip (last 28 days → today)
-  const rangeStart = useMemo(() => format(subDays(new Date(), 28), 'yyyy-MM-dd'), []);
+  // Completion data for the week strip (last 7 days)
+  const rangeStart = useMemo(() => format(subDays(new Date(), 6), 'yyyy-MM-dd'), []);
   const rangeEnd   = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
   const completionMap = useDateRangeProgress(rangeStart, rangeEnd);
 

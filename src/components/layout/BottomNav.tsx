@@ -2,15 +2,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CheckSquare, Repeat, Layers, Settings, BarChart3 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/cn';
 
 const navItems = [
-  { href: '/', label: 'Today', icon: CheckSquare },
+  { href: '/',          label: 'Today',    icon: CheckSquare },
   { href: '/dashboard', label: 'Progress', icon: BarChart3 },
-  { href: '/routine', label: 'Routine', icon: Repeat },
-  { href: '/goals', label: 'Goals', icon: Layers },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/routine',   label: 'Routine',  icon: Repeat },
+  { href: '/goals',     label: 'Goals',    icon: Layers },
+  { href: '/settings',  label: 'Settings', icon: Settings },
 ];
 
 export function BottomNav() {
@@ -18,48 +16,51 @@ export function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--surface) 92%, transparent)',
-        borderTop: '1px solid var(--border)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-      }}
+      className="md:hidden fixed inset-x-0 z-40 flex justify-center pointer-events-none"
+      style={{ bottom: 'max(20px, env(safe-area-inset-bottom, 0px))' }}
+      aria-label="Main navigation"
     >
-      <div className="flex px-2">
+      <div
+        className="flex items-center gap-0.5 pointer-events-auto px-2 py-1.5 rounded-[20px]"
+        style={{
+          backgroundColor: 'var(--surface)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1px 6px rgba(0,0,0,0.06)',
+        }}
+      >
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
-              className={cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 min-h-[56px] relative',
-                'text-[10px] font-medium transition-colors duration-200',
-              )}
-              style={{ color: active ? 'var(--accent)' : 'var(--text-3)' }}
+              aria-label={label}
+              className="relative flex flex-col items-center justify-center w-14 h-[52px] rounded-2xl gap-[3px]"
+              style={{
+                backgroundColor: active ? 'var(--accent-2)' : 'transparent',
+                transition: 'background-color 0.18s ease',
+              }}
             >
-              {/* Active pill background — slides between items */}
-              {active && (
-                <motion.div
-                  layoutId="bottom-nav-pill"
-                  className="absolute top-2 w-12 h-8 rounded-xl"
-                  style={{ backgroundColor: 'var(--accent-2)' }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                />
-              )}
-
-              <motion.div
-                animate={active ? { scale: 1.1 } : { scale: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                className="relative z-10"
+              <Icon
+                size={17}
+                strokeWidth={active ? 2.2 : 1.6}
+                style={{
+                  color: active ? 'var(--accent)' : 'var(--text-3)',
+                  transition: 'color 0.18s ease',
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontWeight: active ? 600 : 400,
+                  color: active ? 'var(--accent)' : 'var(--text-3)',
+                  transition: 'color 0.18s ease',
+                  letterSpacing: '0.01em',
+                  lineHeight: 1,
+                }}
               >
-                <Icon
-                  size={20}
-                  strokeWidth={active ? 2.2 : 1.6}
-                />
-              </motion.div>
-              <span className="relative z-10">{label}</span>
+                {label}
+              </span>
             </Link>
           );
         })}

@@ -29,7 +29,6 @@ export function EntryNoteModal({ open, onClose, onSave, initialNote = '', goalTi
           onChange={e => setNote(e.target.value)}
           placeholder="Add a note for today…"
           rows={4}
-          autoFocus
           className="w-full px-3 py-2 rounded-md text-sm focus:outline-none resize-none"
           style={{
             border: '1px solid var(--border)',

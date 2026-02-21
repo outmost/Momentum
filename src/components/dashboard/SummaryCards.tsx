@@ -14,24 +14,22 @@ interface StatBlockProps {
 function StatBlock({ value, label, sub, accent, delay = 0 }: StatBlockProps) {
   return (
     <div
-      className="rounded-xl p-5 flex flex-col justify-between animate-stagger-in transition-all duration-300"
+      className="card p-5 flex flex-col justify-between animate-stagger-in"
       style={{
-        backgroundColor: 'var(--surface)',
-        border: accent ? '1px solid color-mix(in srgb, var(--success) 30%, var(--border))' : '1px solid var(--border)',
         animationDelay: `${delay}ms`,
-        boxShadow: accent ? '0 0 0 1px color-mix(in srgb, var(--success) 10%, transparent)' : 'none',
+        border: accent
+          ? '1px solid color-mix(in srgb, var(--success) 30%, var(--border))'
+          : undefined,
       }}
     >
       <p
-        className="text-4xl font-semibold tabular tracking-tight leading-none"
+        className="text-4xl font-bold tabular tracking-tight leading-none"
         style={{ color: accent ? 'var(--success)' : 'var(--text)' }}
       >
         {value}
       </p>
-      <div className="mt-3">
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: 'var(--text-3)' }}>
-          {label}
-        </p>
+      <div className="mt-4">
+        <p className="section-label">{label}</p>
         {sub && (
           <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>{sub}</p>
         )}
@@ -41,20 +39,19 @@ function StatBlock({ value, label, sub, accent, delay = 0 }: StatBlockProps) {
 }
 
 export function SummaryCards() {
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const today        = format(new Date(), 'yyyy-MM-dd');
   const todayProgress = useTodayProgress(today);
-  const totals = useTotalStats();
+  const totals        = useTotalStats();
 
-  const completedToday = todayProgress?.completed ?? 0;
-  const totalToday = todayProgress?.total ?? 0;
-  const allDone = totalToday > 0 && completedToday === totalToday;
-
-  const totalThisMonth = totals?.totalThisMonth ?? 0;
+  const completedToday  = todayProgress?.completed ?? 0;
+  const totalToday      = todayProgress?.total ?? 0;
+  const allDone         = totalToday > 0 && completedToday === totalToday;
+  const totalThisMonth  = totals?.totalThisMonth ?? 0;
   const daysActiveThisWeek = totals?.daysActiveThisWeek ?? 0;
-  const consistency30 = totals?.consistency30 ?? 0;
+  const consistency30   = totals?.consistency30 ?? 0;
 
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+    <div className="grid grid-cols-2 gap-3">
       <StatBlock
         value={totalToday > 0 ? `${completedToday}/${totalToday}` : '—'}
         label="Today"

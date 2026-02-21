@@ -7,26 +7,19 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
 }
 
-const fieldBase = 'w-full px-3 py-2 rounded-md text-sm focus:outline-none transition-colors placeholder:text-[var(--text-3)]';
-const fieldStyle = {
-  border: '1px solid var(--border)',
-  backgroundColor: 'transparent',
-  color: 'var(--text)',
-};
-
 export function Input({ label, error, hint, className, id, style, ...props }: InputProps) {
   const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={inputId} className="text-xs font-medium" style={{ color: 'var(--text-2)' }}>
+        <label htmlFor={inputId} className="section-label">
           {label}
         </label>
       )}
       <input
         id={inputId}
-        className={cn(fieldBase, className)}
-        style={{ ...fieldStyle, ...(error ? { borderColor: 'var(--danger)' } : {}), ...style }}
+        className={cn('field', error && 'border-[var(--danger)]', className)}
+        style={style}
         {...props}
       />
       {error && <p className="text-xs" style={{ color: 'var(--danger)' }}>{error}</p>}
@@ -44,16 +37,16 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 export function Textarea({ label, error, hint, className, id, style, ...props }: TextareaProps) {
   const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={inputId} className="text-xs font-medium" style={{ color: 'var(--text-2)' }}>
+        <label htmlFor={inputId} className="section-label">
           {label}
         </label>
       )}
       <textarea
         id={inputId}
-        className={cn(fieldBase, 'resize-none', className)}
-        style={{ ...fieldStyle, ...(error ? { borderColor: 'var(--danger)' } : {}), ...style }}
+        className={cn('field resize-none', error && 'border-[var(--danger)]', className)}
+        style={{ height: 'auto', paddingTop: '10px', paddingBottom: '10px', ...style }}
         {...props}
       />
       {error && <p className="text-xs" style={{ color: 'var(--danger)' }}>{error}</p>}

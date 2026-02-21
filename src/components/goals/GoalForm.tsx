@@ -157,7 +157,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
           placeholder="What do you want to achieve?"
           className={inputClass}
           style={{ ...inputStyle, fontSize: '15px', fontWeight: 500 }}
-          autoFocus
         />
         {errors.title && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.title}</p>}
       </div>
@@ -259,7 +258,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
               placeholder="e.g. 20"
               className={inputClass}
               style={inputStyle}
-              autoFocus
             />
             {errors.target && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.target}</p>}
           </div>
@@ -282,7 +280,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
             placeholder="e.g. 30"
             className={inputClass}
             style={inputStyle}
-            autoFocus
           />
           {errors.duration && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.duration}</p>}
         </div>

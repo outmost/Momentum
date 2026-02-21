@@ -11,20 +11,20 @@ import { FolderForm } from '@/components/folders/FolderForm';
 import type { Goal, GoalStatus } from '@/types';
 
 const STATUS_FILTERS: { label: string; value: GoalStatus | 'all' }[] = [
-  { label: 'Active', value: 'active' },
-  { label: 'Paused', value: 'paused' },
-  { label: 'Completed', value: 'completed' },
+  { label: 'Active',   value: 'active' },
+  { label: 'Paused',   value: 'paused' },
+  { label: 'Done',     value: 'completed' },
   { label: 'Archived', value: 'archived' },
-  { label: 'All', value: 'all' },
+  { label: 'All',      value: 'all' },
 ];
 
 export default function GoalsPage() {
-  const goals = useAllGoals();
-  const folders = useFolders();
+  const goals    = useAllGoals();
+  const folders  = useFolders();
   const allStats = useAllGoalStats();
-  const [search, setSearch] = useState('');
+  const [search, setSearch]             = useState('');
   const [statusFilter, setStatusFilter] = useState<GoalStatus | 'all'>('active');
-  const [goalFormOpen, setGoalFormOpen] = useState(false);
+  const [goalFormOpen, setGoalFormOpen]   = useState(false);
   const [folderFormOpen, setFolderFormOpen] = useState(false);
 
   const statsMap = new Map(allStats?.map(s => [s.goal.id, s]) ?? []);
@@ -48,20 +48,18 @@ export default function GoalsPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6 animate-in">
-        <h1 className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--text)' }}>Goals</h1>
-        <div className="flex gap-1.5">
+        <h1 className="page-title">Goals</h1>
+        <div className="flex gap-2">
           <button
             onClick={() => setFolderFormOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 active:scale-90"
-            style={{ color: 'var(--text-3)', border: '1px solid var(--border)' }}
+            className="btn btn-secondary btn-icon"
             title="New folder"
           >
             <FolderPlus size={15} />
           </button>
           <button
             onClick={() => setGoalFormOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95"
-            style={{ backgroundColor: 'var(--accent)', color: 'white' }}
+            className="btn btn-primary"
           >
             <Plus size={14} /> Goal
           </button>
@@ -70,32 +68,27 @@ export default function GoalsPage() {
 
       {/* Search */}
       <div className="relative mb-4 animate-in">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-3)' }} />
+        <Search
+          size={13}
+          className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: 'var(--text-3)' }}
+        />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search goals…"
-          className="w-full pl-8 pr-3 py-2 rounded-xl text-sm focus:outline-none transition-all duration-200"
-          style={{
-            backgroundColor: 'var(--surface)',
-            border: '1px solid var(--border)',
-            color: 'var(--text)',
-          }}
+          className="field"
+          style={{ paddingLeft: '32px' }}
         />
       </div>
 
-      {/* Status filter */}
-      <div className="flex gap-1 mb-6 overflow-x-auto scrollbar-hide">
+      {/* Status filter chips */}
+      <div className="flex gap-1.5 mb-6 overflow-x-auto scrollbar-hide">
         {STATUS_FILTERS.map(({ label, value }) => (
           <button
             key={value}
             onClick={() => setStatusFilter(value)}
-            className="px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200 active:scale-95"
-            style={{
-              backgroundColor: statusFilter === value ? 'var(--text)' : 'transparent',
-              color: statusFilter === value ? 'var(--bg)' : 'var(--text-3)',
-              border: statusFilter === value ? '1px solid transparent' : '1px solid var(--border)',
-            }}
+            className={statusFilter === value ? 'chip chip-active' : 'chip'}
           >
             {label}
           </button>

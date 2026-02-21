@@ -22,7 +22,7 @@ interface GoalListItemProps {
 
 export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isLast = false }: GoalListItemProps) {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen]     = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
 
@@ -34,17 +34,17 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
   const color = goal.color || '#16A34A';
 
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
+    transform:  CSS.Transform.toString(transform),
     transition: transition ?? undefined,
-    opacity: isDragging ? 0.4 : 1,
-    zIndex: isDragging ? 1 : undefined,
-    position: isDragging ? 'relative' : undefined,
+    opacity:    isDragging ? 0.4 : 1,
+    zIndex:     isDragging ? 1 : undefined,
+    position:   isDragging ? 'relative' : undefined,
     borderBottom: isLast ? 'none' : '1px solid var(--border)',
   };
 
   return (
     <>
-      <div ref={setNodeRef} style={style} className="flex items-center gap-3 px-4 py-3">
+      <div ref={setNodeRef} style={style} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--surface-2)]">
         {draggable && (
           <button
             {...attributes}
@@ -64,7 +64,7 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
 
         <button
           onClick={() => router.push(`/goals/${goal.id}`)}
-          className="flex-1 text-left text-sm font-medium line-clamp-1 transition-colors"
+          className="flex-1 text-left text-[13px] font-medium line-clamp-1 transition-colors"
           style={{ color: 'var(--text)' }}
         >
           {goal.title}
@@ -72,11 +72,8 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
 
         {goal.status !== 'active' && (
           <span
-            className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
-            style={{
-              color: 'var(--text-3)',
-              backgroundColor: 'var(--border)',
-            }}
+            className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md shrink-0"
+            style={{ color: 'var(--text-3)', backgroundColor: 'var(--border)' }}
           >
             {goal.status}
           </span>
@@ -90,7 +87,7 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
         <div className="relative shrink-0">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="w-7 h-7 flex items-center justify-center rounded transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-[var(--border)]"
             style={{ color: 'var(--text-3)' }}
           >
             <MoreVertical size={14} />
@@ -100,39 +97,49 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
               <div
-                className="absolute right-0 top-8 z-20 w-36 rounded-lg py-1"
-                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 16px rgba(0,0,0,0.10)' }}
+                className="absolute right-0 top-8 z-20 w-36 card-sm py-1"
+                style={{ boxShadow: 'var(--shadow-md)' }}
               >
                 {goal.status === 'active' && (
-                  <button onClick={() => { pauseGoal(goal.id); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left"
-                    style={{ color: 'var(--text-2)' }}>
+                  <button
+                    onClick={() => { pauseGoal(goal.id); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
+                    style={{ color: 'var(--text-2)' }}
+                  >
                     <Pause size={13} /> Pause
                   </button>
                 )}
                 {goal.status === 'paused' && (
-                  <button onClick={() => { resumeGoal(goal.id); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left"
-                    style={{ color: 'var(--text-2)' }}>
+                  <button
+                    onClick={() => { resumeGoal(goal.id); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
+                    style={{ color: 'var(--text-2)' }}
+                  >
                     <Play size={13} /> Resume
                   </button>
                 )}
                 {goal.status === 'active' && (
-                  <button onClick={() => { setCompleteOpen(true); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left"
-                    style={{ color: 'var(--text-2)' }}>
+                  <button
+                    onClick={() => { setCompleteOpen(true); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
+                    style={{ color: 'var(--text-2)' }}
+                  >
                     <CheckCircle size={13} /> Complete
                   </button>
                 )}
-                <button onClick={() => { archiveGoal(goal.id); setMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left"
-                  style={{ color: 'var(--text-2)' }}>
+                <button
+                  onClick={() => { archiveGoal(goal.id); setMenuOpen(false); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
+                  style={{ color: 'var(--text-2)' }}
+                >
                   <Archive size={13} /> Archive
                 </button>
-                <div style={{ margin: '2px 0', borderTop: '1px solid var(--border)' }} />
-                <button onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left"
-                  style={{ color: 'var(--danger)' }}>
+                <div className="my-0.5" style={{ borderTop: '1px solid var(--border)' }} />
+                <button
+                  onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--danger-soft)]"
+                  style={{ color: 'var(--danger)' }}
+                >
                   <Trash2 size={13} /> Delete
                 </button>
               </div>

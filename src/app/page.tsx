@@ -60,6 +60,7 @@ export default function TodayPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const wasAllDone = useRef(false);
+  const hasSeenIncomplete = useRef(false);
   const [momentumMsg, setMomentumMsg] = useState('');
 
   const weekStartsOn = settings?.weekStartsOn ?? 0;
@@ -111,7 +112,8 @@ export default function TodayPage() {
   }, [completedCount, scheduledGoals.length, allDone]);
 
   useEffect(() => {
-    if (allDone && !wasAllDone.current && scheduledGoals.length > 0) {
+    if (!allDone) hasSeenIncomplete.current = true;
+    if (allDone && hasSeenIncomplete.current && !wasAllDone.current && scheduledGoals.length > 0) {
       setShowConfetti(true);
       setShowCelebration(true);
       setTimeout(() => setShowConfetti(false), 3500);
@@ -171,22 +173,21 @@ export default function TodayPage() {
               <circle
                 cx="20" cy="20" r="16"
                 fill="none"
-                stroke="var(--border)"
                 strokeWidth="3"
+                style={{ stroke: 'var(--border)' }}
               />
               <motion.circle
                 cx="20" cy="20" r="16"
                 fill="none"
-                stroke={completedCount > 0 ? 'var(--success)' : 'var(--border-2)'}
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
-                animate={{
-                  strokeDashoffset: circumference * (1 - pct),
-                  filter: allDone ? 'drop-shadow(0 0 5px var(--success-glow))' : 'none',
-                }}
+                animate={{ strokeDashoffset: circumference * (1 - pct) }}
                 transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                style={{ strokeDashoffset: circumference }}
+                style={{
+                  strokeDashoffset: circumference,
+                  stroke: completedCount > 0 ? 'var(--success)' : 'var(--border-2)',
+                }}
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">

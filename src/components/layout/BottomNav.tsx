@@ -21,7 +21,7 @@ export function BottomNav() {
       aria-label="Main navigation"
     >
       <div
-        className="flex items-center gap-0.5 pointer-events-auto px-2 py-2 rounded-full"
+        className="flex items-center gap-0.5 pointer-events-auto px-2 py-1.5 rounded-[20px]"
         style={{
           backgroundColor: 'var(--surface)',
           border: '1px solid var(--border)',
@@ -35,20 +35,32 @@ export function BottomNav() {
               key={href}
               href={href}
               aria-label={label}
-              className="relative flex items-center justify-center w-11 h-10 rounded-full"
+              className="relative flex flex-col items-center justify-center w-14 h-[52px] rounded-2xl gap-[3px]"
               style={{
                 backgroundColor: active ? 'var(--accent-2)' : 'transparent',
                 transition: 'background-color 0.18s ease',
               }}
             >
               <Icon
-                size={19}
+                size={17}
                 strokeWidth={active ? 2.2 : 1.6}
                 style={{
                   color: active ? 'var(--accent)' : 'var(--text-3)',
                   transition: 'color 0.18s ease',
                 }}
               />
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontWeight: active ? 600 : 400,
+                  color: active ? 'var(--accent)' : 'var(--text-3)',
+                  transition: 'color 0.18s ease',
+                  letterSpacing: '0.01em',
+                  lineHeight: 1,
+                }}
+              >
+                {label}
+              </span>
             </Link>
           );
         })}

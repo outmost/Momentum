@@ -6,7 +6,11 @@ import type { RoutineBlock } from '@/types';
 // ── Queries ──
 
 export function useRoutineBlocks() {
-  return useLiveQuery(() => db.routineBlocks.orderBy('sortOrder').toArray());
+  return useLiveQuery(() =>
+    db.routineBlocks.toArray().then(blocks =>
+      blocks.sort((a, b) => a.startTime.localeCompare(b.startTime))
+    )
+  );
 }
 
 // ── Mutations ──

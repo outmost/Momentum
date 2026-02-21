@@ -47,7 +47,6 @@ function BlockForm({ block, onClose }: { block?: RoutineBlock; onClose: () => vo
           onChange={e => setName(e.target.value)}
           placeholder="e.g. Morning, Lunch break, After work"
           maxLength={30}
-          autoFocus
           className="field"
         />
       </div>

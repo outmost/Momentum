@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Folder, Goal, Milestone, Entry, AppSettings, RoutineBlock } from '@/types';
+import type { Folder, Goal, Milestone, Entry, AppSettings, RoutineBlock, Invite } from '@/types';
 
 class MomentumDB extends Dexie {
   folders!: Table<Folder>;
@@ -8,6 +8,7 @@ class MomentumDB extends Dexie {
   entries!: Table<Entry>;
   settings!: Table<AppSettings>;
   routineBlocks!: Table<RoutineBlock>;
+  invites!: Table<Invite>;
 
   constructor() {
     super('momentum-db');
@@ -25,6 +26,15 @@ class MomentumDB extends Dexie {
       entries: 'id, goalId, date, [goalId+date]',
       settings: 'id',
       routineBlocks: 'id, sortOrder',
+    });
+    this.version(3).stores({
+      folders: 'id, sortOrder',
+      goals: 'id, folderId, routineBlockId, status, visibility, sortOrder, [folderId+sortOrder]',
+      milestones: 'id, goalId, sortOrder, [goalId+sortOrder]',
+      entries: 'id, goalId, date, [goalId+date]',
+      settings: 'id',
+      routineBlocks: 'id, sortOrder',
+      invites: 'id, goalId, status, [goalId+status]',
     });
   }
 }

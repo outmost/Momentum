@@ -3,6 +3,8 @@
 export type GoalType = 'binary' | 'numeric' | 'timer';
 export type Frequency = 'daily' | 'weekly' | 'custom';
 export type GoalStatus = 'active' | 'paused' | 'completed' | 'archived';
+export type GoalVisibility = 'private' | 'invite-only' | 'public';
+export type InviteStatus = 'pending' | 'approved' | 'denied';
 
 // ---- Tables ----
 
@@ -33,9 +35,21 @@ export interface Goal {
   reminderEnabled: boolean;
   reminderTime?: string;
   color?: string;
+  visibility: GoalVisibility;
+  shareCode?: string;      // auto-generated for invite-only and public goals
   createdAt: number;
   updatedAt: number;
   completedAt?: number;
+}
+
+export interface Invite {
+  id: string;
+  goalId: string;
+  name: string;
+  status: InviteStatus;
+  note?: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface Milestone {

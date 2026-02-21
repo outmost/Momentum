@@ -48,38 +48,38 @@ export async function seedDemoData(): Promise<boolean> {
     {
       id: meditateId, title: 'Meditate', type: 'binary', status: 'active',
       folderId: healthId, sortOrder: 1000, frequency: 'daily',
-      reminderEnabled: false, color: '#22C55E', createdAt: now, updatedAt: now,
+      reminderEnabled: false, color: '#22C55E', visibility: 'private', createdAt: now, updatedAt: now,
     },
     {
       id: pushupsId, title: 'Press-ups', type: 'numeric', status: 'active',
       folderId: healthId, sortOrder: 2000, frequency: 'daily',
       target: 30, unit: 'reps',
-      reminderEnabled: false, color: '#16A34A', createdAt: now, updatedAt: now,
+      reminderEnabled: false, color: '#16A34A', visibility: 'private', createdAt: now, updatedAt: now,
     },
     {
       id: waterId, title: 'Water', type: 'numeric', status: 'active',
       folderId: healthId, sortOrder: 3000, frequency: 'daily',
       target: 8, unit: 'glasses',
-      reminderEnabled: false, color: '#0EA5E9', createdAt: now, updatedAt: now,
+      reminderEnabled: false, color: '#0EA5E9', visibility: 'private', createdAt: now, updatedAt: now,
     },
     {
       id: deepworkId, title: 'Deep work', type: 'timer', status: 'active',
       folderId: undefined, sortOrder: 1000, frequency: 'custom',
       customDays: [1, 2, 3, 4, 5], // Mon–Fri
       duration: 90 * 60,
-      reminderEnabled: false, color: '#0057FF', createdAt: now, updatedAt: now,
+      reminderEnabled: false, color: '#0057FF', visibility: 'private', createdAt: now, updatedAt: now,
     },
     {
       id: readId, title: 'Read', type: 'numeric', status: 'active',
       folderId: learningId, sortOrder: 1000, frequency: 'daily',
       target: 20, unit: 'pages',
-      reminderEnabled: false, color: '#8B5CF6', createdAt: now, updatedAt: now,
+      reminderEnabled: false, color: '#8B5CF6', visibility: 'private', createdAt: now, updatedAt: now,
     },
     {
       id: spanishId, title: 'Spanish', type: 'timer', status: 'active',
       folderId: learningId, sortOrder: 2000, frequency: 'daily',
       duration: 15 * 60,
-      reminderEnabled: false, color: '#F59E0B', createdAt: now, updatedAt: now,
+      reminderEnabled: false, color: '#F59E0B', visibility: 'private', createdAt: now, updatedAt: now,
     },
   ]);
 
@@ -173,12 +173,13 @@ export async function seedDemoData(): Promise<boolean> {
  * Wipes everything — used by "Clear all data" in settings.
  */
 export async function clearAllAppData() {
-  await db.transaction('rw', [db.goals, db.folders, db.entries, db.milestones, db.routineBlocks, db.settings], async () => {
+  await db.transaction('rw', [db.goals, db.folders, db.entries, db.milestones, db.routineBlocks, db.invites, db.settings], async () => {
     await db.entries.clear();
     await db.milestones.clear();
     await db.goals.clear();
     await db.folders.clear();
     await db.routineBlocks.clear();
+    await db.invites.clear();
     // Reset seeded flag so sample data can be loaded again
     await db.settings.update('settings', { seeded: false, updatedAt: Date.now() });
   });

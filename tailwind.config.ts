@@ -10,11 +10,40 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        accent: '#3B82F6',
-        success: '#10B981',
+        accent: 'var(--accent)',
+        success: 'var(--success)',
+        progress: 'var(--progress)',
+        danger: 'var(--danger)',
       },
       borderRadius: {
-        card: '12px',
+        card: '14px',
+        'card-sm': '10px',
+        'card-lg': '20px',
+      },
+      boxShadow: {
+        xs: 'var(--shadow-xs)',
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+      },
+      fontFamily: {
+        sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        mono: ['GeistMono', 'ui-monospace', 'monospace'],
+      },
+      fontSize: {
+        '2xs': ['10px', { lineHeight: '1.4' }],
+        'xs': ['12px', { lineHeight: '1.5' }],
+        'sm': ['13px', { lineHeight: '1.5' }],
+        'base': ['14px', { lineHeight: '1.5' }],
+        'md': ['15px', { lineHeight: '1.4' }],
+      },
+      transitionTimingFunction: {
+        spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        smooth: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      animation: {
+        'in': 'fadeIn 0.15s ease-out',
+        'scale-in': 'scaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both',
       },
     },
   },

@@ -125,14 +125,14 @@ export function NumericEntry({ value, target, unit, onChange, color = '#16A34A' 
           <ProgressBar
             value={progress}
             size="sm"
-            color={isSuccess ? color : 'var(--text-3)'}
+            color={value > 0 ? color : 'var(--border-2)'}
             milestone={80}
             className="flex-1"
           />
           {value > 0 && (
             <span
               className={`text-[9px] tabular leading-none transition-all duration-200 ${justHitTarget ? 'animate-counter-up' : ''}`}
-              style={{ color: isSuccess ? color : 'var(--text-3)', opacity: 0.7, minWidth: 20, textAlign: 'right' }}
+              style={{ color: value > 0 ? color : 'var(--text-3)', opacity: 0.75, minWidth: 20, textAlign: 'right' }}
             >
               {progress}%
             </span>

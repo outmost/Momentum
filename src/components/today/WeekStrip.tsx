@@ -1,6 +1,7 @@
 'use client';
 import React, { useRef, useEffect } from 'react';
 import { format, addDays, subDays, parseISO, startOfWeek, isSameDay } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface WeekStripProps {
   selectedDate: string;
@@ -20,7 +21,6 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0, comple
   const todayStr = format(today, 'yyyy-MM-dd');
   const selected = parseISO(selectedDate);
 
-  // Show 3 weeks: previous, current, next
   const currentWeekStart = startOfWeek(selected, { weekStartsOn });
   const rangeStart = subDays(currentWeekStart, 7);
   const days: Date[] = [];
@@ -30,7 +30,6 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0, comple
 
   const dayLabels = weekStartsOn === 1 ? DAY_LABELS_MON : DAY_LABELS_SUN;
 
-  // Scroll to center the selected date on mount / change
   useEffect(() => {
     if (selectedRef.current && scrollRef.current) {
       const container = scrollRef.current;
@@ -43,11 +42,11 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0, comple
   return (
     <div className="mb-6">
       {/* Day-of-week labels */}
-      <div className="flex justify-between px-1 mb-1">
+      <div className="flex justify-between px-1 mb-1.5">
         {dayLabels.map((label, i) => (
           <span
             key={i}
-            className="w-10 text-center text-[10px] font-medium"
+            className="w-10 text-center text-[10px] font-semibold uppercase tracking-wider"
             style={{ color: 'var(--text-3)' }}
           >
             {label}
@@ -73,10 +72,10 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0, comple
               const isFuture = dateStr > todayStr;
               const dayNum = day.getDate();
 
-              // Completion data for dot
               const progress = completionMap?.get(dateStr);
               const hasDot = progress && progress.total > 0 && !isFuture;
               const dotPct = progress ? progress.completed / progress.total : 0;
+              // Any progress is positive — green always (never amber)
               const isPerfectDay = dotPct >= 1 && hasDot;
 
               return (
@@ -85,46 +84,60 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0, comple
                   ref={isSelected ? selectedRef : undefined}
                   onClick={() => !isFuture && onSelectDate(dateStr)}
                   disabled={isFuture}
-                  className="flex flex-col items-center justify-center w-10 h-12 rounded-full transition-all duration-200 active:scale-95"
-                  style={{
-                    backgroundColor: isSelected
-                      ? 'var(--accent)'
-                      : isToday
-                      ? 'var(--accent-2)'
-                      : 'transparent',
-                    color: isSelected
-                      ? 'white'
-                      : isFuture
-                      ? 'var(--border-2)'
-                      : isToday
-                      ? 'var(--accent)'
-                      : 'var(--text)',
-                    fontWeight: isSelected || isToday ? 600 : 400,
-                    opacity: isFuture ? 0.4 : 1,
-                    boxShadow: isSelected ? '0 2px 8px var(--glow)' : 'none',
-                  }}
+                  className="relative flex flex-col items-center justify-center w-10 h-12 rounded-full active:scale-95"
+                  style={{ opacity: isFuture ? 0.3 : 1 }}
                 >
-                  <span className="text-sm leading-none tabular">{dayNum}</span>
-                  {/* Completion dot — with glow for perfect days */}
-                  {hasDot ? (
+                  {/* Selected / today background */}
+                  {(isSelected || isToday) && !isSelected && (
                     <span
-                      className="w-[5px] h-[5px] rounded-full mt-1 transition-all duration-300"
-                      style={{
-                        backgroundColor: isSelected
-                          ? 'rgba(255,255,255,0.7)'
-                          : isPerfectDay
-                          ? 'var(--success)'
-                          : dotPct > 0
-                          ? 'var(--accent)'
-                          : 'var(--border-2)',
-                        boxShadow: isPerfectDay && !isSelected
-                          ? '0 0 4px var(--success-glow)'
-                          : 'none',
-                      }}
+                      className="absolute inset-0 rounded-full"
+                      style={{ backgroundColor: 'var(--accent-2)' }}
                     />
-                  ) : (
-                    <span className="w-[5px] h-[5px] mt-1" />
                   )}
+                  {isSelected && (
+                    <motion.span
+                      layoutId="week-selected"
+                      className="absolute inset-0 rounded-full"
+                      style={{ backgroundColor: 'var(--accent)' }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+
+                  <span
+                    className="relative z-10 text-sm leading-none tabular font-medium"
+                    style={{
+                      color: isSelected
+                        ? 'white'
+                        : isToday
+                        ? 'var(--accent)'
+                        : 'var(--text)',
+                      fontWeight: isSelected || isToday ? 700 : 400,
+                    }}
+                  >
+                    {dayNum}
+                  </span>
+
+                  {/* Completion indicator — green for any progress, brighter for perfect */}
+                  <span className="relative z-10 flex items-center justify-center w-[6px] h-[6px] mt-1">
+                    {hasDot ? (
+                      <motion.span
+                        className="w-[5px] h-[5px] rounded-full"
+                        style={{
+                          backgroundColor: isSelected
+                            ? 'rgba(255,255,255,0.75)'
+                            : isPerfectDay
+                            ? 'var(--success)'
+                            : 'color-mix(in srgb, var(--success) 60%, transparent)',
+                          boxShadow: isPerfectDay && !isSelected
+                            ? '0 0 5px var(--success-glow)'
+                            : 'none',
+                        }}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      />
+                    ) : null}
+                  </span>
                 </button>
               );
             })}
@@ -132,18 +145,30 @@ export function WeekStrip({ selectedDate, onSelectDate, weekStartsOn = 0, comple
         ))}
       </div>
 
-      {/* Quick "Today" pill when not viewing today */}
-      {selectedDate !== todayStr && (
-        <div className="flex justify-center mt-2 animate-slide-down">
-          <button
-            onClick={() => onSelectDate(todayStr)}
-            className="px-3 py-1 rounded-full text-[11px] font-semibold transition-all active:scale-95"
-            style={{ backgroundColor: 'var(--accent)', color: 'white', boxShadow: '0 2px 8px var(--glow)' }}
+      {/* "Today" pill when browsing past */}
+      <AnimatePresence>
+        {selectedDate !== todayStr && (
+          <motion.div
+            className="flex justify-center mt-2"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
           >
-            Today
-          </button>
-        </div>
-      )}
+            <button
+              onClick={() => onSelectDate(todayStr)}
+              className="px-4 py-1.5 rounded-full text-[11px] font-semibold transition-all active:scale-95 hover:opacity-90"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: 'white',
+                boxShadow: '0 2px 10px var(--glow)',
+              }}
+            >
+              Back to today
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

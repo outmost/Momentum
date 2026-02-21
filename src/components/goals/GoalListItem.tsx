@@ -1,16 +1,18 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { MoreVertical, Pause, Play, Archive, Trash2, CheckCircle, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { deleteGoal, pauseGoal, resumeGoal, archiveGoal, completeGoal } from '@/hooks/useGoals';
+import { deleteGoal, pauseGoal, resumeGoal, archiveGoal, completeGoal, resumeGoal as undoComplete } from '@/hooks/useGoals';
+import { useUIStore } from '@/lib/store';
 import type { Goal } from '@/types';
 
 const TYPE_LABELS: Record<string, string> = {
-  binary: '✓', numeric: '#', milestone: '◎', timer: '⏱',
+  binary: '\u2713', numeric: '#', milestone: '\u25CE', timer: '\u23F1',
 };
 
 interface GoalListItemProps {
@@ -25,6 +27,9 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
   const [menuOpen, setMenuOpen]     = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const setToast = useUIStore(s => s.setToast);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: goal.id,
@@ -41,6 +46,37 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
     position:   isDragging ? 'relative' : undefined,
     borderBottom: isLast ? 'none' : '1px solid var(--border)',
   };
+
+  // Position the dropdown based on the button's location
+  const openMenu = useCallback(() => {
+    if (menuBtnRef.current) {
+      const rect = menuBtnRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.bottom + 4,
+        left: rect.right - 144, // w-36 = 144px, right-aligned
+      });
+    }
+    setMenuOpen(true);
+  }, []);
+
+  // Close menu on scroll (since portal position would be stale)
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleScroll = () => setMenuOpen(false);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [menuOpen]);
+
+  async function handleComplete() {
+    const goalId = goal.id;
+    const goalTitle = goal.title;
+    await completeGoal(goalId);
+    setCompleteOpen(false);
+    setToast({
+      message: `"${goalTitle}" completed`,
+      undoAction: () => undoComplete(goalId),
+    });
+  }
 
   return (
     <>
@@ -84,69 +120,76 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
           <p className="text-[10px] tabular text-right" style={{ color: 'var(--text-3)' }}>{completionRate7}%</p>
         </div>
 
-        <div className="relative shrink-0">
+        <div className="shrink-0">
           <button
-            onClick={() => setMenuOpen(!menuOpen)}
+            ref={menuBtnRef}
+            onClick={openMenu}
             className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-[var(--border)]"
             style={{ color: 'var(--text-3)' }}
           >
             <MoreVertical size={14} />
           </button>
-
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div
-                className="absolute right-0 top-8 z-20 w-36 card-sm py-1"
-                style={{ boxShadow: 'var(--shadow-md)' }}
-              >
-                {goal.status === 'active' && (
-                  <button
-                    onClick={() => { pauseGoal(goal.id); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
-                    style={{ color: 'var(--text-2)' }}
-                  >
-                    <Pause size={13} /> Pause
-                  </button>
-                )}
-                {goal.status === 'paused' && (
-                  <button
-                    onClick={() => { resumeGoal(goal.id); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
-                    style={{ color: 'var(--text-2)' }}
-                  >
-                    <Play size={13} /> Resume
-                  </button>
-                )}
-                {goal.status === 'active' && (
-                  <button
-                    onClick={() => { setCompleteOpen(true); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
-                    style={{ color: 'var(--text-2)' }}
-                  >
-                    <CheckCircle size={13} /> Complete
-                  </button>
-                )}
-                <button
-                  onClick={() => { archiveGoal(goal.id); setMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
-                  style={{ color: 'var(--text-2)' }}
-                >
-                  <Archive size={13} /> Archive
-                </button>
-                <div className="my-0.5" style={{ borderTop: '1px solid var(--border)' }} />
-                <button
-                  onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--danger-soft)]"
-                  style={{ color: 'var(--danger)' }}
-                >
-                  <Trash2 size={13} /> Delete
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </div>
+
+      {/* Dropdown menu — rendered via portal to avoid overflow clipping */}
+      {menuOpen && menuPos && createPortal(
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setMenuOpen(false)} />
+          <div
+            className="fixed z-[61] w-36 card-sm py-1"
+            style={{
+              top: menuPos.top,
+              left: Math.max(8, menuPos.left),
+              boxShadow: 'var(--shadow-md)',
+            }}
+          >
+            {goal.status === 'active' && (
+              <button
+                onClick={() => { pauseGoal(goal.id); setMenuOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
+                style={{ color: 'var(--text-2)' }}
+              >
+                <Pause size={13} /> Pause
+              </button>
+            )}
+            {goal.status === 'paused' && (
+              <button
+                onClick={() => { resumeGoal(goal.id); setMenuOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
+                style={{ color: 'var(--text-2)' }}
+              >
+                <Play size={13} /> Resume
+              </button>
+            )}
+            {goal.status === 'active' && (
+              <button
+                onClick={() => { setCompleteOpen(true); setMenuOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
+                style={{ color: 'var(--text-2)' }}
+              >
+                <CheckCircle size={13} /> Complete
+              </button>
+            )}
+            <button
+              onClick={() => { archiveGoal(goal.id); setMenuOpen(false); }}
+              className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--surface-2)]"
+              style={{ color: 'var(--text-2)' }}
+            >
+              <Archive size={13} /> Archive
+            </button>
+            <div className="my-0.5" style={{ borderTop: '1px solid var(--border)' }} />
+            <button
+              onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}
+              className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--danger-soft)]"
+              style={{ color: 'var(--danger)' }}
+            >
+              <Trash2 size={13} /> Delete
+            </button>
+          </div>
+        </>,
+        document.body
+      )}
 
       <ConfirmDialog
         open={deleteOpen}
@@ -160,9 +203,9 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
       <ConfirmDialog
         open={completeOpen}
         onClose={() => setCompleteOpen(false)}
-        onConfirm={() => { completeGoal(goal.id); setCompleteOpen(false); }}
+        onConfirm={handleComplete}
         title="Mark complete"
-        message={`Mark "${goal.title}" as completed? It will be hidden from active views.`}
+        message={`Mark "${goal.title}" as completed? You can undo this afterwards.`}
         confirmLabel="Mark Complete"
         variant="primary"
       />

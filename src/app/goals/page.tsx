@@ -5,7 +5,6 @@ import { useAllGoals } from '@/hooks/useGoals';
 import { useFolders } from '@/hooks/useFolders';
 import { useAllGoalStats, useOverallStreak } from '@/hooks/useStats';
 import { FolderSection } from '@/components/folders/FolderSection';
-import { CompletionChart } from '@/components/dashboard/CompletionChart';
 import { Modal } from '@/components/ui/Modal';
 import { FolderForm } from '@/components/folders/FolderForm';
 import type { Goal, GoalStatus } from '@/types';
@@ -64,11 +63,6 @@ export default function GoalsPage() {
             <FolderPlus size={15} />
           </button>
         </div>
-      </div>
-
-      {/* Activity heatmap — replaces the separate Progress tab */}
-      <div className="mb-5">
-        <CompletionChart />
       </div>
 
       {/* Search */}

@@ -29,6 +29,9 @@ interface UIStore {
 
   addGoalOpen: boolean;
   setAddGoalOpen: (open: boolean) => void;
+
+  toast: { message: string; undoAction?: () => void } | null;
+  setToast: (toast: { message: string; undoAction?: () => void } | null) => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -56,4 +59,7 @@ export const useUIStore = create<UIStore>((set) => ({
 
   addGoalOpen: false,
   setAddGoalOpen: (open) => set({ addGoalOpen: open }),
+
+  toast: null,
+  setToast: (toast) => set({ toast }),
 }));

@@ -4,7 +4,7 @@ import { format, parseISO, subDays } from 'date-fns';
 import { Plus, X, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useUIStore } from '@/lib/store';
-import { useActiveGoals } from '@/hooks/useGoals';
+import { useTodayViewGoals } from '@/hooks/useGoals';
 import { useEntriesForDate } from '@/hooks/useEntries';
 import { useRoutineBlocks } from '@/hooks/useRoutine';
 import { useDateRangeProgress, useOverallStreak } from '@/hooks/useStats';
@@ -42,7 +42,7 @@ const BANNER_QUOTES = [
 
 export default function TodayPage() {
   const { selectedDate, setSelectedDate, setAddGoalOpen } = useUIStore();
-  const goals         = useActiveGoals();
+  const goals         = useTodayViewGoals();
   const entries       = useEntriesForDate(selectedDate);
   const routineBlocks = useRoutineBlocks();
   const streak        = useOverallStreak();

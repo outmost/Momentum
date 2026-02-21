@@ -96,13 +96,7 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
           />
         )}
 
-        {localGoals.length > 0 && (
-          <div className="ml-auto mr-2 shrink-0">
-            <MiniHeatmap data={heatmapData} />
-          </div>
-        )}
-
-        <span className="text-[11px] tabular shrink-0" style={{ color: 'var(--text-3)' }}>
+        <span className="text-[11px] ml-auto tabular shrink-0" style={{ color: 'var(--text-3)' }}>
           {localGoals.length}
         </span>
 
@@ -142,6 +136,15 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
           </div>
         )}
       </div>
+
+      {expanded && localGoals.length > 0 && heatmapData && heatmapData.length > 0 && (
+        <div
+          className="px-4 py-3"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <MiniHeatmap data={heatmapData} />
+        </div>
+      )}
 
       {expanded && (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

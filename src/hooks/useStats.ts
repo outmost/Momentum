@@ -1,8 +1,19 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { format, subDays, addDays, parseISO } from 'date-fns';
-import type { Goal, Entry } from '@/types';
+import type { Goal, Entry, GoalType } from '@/types';
 import { isScheduledForDate, HABIT_FORMATION_DAYS } from '@/lib/utils';
+
+/**
+ * A day is "good" based on goal type:
+ *   binary  → entry must be completed
+ *   numeric/timer → any non-zero value counts (no need to hit the full target)
+ */
+function isGoodEntry(entry: Entry | undefined, goalType: GoalType | string): boolean {
+  if (!entry) return false;
+  if (goalType === 'binary') return entry.completed;
+  return entry.completed || (entry.value ?? 0) > 0;
+}
 
 function getScheduledDays(goal: Goal, days: string[]): string[] {
   return days.filter(day => isScheduledForDate(day, goal.frequency, goal.customDays));
@@ -28,7 +39,7 @@ function computeCurrentStreak(entries: Entry[], goal: Goal): number {
     }
 
     const entry = entryMap.get(dateStr);
-    if (entry && entry.completed) {
+    if (isGoodEntry(entry, goal.type)) {
       streak++;
       current = subDays(current, 1);
     } else {
@@ -60,8 +71,7 @@ function computeBestStreak(entries: Entry[], goal: Goal): number {
       continue;
     }
 
-    const entry = entryMap.get(dateStr);
-    if (entry && entry.completed) {
+    if (isGoodEntry(entryMap.get(dateStr), goal.type)) {
       current++;
       best = Math.max(best, current);
     } else {
@@ -85,10 +95,9 @@ function computeCompletionRate(entries: Entry[], goal: Goal, days: number): numb
   if (scheduled.length === 0) return 0;
 
   const entryMap = new Map(entries.map(e => [e.date, e]));
-  const completed = scheduled.filter(d => {
-    const entry = entryMap.get(d);
-    return entry && entry.completed;
-  }).length;
+  const completed = scheduled.filter(d =>
+    isGoodEntry(entryMap.get(d), goal.type)
+  ).length;
 
   return Math.round((completed / scheduled.length) * 100);
 }
@@ -105,7 +114,7 @@ export function useGoalStats(goalId: string, goal: Goal | undefined) {
       bestStreak: computeBestStreak(entries, goal),
       completionRate30: computeCompletionRate(entries, goal, 30),
       completionRate7: computeCompletionRate(entries, goal, 7),
-      totalEntries: entries.filter(e => e.completed).length,
+      totalEntries: entries.filter(e => isGoodEntry(e, goal.type)).length,
     };
   }, [goalId, goal?.frequency, goal?.customDays]);
 }
@@ -210,7 +219,7 @@ export function useAllGoalStats() {
         completed: !!entryMap.get(date)?.completed,
       }));
       const completionRate7 = computeCompletionRate(goalEntries, goal, 7);
-      const totalCompletions = goalEntries.filter(e => e.completed).length;
+      const totalCompletions = goalEntries.filter(e => isGoodEntry(e, goal.type)).length;
       const currentStreak = computeCurrentStreak(goalEntries, goal);
       return {
         goal,
@@ -225,7 +234,8 @@ export function useAllGoalStats() {
 
 /**
  * Tracks 66-day habit formation progress for a habit (folder).
- * Counts unique days where at least one goal in the habit was completed,
+ * Counts unique days where at least one goal in the habit had any activity
+ * (binary: completed; numeric/timer: any value > 0),
  * from the habit's startedAt date up to today (max HABIT_FORMATION_DAYS).
  */
 export function useHabitFormationProgress(folderId: string, startedAt: number) {
@@ -240,21 +250,27 @@ export function useHabitFormationProgress(folderId: string, startedAt: number) {
 
     const startDate = format(new Date(startedAt), 'yyyy-MM-dd');
     const today = format(new Date(), 'yyyy-MM-dd');
+    const goalTypeMap = new Map(goals.map(g => [g.id, g.type]));
     const goalIds = goals.map(g => g.id);
 
     const entries = await db.entries
       .where('goalId')
       .anyOf(goalIds)
-      .filter(e => e.completed && e.date >= startDate && e.date <= today)
+      .filter(e => e.date >= startDate && e.date <= today)
       .toArray();
 
-    // Count unique days practiced (cap at HABIT_FORMATION_DAYS)
-    const practicedDays = Math.min(
-      new Set(entries.map(e => e.date)).size,
-      HABIT_FORMATION_DAYS
-    );
+    // Collect unique days where at least one goal had a "good" entry
+    const goodDays = new Set<string>();
+    for (const e of entries) {
+      if (isGoodEntry(e, goalTypeMap.get(e.goalId) ?? 'binary')) {
+        goodDays.add(e.date);
+      }
+    }
 
-    return { practicedDays, target: HABIT_FORMATION_DAYS };
+    return {
+      practicedDays: Math.min(goodDays.size, HABIT_FORMATION_DAYS),
+      target: HABIT_FORMATION_DAYS,
+    };
   }, [folderId, startedAt]);
 }
 

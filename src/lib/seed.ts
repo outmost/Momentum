@@ -31,9 +31,11 @@ export async function seedDemoData(): Promise<boolean> {
   const healthId = nanoid();
   const learningId = nanoid();
 
+  const startedAt = subDays(new Date(), 65).getTime();
+
   await db.folders.bulkAdd([
-    { id: healthId,   name: 'Physical Health', color: '#10B981', icon: '💪', category: 'physical-health', startedAt: now, sortOrder: 1000, createdAt: now },
-    { id: learningId, name: 'Mental Well-being', color: '#F97316', icon: '🧘', category: 'mental-wellbeing', startedAt: now, sortOrder: 2000, createdAt: now },
+    { id: healthId,   name: 'Physical Health', color: '#10B981', icon: '💪', category: 'physical-health', startedAt, sortOrder: 1000, createdAt: now },
+    { id: learningId, name: 'Mental Well-being', color: '#F97316', icon: '🧘', category: 'mental-wellbeing', startedAt, sortOrder: 2000, createdAt: now },
   ]);
 
   // ── Goals ─────────────────────────────────────────────────────────────────
@@ -83,10 +85,10 @@ export async function seedDemoData(): Promise<boolean> {
     },
   ]);
 
-  // ── Entries — last 30 days (realistic, varied) ────────────────────────────
+  // ── Entries — last 65 days (realistic, varied) ────────────────────────────
   const entries: Entry[] = [];
 
-  for (let i = 30; i >= 1; i--) {
+  for (let i = 65; i >= 1; i--) {
     const d = subDays(new Date(), i);
     const date = format(d, 'yyyy-MM-dd');
     const dow = getDay(d);

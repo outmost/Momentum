@@ -7,8 +7,11 @@ import {
   Share2, UserPlus, Check, X, Clock,
 } from 'lucide-react';
 import { useGoal, deleteGoal, pauseGoal, resumeGoal, archiveGoal, completeGoal } from '@/hooks/useGoals';
-import { useEntries } from '@/hooks/useEntries';
+import { useEntries, useEntryForDate, upsertEntry } from '@/hooks/useEntries';
 import { useGoalStats } from '@/hooks/useStats';
+import { BinaryEntry } from '@/components/entries/BinaryEntry';
+import { NumericEntry } from '@/components/entries/NumericEntry';
+import { TimerEntry } from '@/components/entries/TimerEntry';
 import { useInvites, createInvite, updateInviteStatus, deleteInvite } from '@/hooks/useInvites';
 import { Modal } from '@/components/ui/Modal';
 import { GoalForm } from '@/components/goals/GoalForm';
@@ -273,11 +276,11 @@ function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: strin
   const entryMap = new Map((entries ?? []).map(e => [e.date, e]));
   const accentColor = goal.color || '#16A34A';
 
-  // Build 13 weeks × 7 days = 91 days, column-major
-  const startOfGrid = subDays(today, 90);
+  // Build 10 weeks × 7 days = 70 days, column-major; today is always the last cell
+  const startOfGrid = subDays(today, 69);
 
   const columns: string[][] = [];
-  for (let col = 0; col < 13; col++) {
+  for (let col = 0; col < 10; col++) {
     const week: string[] = [];
     for (let row = 0; row < 7; row++) {
       const d = new Date(startOfGrid.getTime() + (col * 7 + row) * 86400000);
@@ -356,6 +359,8 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
   const goal = useGoal(params.id);
   const entries = useEntries(params.id);
   const stats = useGoalStats(params.id, goal ?? undefined);
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const todayEntry = useEntryForDate(params.id, today);
   const [editOpen, setEditOpen]         = useState(false);
   const [deleteOpen, setDeleteOpen]     = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
@@ -366,7 +371,9 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
 
   const recentEntries = (entries ?? []).slice(0, 30);
   const goalColor = goal.color || '#16A34A';
-  const totalCompletions = (entries ?? []).filter(e => e.completed).length;
+  const totalCompletions = (entries ?? []).filter(e =>
+    goal.type === 'binary' ? e.completed : (e.completed || (e.value ?? 0) > 0)
+  ).length;
 
   const currentMissRun = (() => {
     let n = 0;
@@ -515,12 +522,58 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
         )}
       </div>
 
+      {/* Track today */}
+      {goal.status === 'active' && (
+        <div
+          className="rounded-xl p-5 animate-stagger-in"
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', animationDelay: '280ms' }}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>
+            Track today
+          </p>
+          {goal.type === 'binary' && (
+            <div className="flex items-center gap-3">
+              <BinaryEntry
+                completed={todayEntry?.completed ?? false}
+                onChange={completed => upsertEntry(goal.id, today, { completed })}
+                color={goalColor}
+              />
+              <span className="text-sm" style={{ color: 'var(--text-2)' }}>
+                {todayEntry?.completed ? 'Done for today!' : 'Mark as done'}
+              </span>
+            </div>
+          )}
+          {goal.type === 'numeric' && (
+            <NumericEntry
+              value={todayEntry?.value ?? 0}
+              target={goal.target ?? 0}
+              unit={goal.unit}
+              onChange={value =>
+                upsertEntry(goal.id, today, { value, completed: value >= (goal.target ?? 0) })
+              }
+              color={goalColor}
+            />
+          )}
+          {goal.type === 'timer' && (
+            <TimerEntry
+              goalId={goal.id}
+              value={todayEntry?.value ?? 0}
+              target={goal.duration ?? 0}
+              onChange={value =>
+                upsertEntry(goal.id, today, { value, completed: value >= (goal.duration ?? 0) })
+              }
+              color={goalColor}
+            />
+          )}
+        </div>
+      )}
+
       {/* Heatmap */}
       <div
         className="rounded-xl p-5 animate-stagger-in"
         style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', animationDelay: '300ms' }}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>Last 90 days</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>Last 66 days</p>
         <CalendarHeatmap goalId={goal.id} goal={goal} />
       </div>
 

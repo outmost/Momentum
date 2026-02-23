@@ -297,10 +297,10 @@ export default function TodayPage() {
                 &#127793;
               </motion.p>
               <p className="text-md font-semibold mb-1.5" style={{ color: 'var(--text)' }}>
-                Start your first habit
+                Start building habits
               </p>
-              <p className="text-sm mb-6" style={{ color: 'var(--text-3)', maxWidth: 240, margin: '0 auto 24px' }}>
-                Small, repeated actions build momentum over time.
+              <p className="text-sm mb-6" style={{ color: 'var(--text-3)', maxWidth: 260, margin: '0 auto 24px' }}>
+                Create a habit, add 3–5 goals, and track your way to 66 days.
               </p>
               <button
                 onClick={() => setAddGoalOpen(true)}

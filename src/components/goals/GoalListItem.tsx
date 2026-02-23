@@ -2,10 +2,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { MoreVertical, Pause, Play, Archive, Trash2, CheckCircle, GripVertical, Share2 } from 'lucide-react';
+import { MoreVertical, Pause, Play, Archive, Trash2, CheckCircle, GripVertical, Share2, Plus } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ShareModal } from '@/components/sharing/ShareModal';
 import { VisibilityBadge } from '@/components/sharing/VisibilityPicker';
@@ -19,12 +18,12 @@ const TYPE_LABELS: Record<string, string> = {
 
 interface GoalListItemProps {
   goal: Goal;
-  completionRate7?: number;
+  currentStreak?: number;
   draggable?: boolean;
   isLast?: boolean;
 }
 
-export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isLast = false }: GoalListItemProps) {
+export function GoalListItem({ goal, currentStreak = 0, draggable = false, isLast = false }: GoalListItemProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [deleteOpen, setDeleteOpen]   = useState(false);
@@ -97,13 +96,13 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
 
         <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
 
-        <span className="text-[11px] font-mono w-3 shrink-0 select-none" style={{ color: 'var(--text-3)' }}>
+        <span className="text-xs font-mono w-3 shrink-0 select-none" style={{ color: 'var(--text-3)' }}>
           {TYPE_LABELS[goal.type]}
         </span>
 
         <button
           onClick={() => router.push(`/goals/${goal.id}`)}
-          className="flex-1 text-left text-[13px] font-medium line-clamp-1 transition-colors"
+          className="flex-1 text-left text-sm font-medium line-clamp-1 transition-colors"
           style={{ color: 'var(--text)' }}
         >
           {goal.title}
@@ -135,10 +134,26 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
           </button>
         )}
 
-        <div className="w-12 shrink-0 space-y-0.5">
-          <ProgressBar value={completionRate7} size="sm" color={color} />
-          <p className="text-[10px] tabular text-right" style={{ color: 'var(--text-3)' }}>{completionRate7}%</p>
-        </div>
+        {/* Streak badge */}
+        {currentStreak > 0 && (
+          <div
+            className="flex items-center gap-1 px-2 py-0.5 rounded-full shrink-0"
+            style={{ backgroundColor: 'var(--streak-soft)', border: '1px solid color-mix(in srgb, var(--streak) 20%, transparent)' }}
+          >
+            <span style={{ fontSize: '11px' }}>🔥</span>
+            <span className="text-xs font-semibold tabular" style={{ color: 'var(--streak)' }}>{currentStreak}</span>
+          </div>
+        )}
+
+        <button
+          onClick={() => router.push(`/goals/${goal.id}`)}
+          className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors hover:bg-[var(--surface-3)]"
+          style={{ color: 'var(--text-3)', border: '1px solid var(--border)' }}
+          title="Track today"
+        >
+          <Plus size={10} />
+          Track
+        </button>
 
         <div className="shrink-0">
           <button

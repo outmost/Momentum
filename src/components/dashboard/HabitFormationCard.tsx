@@ -5,11 +5,6 @@ import { useAllGoalStats } from '@/hooks/useStats';
 
 const GOAL_DAYS = 66;
 const MILESTONES = [21, 44, 66] as const;
-const MILESTONE_LABELS: Record<number, string> = {
-  21: '3 wk',
-  44: '6 wk',
-  66: 'Done',
-};
 
 interface MiniRingProps {
   progress: number;     // 0–66
@@ -97,7 +92,7 @@ export function HabitFormationCard() {
               <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>
                 {formed
                   ? 'Habit formed 🎉'
-                  : `${capped} / ${GOAL_DAYS} days · next: ${MILESTONE_LABELS[nextMilestone]} at day ${nextMilestone}`}
+                  : `${GOAL_DAYS - capped} days to go · next milestone: day ${nextMilestone}`}
               </p>
             </div>
 

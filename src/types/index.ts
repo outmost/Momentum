@@ -6,13 +6,31 @@ export type GoalStatus = 'active' | 'paused' | 'completed' | 'archived';
 export type GoalVisibility = 'private' | 'invite-only' | 'public';
 export type InviteStatus = 'pending' | 'approved' | 'denied';
 
+export type HabitCategory =
+  | 'physical-health'
+  | 'sleep-rest'
+  | 'productivity'
+  | 'mental-wellbeing'
+  | 'financial'
+  | 'social'
+  | 'mindful-consumption'
+  | 'custom';
+
 // ---- Tables ----
 
+/**
+ * A Habit is an area of life you are working on (like an OKR Objective).
+ * It groups 3–5 Goals (Key Results) and tracks 66-day formation progress.
+ * The DB table is still called "folders" for backward compatibility.
+ */
 export interface Folder {
   id: string;
   name: string;
   color: string;
   icon: string;
+  category: HabitCategory;
+  /** Unix ms timestamp of when the user began tracking this habit (for 66-day progress). */
+  startedAt: number;
   sortOrder: number;
   createdAt: number;
 }
@@ -24,7 +42,7 @@ export interface Goal {
   description?: string;
   type: GoalType;
   status: GoalStatus;
-  folderId?: string;
+  folderId?: string;    // Required in practice — the habit this goal belongs to
   routineBlockId?: string;
   sortOrder: number;
   target?: number;

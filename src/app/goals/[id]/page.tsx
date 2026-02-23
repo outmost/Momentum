@@ -7,8 +7,11 @@ import {
   Share2, UserPlus, Check, X, Clock,
 } from 'lucide-react';
 import { useGoal, deleteGoal, pauseGoal, resumeGoal, archiveGoal, completeGoal } from '@/hooks/useGoals';
-import { useEntries } from '@/hooks/useEntries';
+import { useEntries, useEntryForDate, upsertEntry } from '@/hooks/useEntries';
 import { useGoalStats } from '@/hooks/useStats';
+import { BinaryEntry } from '@/components/entries/BinaryEntry';
+import { NumericEntry } from '@/components/entries/NumericEntry';
+import { TimerEntry } from '@/components/entries/TimerEntry';
 import { useInvites, createInvite, updateInviteStatus, deleteInvite } from '@/hooks/useInvites';
 import { Modal } from '@/components/ui/Modal';
 import { GoalForm } from '@/components/goals/GoalForm';
@@ -268,25 +271,28 @@ function InvitePanel({ goalId }: { goalId: string }) {
 
 function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: string; target?: number; duration?: number; color?: string } }) {
   const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
   const entries = useEntries(goalId);
   const entryMap = new Map((entries ?? []).map(e => [e.date, e]));
   const accentColor = goal.color || '#16A34A';
 
-  const weeks: string[][] = [];
-  let week: string[] = [];
-  const start = subDays(today, 89);
+  // Build 10 weeks × 7 days = 70 days, column-major; today is always the last cell
+  const startOfGrid = subDays(today, 69);
 
-  for (let i = 0; i < 90; i++) {
-    const d = new Date(start.getTime() + i * 86400000);
-    const dateStr = format(d, 'yyyy-MM-dd');
-    week.push(dateStr);
-    if (week.length === 7 || i === 89) { weeks.push(week); week = []; }
+  const columns: string[][] = [];
+  for (let col = 0; col < 10; col++) {
+    const week: string[] = [];
+    for (let row = 0; row < 7; row++) {
+      const d = new Date(startOfGrid.getTime() + (col * 7 + row) * 86400000);
+      week.push(format(d, 'yyyy-MM-dd'));
+    }
+    columns.push(week);
   }
 
   function getColor(dateStr: string): string {
+    if (dateStr > todayStr) return 'transparent';
     const entry = entryMap.get(dateStr);
-    if (!entry) return 'var(--border)';
-    if (!entry.completed && !entry.value) return 'var(--border)';
+    if (!entry || (!entry.completed && !entry.value)) return 'var(--border)';
     let intensity = 0;
     if (goal.type === 'binary') intensity = entry.completed ? 1 : 0;
     else if (goal.target) intensity = Math.min(1, (entry.value ?? 0) / goal.target);
@@ -298,21 +304,42 @@ function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: strin
     return accentColor;
   }
 
+  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
   return (
-    <div className="overflow-x-auto">
-      <div className="flex gap-0.5 min-w-max">
-        {weeks.map((w, wi) => (
-          <div key={wi} className="flex flex-col gap-0.5">
-            {w.map(dateStr => {
-              const color = getColor(dateStr);
-              const isFull = color === accentColor;
+    <div className="w-full">
+      <div className="flex gap-0.5 w-full">
+        {/* Day-of-week labels */}
+        <div className="flex flex-col gap-0.5 mr-1 shrink-0" style={{ paddingTop: 0 }}>
+          {dayLabels.map((d, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-center"
+              style={{ height: 14, fontSize: 9, color: 'var(--text-3)', fontWeight: 500 }}
+            >
+              {i % 2 === 0 ? d : ''}
+            </div>
+          ))}
+        </div>
+
+        {/* Grid columns — each column fills equal width */}
+        {columns.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-0.5 flex-1">
+            {week.map(dateStr => {
+              const bg = getColor(dateStr);
+              const isFuture = dateStr > todayStr;
+              const isFull = bg === accentColor;
+              const isToday = dateStr === todayStr;
               return (
                 <div
                   key={dateStr}
-                  className="w-2.5 h-2.5 rounded-sm transition-all duration-300"
+                  className="rounded-[3px] transition-colors duration-200"
                   style={{
-                    backgroundColor: color,
-                    boxShadow: isFull ? `0 0 3px ${accentColor}30` : 'none',
+                    aspectRatio: '1',
+                    backgroundColor: bg,
+                    opacity: isFuture ? 0.12 : 1,
+                    border: isToday ? `1.5px solid ${accentColor}` : undefined,
+                    boxShadow: isFull ? `0 0 4px ${accentColor}40` : 'none',
                   }}
                   title={dateStr}
                 />
@@ -332,6 +359,8 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
   const goal = useGoal(params.id);
   const entries = useEntries(params.id);
   const stats = useGoalStats(params.id, goal ?? undefined);
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const todayEntry = useEntryForDate(params.id, today);
   const [editOpen, setEditOpen]         = useState(false);
   const [deleteOpen, setDeleteOpen]     = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
@@ -342,7 +371,9 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
 
   const recentEntries = (entries ?? []).slice(0, 30);
   const goalColor = goal.color || '#16A34A';
-  const totalCompletions = (entries ?? []).filter(e => e.completed).length;
+  const totalCompletions = (entries ?? []).filter(e =>
+    goal.type === 'binary' ? e.completed : (e.completed || (e.value ?? 0) > 0)
+  ).length;
 
   const currentMissRun = (() => {
     let n = 0;
@@ -491,12 +522,58 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
         )}
       </div>
 
+      {/* Track today */}
+      {goal.status === 'active' && (
+        <div
+          className="rounded-xl p-5 animate-stagger-in"
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', animationDelay: '280ms' }}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>
+            Track today
+          </p>
+          {goal.type === 'binary' && (
+            <div className="flex items-center gap-3">
+              <BinaryEntry
+                completed={todayEntry?.completed ?? false}
+                onChange={completed => upsertEntry(goal.id, today, { completed })}
+                color={goalColor}
+              />
+              <span className="text-sm" style={{ color: 'var(--text-2)' }}>
+                {todayEntry?.completed ? 'Done for today!' : 'Mark as done'}
+              </span>
+            </div>
+          )}
+          {goal.type === 'numeric' && (
+            <NumericEntry
+              value={todayEntry?.value ?? 0}
+              target={goal.target ?? 0}
+              unit={goal.unit}
+              onChange={value =>
+                upsertEntry(goal.id, today, { value, completed: value >= (goal.target ?? 0) })
+              }
+              color={goalColor}
+            />
+          )}
+          {goal.type === 'timer' && (
+            <TimerEntry
+              goalId={goal.id}
+              value={todayEntry?.value ?? 0}
+              target={goal.duration ?? 0}
+              onChange={value =>
+                upsertEntry(goal.id, today, { value, completed: value >= (goal.duration ?? 0) })
+              }
+              color={goalColor}
+            />
+          )}
+        </div>
+      )}
+
       {/* Heatmap */}
       <div
         className="rounded-xl p-5 animate-stagger-in"
         style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', animationDelay: '300ms' }}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>Last 90 days</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-3)' }}>Last 66 days</p>
         <CalendarHeatmap goalId={goal.id} goal={goal} />
       </div>
 

@@ -36,6 +36,22 @@ class MomentumDB extends Dexie {
       routineBlocks: 'id, sortOrder',
       invites: 'id, goalId, status, [goalId+status]',
     });
+    // v4: habits now have category + startedAt for 66-day formation tracking
+    this.version(4).stores({
+      folders: 'id, sortOrder, category',
+      goals: 'id, folderId, routineBlockId, status, visibility, sortOrder, [folderId+sortOrder]',
+      milestones: 'id, goalId, sortOrder, [goalId+sortOrder]',
+      entries: 'id, goalId, date, [goalId+date]',
+      settings: 'id',
+      routineBlocks: 'id, sortOrder',
+      invites: 'id, goalId, status, [goalId+status]',
+    }).upgrade(tx => {
+      // Backfill existing folders with category and startedAt
+      return tx.table('folders').toCollection().modify((folder: Folder) => {
+        if (!folder.category) folder.category = 'custom';
+        if (!folder.startedAt) folder.startedAt = folder.createdAt;
+      });
+    });
   }
 }
 

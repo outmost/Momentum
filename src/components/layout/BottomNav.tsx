@@ -7,7 +7,7 @@ import { useUIStore } from '@/lib/store';
 
 const navItems = [
   { href: '/',         label: 'Today',    icon: CheckSquare },
-  { href: '/goals',    label: 'Goals',    icon: Layers },
+  { href: '/goals',    label: 'Habits',   icon: Layers },
   // center (+) button occupies slot 2
   { href: '/routine',  label: 'Routine',  icon: Repeat },
   { href: '/settings', label: 'Settings', icon: Settings },

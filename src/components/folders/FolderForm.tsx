@@ -19,6 +19,10 @@ export function FolderForm({ folder, onClose }: FolderFormProps) {
   const [saving, setSaving] = useState(false);
 
   const selectedCat = HABIT_CATEGORIES.find(c => c.id === category)!;
+  // Categories already used by another habit (self excluded when editing)
+  const usedCategories = new Set(
+    (folders ?? []).filter(f => f.id !== folder?.id).map(f => f.category)
+  );
 
   // When category changes for a new habit, pre-fill name with the category label
   useEffect(() => {
@@ -86,17 +90,21 @@ export function FolderForm({ folder, onClose }: FolderFormProps) {
       <div className="grid grid-cols-2 gap-2">
         {HABIT_CATEGORIES.map(cat => {
           const isSelected = category === cat.id;
+          const isUsed = cat.id !== 'custom' && usedCategories.has(cat.id);
           return (
             <button
               key={cat.id}
               type="button"
-              onClick={() => setCategory(cat.id)}
+              onClick={() => !isUsed && setCategory(cat.id)}
+              disabled={isUsed}
               className="flex items-center gap-2.5 p-3 rounded-xl text-left transition-colors"
               style={{
                 border: `1.5px solid ${isSelected ? cat.color : 'var(--border)'}`,
                 backgroundColor: isSelected
                   ? `color-mix(in srgb, ${cat.color} 10%, var(--surface))`
                   : 'var(--surface)',
+                opacity: isUsed ? 0.38 : 1,
+                cursor: isUsed ? 'not-allowed' : 'pointer',
               }}
             >
               <span className="text-xl leading-none shrink-0">{cat.icon}</span>

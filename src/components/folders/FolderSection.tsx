@@ -17,7 +17,7 @@ import { useHabitFormationProgress } from '@/hooks/useStats';
 import { MIN_GOALS_PER_HABIT, MAX_GOALS_PER_HABIT } from '@/lib/utils';
 import type { Folder, Goal } from '@/types';
 
-interface GoalWithStats extends Goal { completionRate7?: number; currentStreak?: number; }
+interface GoalWithStats extends Goal { currentStreak?: number; }
 interface FolderSectionProps {
   folder?: Folder;
   goals: GoalWithStats[];
@@ -41,10 +41,12 @@ function FormationBar({
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium" style={{ color: 'var(--text-3)' }}>
-          Habit formation
+          66-day journey
         </span>
         <span className="text-xs font-semibold tabular" style={{ color }}>
-          {practicedDays} / {target} days
+          {practicedDays >= target
+            ? 'Habit formed 🎉'
+            : `${target - practicedDays} days to go`}
         </span>
       </div>
 
@@ -251,7 +253,6 @@ export function FolderSection({ folder, goals, defaultExpanded = true }: FolderS
               <GoalListItem
                 key={goal.id}
                 goal={goal}
-                completionRate7={goal.completionRate7}
                 currentStreak={goal.currentStreak}
                 draggable
                 isLast={i === localGoals.length - 1}

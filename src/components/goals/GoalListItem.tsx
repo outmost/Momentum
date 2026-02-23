@@ -2,10 +2,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { MoreVertical, Pause, Play, Archive, Trash2, CheckCircle, GripVertical, Share2 } from 'lucide-react';
+import { MoreVertical, Pause, Play, Archive, Trash2, CheckCircle, GripVertical, Share2, Plus } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ShareModal } from '@/components/sharing/ShareModal';
 import { VisibilityBadge } from '@/components/sharing/VisibilityPicker';
@@ -19,13 +18,12 @@ const TYPE_LABELS: Record<string, string> = {
 
 interface GoalListItemProps {
   goal: Goal;
-  completionRate7?: number;
   currentStreak?: number;
   draggable?: boolean;
   isLast?: boolean;
 }
 
-export function GoalListItem({ goal, completionRate7 = 0, currentStreak = 0, draggable = false, isLast = false }: GoalListItemProps) {
+export function GoalListItem({ goal, currentStreak = 0, draggable = false, isLast = false }: GoalListItemProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [deleteOpen, setDeleteOpen]   = useState(false);
@@ -147,10 +145,15 @@ export function GoalListItem({ goal, completionRate7 = 0, currentStreak = 0, dra
           </div>
         )}
 
-        <div className="w-14 shrink-0 space-y-0.5">
-          <ProgressBar value={completionRate7} size="sm" color={color} />
-          <p className="text-xs tabular text-right" style={{ color: 'var(--text-3)' }}>{completionRate7}%</p>
-        </div>
+        <button
+          onClick={() => router.push(`/goals/${goal.id}`)}
+          className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors hover:bg-[var(--surface-3)]"
+          style={{ color: 'var(--text-3)', border: '1px solid var(--border)' }}
+          title="Track today"
+        >
+          <Plus size={10} />
+          Track
+        </button>
 
         <div className="shrink-0">
           <button

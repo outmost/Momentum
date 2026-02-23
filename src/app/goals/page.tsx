@@ -108,7 +108,6 @@ export default function GoalsPage() {
         {(folders ?? []).map(folder => {
           const folderGoals = (grouped.get(folder.id) ?? []).map(g => ({
             ...g,
-            completionRate7: statsMap.get(g.id)?.completionRate7 ?? 0,
             currentStreak: statsMap.get(g.id)?.currentStreak ?? 0,
           }));
           if (statusFilter !== 'all' && folderGoals.length === 0) return null;
@@ -120,7 +119,6 @@ export default function GoalsPage() {
           <FolderSection
             goals={(grouped.get(null) ?? []).map(g => ({
               ...g,
-              completionRate7: statsMap.get(g.id)?.completionRate7 ?? 0,
               currentStreak: statsMap.get(g.id)?.currentStreak ?? 0,
             }))}
           />

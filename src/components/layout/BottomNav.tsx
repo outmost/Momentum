@@ -114,7 +114,7 @@ export function BottomNav() {
               marginTop: '-6px',
             }}
             whileTap={{ scale: 0.9 }}
-            aria-label="Add key result"
+            aria-label="Add goal"
           >
             <Plus size={20} strokeWidth={2.5} />
           </motion.button>

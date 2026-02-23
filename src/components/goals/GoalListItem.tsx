@@ -98,13 +98,13 @@ export function GoalListItem({ goal, completionRate7 = 0, currentStreak = 0, dra
 
         <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
 
-        <span className="text-[11px] font-mono w-3 shrink-0 select-none" style={{ color: 'var(--text-3)' }}>
+        <span className="text-xs font-mono w-3 shrink-0 select-none" style={{ color: 'var(--text-3)' }}>
           {TYPE_LABELS[goal.type]}
         </span>
 
         <button
           onClick={() => router.push(`/goals/${goal.id}`)}
-          className="flex-1 text-left text-[13px] font-medium line-clamp-1 transition-colors"
+          className="flex-1 text-left text-sm font-medium line-clamp-1 transition-colors"
           style={{ color: 'var(--text)' }}
         >
           {goal.title}
@@ -139,17 +139,17 @@ export function GoalListItem({ goal, completionRate7 = 0, currentStreak = 0, dra
         {/* Streak badge */}
         {currentStreak > 0 && (
           <div
-            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full shrink-0"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-full shrink-0"
             style={{ backgroundColor: 'var(--streak-soft)', border: '1px solid color-mix(in srgb, var(--streak) 20%, transparent)' }}
           >
-            <span style={{ fontSize: '9px' }}>🔥</span>
-            <span className="text-[10px] font-semibold tabular" style={{ color: 'var(--streak)' }}>{currentStreak}</span>
+            <span style={{ fontSize: '11px' }}>🔥</span>
+            <span className="text-xs font-semibold tabular" style={{ color: 'var(--streak)' }}>{currentStreak}</span>
           </div>
         )}
 
-        <div className="w-12 shrink-0 space-y-0.5">
+        <div className="w-14 shrink-0 space-y-0.5">
           <ProgressBar value={completionRate7} size="sm" color={color} />
-          <p className="text-[10px] tabular text-right" style={{ color: 'var(--text-3)' }}>{completionRate7}%</p>
+          <p className="text-xs tabular text-right" style={{ color: 'var(--text-3)' }}>{completionRate7}%</p>
         </div>
 
         <div className="shrink-0">

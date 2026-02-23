@@ -300,14 +300,14 @@ export default function TodayPage() {
                 Start building habits
               </p>
               <p className="text-sm mb-6" style={{ color: 'var(--text-3)', maxWidth: 260, margin: '0 auto 24px' }}>
-                Create a habit, add 3–5 key results, and track your way to 66 days.
+                Create a habit, add 3–5 goals, and track your way to 66 days.
               </p>
               <button
                 onClick={() => setAddGoalOpen(true)}
                 className="btn btn-primary btn-lg"
               >
                 <Plus size={16} strokeWidth={2.5} />
-                Add your first key result
+                Add your first goal
               </button>
             </>
           ) : (

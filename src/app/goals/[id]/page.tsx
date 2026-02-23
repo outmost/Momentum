@@ -268,25 +268,28 @@ function InvitePanel({ goalId }: { goalId: string }) {
 
 function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: string; target?: number; duration?: number; color?: string } }) {
   const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
   const entries = useEntries(goalId);
   const entryMap = new Map((entries ?? []).map(e => [e.date, e]));
   const accentColor = goal.color || '#16A34A';
 
-  const weeks: string[][] = [];
-  let week: string[] = [];
-  const start = subDays(today, 89);
+  // Build 13 weeks × 7 days = 91 days, column-major
+  const startOfGrid = subDays(today, 90);
 
-  for (let i = 0; i < 90; i++) {
-    const d = new Date(start.getTime() + i * 86400000);
-    const dateStr = format(d, 'yyyy-MM-dd');
-    week.push(dateStr);
-    if (week.length === 7 || i === 89) { weeks.push(week); week = []; }
+  const columns: string[][] = [];
+  for (let col = 0; col < 13; col++) {
+    const week: string[] = [];
+    for (let row = 0; row < 7; row++) {
+      const d = new Date(startOfGrid.getTime() + (col * 7 + row) * 86400000);
+      week.push(format(d, 'yyyy-MM-dd'));
+    }
+    columns.push(week);
   }
 
   function getColor(dateStr: string): string {
+    if (dateStr > todayStr) return 'transparent';
     const entry = entryMap.get(dateStr);
-    if (!entry) return 'var(--border)';
-    if (!entry.completed && !entry.value) return 'var(--border)';
+    if (!entry || (!entry.completed && !entry.value)) return 'var(--border)';
     let intensity = 0;
     if (goal.type === 'binary') intensity = entry.completed ? 1 : 0;
     else if (goal.target) intensity = Math.min(1, (entry.value ?? 0) / goal.target);
@@ -298,21 +301,42 @@ function CalendarHeatmap({ goalId, goal }: { goalId: string; goal: { type: strin
     return accentColor;
   }
 
+  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
   return (
-    <div className="overflow-x-auto">
-      <div className="flex gap-0.5 min-w-max">
-        {weeks.map((w, wi) => (
-          <div key={wi} className="flex flex-col gap-0.5">
-            {w.map(dateStr => {
-              const color = getColor(dateStr);
-              const isFull = color === accentColor;
+    <div className="w-full">
+      <div className="flex gap-0.5 w-full">
+        {/* Day-of-week labels */}
+        <div className="flex flex-col gap-0.5 mr-1 shrink-0" style={{ paddingTop: 0 }}>
+          {dayLabels.map((d, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-center"
+              style={{ height: 14, fontSize: 9, color: 'var(--text-3)', fontWeight: 500 }}
+            >
+              {i % 2 === 0 ? d : ''}
+            </div>
+          ))}
+        </div>
+
+        {/* Grid columns — each column fills equal width */}
+        {columns.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-0.5 flex-1">
+            {week.map(dateStr => {
+              const bg = getColor(dateStr);
+              const isFuture = dateStr > todayStr;
+              const isFull = bg === accentColor;
+              const isToday = dateStr === todayStr;
               return (
                 <div
                   key={dateStr}
-                  className="w-2.5 h-2.5 rounded-sm transition-all duration-300"
+                  className="rounded-[3px] transition-colors duration-200"
                   style={{
-                    backgroundColor: color,
-                    boxShadow: isFull ? `0 0 3px ${accentColor}30` : 'none',
+                    aspectRatio: '1',
+                    backgroundColor: bg,
+                    opacity: isFuture ? 0.12 : 1,
+                    border: isToday ? `1.5px solid ${accentColor}` : undefined,
+                    boxShadow: isFull ? `0 0 4px ${accentColor}40` : 'none',
                   }}
                   title={dateStr}
                 />

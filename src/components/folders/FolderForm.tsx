@@ -100,7 +100,7 @@ export function FolderForm({ folder, onClose }: FolderFormProps) {
               key={cat.id}
               type="button"
               onClick={() => setCategory(cat.id)}
-              className="flex items-start gap-2.5 p-3 rounded-xl text-left transition-colors"
+              className="flex items-start gap-3 p-3.5 rounded-xl text-left transition-colors"
               style={{
                 border: `1.5px solid ${isSelected ? cat.color : 'var(--border)'}`,
                 backgroundColor: isSelected
@@ -108,15 +108,15 @@ export function FolderForm({ folder, onClose }: FolderFormProps) {
                   : 'var(--surface)',
               }}
             >
-              <span className="text-xl leading-none shrink-0 mt-0.5">{cat.icon}</span>
+              <span className="text-2xl leading-none shrink-0 mt-0.5">{cat.icon}</span>
               <div className="min-w-0">
                 <p
-                  className="text-xs font-semibold leading-tight"
+                  className="text-sm font-semibold leading-tight"
                   style={{ color: isSelected ? cat.color : 'var(--text)' }}
                 >
                   {cat.label}
                 </p>
-                <p className="text-[10px] mt-0.5 leading-snug" style={{ color: 'var(--text-3)' }}>
+                <p className="text-xs mt-0.5 leading-snug" style={{ color: 'var(--text-3)' }}>
                   {cat.description}
                 </p>
               </div>

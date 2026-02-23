@@ -53,7 +53,7 @@ export default function GoalsPage() {
         <div>
           <h1 className="page-title">Habits</h1>
           <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-3)' }}>
-            {habitCount}/{MAX_HABITS} habits · key results track progress
+            {habitCount}/{MAX_HABITS} habits · goals track progress
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ export default function GoalsPage() {
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search key results…"
+          placeholder="Search goals…"
           className="field"
           style={{ paddingLeft: '32px' }}
         />
@@ -103,7 +103,7 @@ export default function GoalsPage() {
         ))}
       </div>
 
-      {/* ── Habit sections (each shows 66-day ring + mini heatmap + key results) ── */}
+      {/* ── Habit sections (each shows 66-day progress + goals) ── */}
       <div className="space-y-3">
         {(folders ?? []).map(folder => {
           const folderGoals = (grouped.get(folder.id) ?? []).map(g => ({
@@ -136,7 +136,7 @@ export default function GoalsPage() {
                   Start with a habit
                 </p>
                 <p className="text-sm mb-5" style={{ color: 'var(--text-3)', maxWidth: 240, margin: '0 auto 20px' }}>
-                  Choose a life area, then add 3–5 key results to track for 66 days.
+                  Choose a life area, then add 3–5 goals to track for 66 days.
                 </p>
                 <button
                   onClick={() => setHabitFormOpen(true)}
@@ -148,7 +148,7 @@ export default function GoalsPage() {
               </>
             ) : (
               <p className="text-sm" style={{ color: 'var(--text-3)' }}>
-                {search ? 'No key results match your search.' : 'No key results here.'}
+                {search ? 'No goals match your search.' : 'No goals here.'}
               </p>
             )}
           </div>

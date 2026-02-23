@@ -72,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       <BottomNav />
 
-      <Modal open={addGoalOpen} onClose={() => setAddGoalOpen(false)} title="New key result" size="md">
+      <Modal open={addGoalOpen} onClose={() => setAddGoalOpen(false)} title="New goal" size="md">
         <GoalForm onClose={() => setAddGoalOpen(false)} />
       </Modal>
 

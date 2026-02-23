@@ -31,14 +31,14 @@ function GoalCountHint({ folderId, currentGoalId }: { folderId: string; currentG
   if (count < MIN_GOALS_PER_HABIT) {
     return (
       <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>
-        {count} of {MIN_GOALS_PER_HABIT}–{MAX_GOALS_PER_HABIT} key results — add {MIN_GOALS_PER_HABIT - count} more to complete your habit.
+        {count} of {MIN_GOALS_PER_HABIT}–{MAX_GOALS_PER_HABIT} goals — add {MIN_GOALS_PER_HABIT - count} more to complete this habit.
       </p>
     );
   }
   if (count < MAX_GOALS_PER_HABIT) {
     return (
       <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>
-        {count} key results — {MAX_GOALS_PER_HABIT - count} slot{MAX_GOALS_PER_HABIT - count !== 1 ? 's' : ''} remaining.
+        {count} goals — {MAX_GOALS_PER_HABIT - count} slot{MAX_GOALS_PER_HABIT - count !== 1 ? 's' : ''} remaining.
       </p>
     );
   }
@@ -86,8 +86,8 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   function validate() {
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = 'Title is required';
-    if (!folderId) errs.folderId = 'Please select a habit for this key result';
-    if (atGoalLimit) errs.folderId = `This habit already has the maximum of ${MAX_GOALS_PER_HABIT} key results`;
+    if (!folderId) errs.folderId = 'Please select a habit for this goal';
+    if (atGoalLimit) errs.folderId = `This habit already has the maximum of ${MAX_GOALS_PER_HABIT} goals`;
     if (type === 'numeric' && (!target || Number(target) <= 0)) errs.target = 'Target must be greater than 0';
     if (type === 'timer' && (!duration || Number(duration) <= 0)) errs.duration = 'Duration must be greater than 0';
     if (frequency === 'custom' && customDays.length === 0) errs.customDays = 'Select at least one day';
@@ -177,10 +177,10 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
                     </span>
                     {isSelected && goalCount !== null && (
                       <span
-                        className="text-[10px] shrink-0 tabular"
+                        className="text-xs shrink-0 tabular"
                         style={{ color: goalCount >= MAX_GOALS_PER_HABIT ? 'var(--danger)' : 'var(--text-3)' }}
                       >
-                        {goalCount}/{MAX_GOALS_PER_HABIT}
+                        {goalCount}/{MAX_GOALS_PER_HABIT} goals
                       </span>
                     )}
                   </button>
@@ -191,7 +191,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
           </>
         ) : (
           <p className="text-sm py-2" style={{ color: 'var(--text-3)' }}>
-            Create a habit first, then add key results to it.
+            Create a habit first, then add goals to it.
           </p>
         )}
         {errors.folderId && (
@@ -202,7 +202,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
       {/* ── Title ── */}
       <div>
         <label style={labelStyle}>
-          Key result <span style={{ color: 'var(--danger)' }}>*</span>
+          Goal <span style={{ color: 'var(--danger)' }}>*</span>
         </label>
         <input
           value={title}
@@ -459,7 +459,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
           className="px-4 py-2 text-sm font-medium rounded-md text-white disabled:opacity-50"
           style={{ backgroundColor: 'var(--accent)' }}
         >
-          {saving ? 'Saving…' : goal ? 'Update' : 'Add key result'}
+          {saving ? 'Saving…' : goal ? 'Update goal' : 'Add goal'}
         </button>
       </div>
     </form>

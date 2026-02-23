@@ -48,14 +48,14 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* New key result button */}
+      {/* New goal button */}
       <div className="px-3 mb-4">
         <button
           onClick={() => setAddGoalOpen(true)}
           className="btn btn-primary w-full"
         >
           <Plus size={15} strokeWidth={2.5} />
-          New Key Result
+          New Goal
         </button>
       </div>
 

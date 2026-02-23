@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useFolders, createFolder } from '@/hooks/useFolders';
 import { useGoals, createGoal } from '@/hooks/useGoals';
 import { HABIT_CATEGORIES, MAX_HABITS, MAX_GOALS_PER_HABIT } from '@/lib/utils';
-import type { HabitCategory, GoalType } from '@/types';
+import type { HabitCategory, GoalType, Frequency } from '@/types';
 
 type Screen = 'choose' | 'habit' | 'goal';
 
@@ -153,9 +153,12 @@ function GoalScreen({
   const [target, setTarget] = useState('');
   const [unit, setUnit] = useState('');
   const [duration, setDuration] = useState('');
+  const [frequency, setFrequency] = useState<Frequency>('daily');
+  const [customDays, setCustomDays] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Auto-select the only habit if there's exactly one
   useEffect(() => {
@@ -172,6 +175,7 @@ function GoalScreen({
     if (!folderId) { setError('Please select a habit.'); return; }
     if (!title.trim()) { setError('Please enter a title.'); titleRef.current?.focus(); return; }
     if (atGoalLimit) { setError(`This habit already has ${MAX_GOALS_PER_HABIT} goals (maximum).`); return; }
+    if (frequency === 'custom' && customDays.length === 0) { setError('Select at least one day.'); return; }
     setSaving(true);
     try {
       await createGoal({
@@ -179,7 +183,8 @@ function GoalScreen({
         type,
         status: 'active',
         folderId,
-        frequency: 'daily',
+        frequency,
+        customDays: frequency === 'custom' ? customDays : undefined,
         reminderEnabled: false,
         visibility: 'private',
         target: type === 'numeric' && target ? parseFloat(target) : undefined,
@@ -283,6 +288,48 @@ function GoalScreen({
             {t === 'binary' ? '✓ Done' : t === 'numeric' ? '# Number' : '⏱ Timer'}
           </button>
         ))}
+      </div>
+
+      {/* When (frequency) */}
+      <div>
+        <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-3)' }}>When</p>
+        <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--border)' }}>
+          {(['daily', 'weekly', 'custom'] as Frequency[]).map(f => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFrequency(f)}
+              className="flex-1 py-1.5 rounded-md text-xs font-medium capitalize transition-colors"
+              style={{
+                backgroundColor: frequency === f ? 'var(--surface)' : 'transparent',
+                color: frequency === f ? 'var(--text)' : 'var(--text-3)',
+              }}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        {frequency === 'custom' && (
+          <div className="flex gap-1.5 mt-2 flex-wrap">
+            {DAY_NAMES.map((day, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setCustomDays(prev =>
+                  prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i]
+                )}
+                className="px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: customDays.includes(i) ? 'var(--text)' : 'transparent',
+                  color: customDays.includes(i) ? 'var(--bg)' : 'var(--text-3)',
+                  border: customDays.includes(i) ? '1px solid transparent' : '1px solid var(--border)',
+                }}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Numeric fields */}

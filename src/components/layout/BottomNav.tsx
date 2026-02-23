@@ -7,7 +7,7 @@ import { useUIStore } from '@/lib/store';
 
 const navItems = [
   { href: '/',         label: 'Today',    icon: CheckSquare },
-  { href: '/goals',    label: 'Goals',    icon: Layers },
+  { href: '/goals',    label: 'Habits',   icon: Layers },
   // center (+) button occupies slot 2
   { href: '/routine',  label: 'Routine',  icon: Repeat },
   { href: '/settings', label: 'Settings', icon: Settings },
@@ -114,7 +114,7 @@ export function BottomNav() {
               marginTop: '-6px',
             }}
             whileTap={{ scale: 0.9 }}
-            aria-label="Add goal"
+            aria-label="Add key result"
           >
             <Plus size={20} strokeWidth={2.5} />
           </motion.button>

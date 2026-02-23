@@ -1,11 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { createFolder, updateFolder } from '@/hooks/useFolders';
-import { FOLDER_COLORS } from '@/lib/utils';
-import type { Folder } from '@/types';
-
-const ICONS = ['📁', '💪', '📚', '💰', '❤️', '🏃', '🧘', '🎯', '🌱', '⭐', '🏠', '🎨'];
+import { createFolder, updateFolder, useFolders } from '@/hooks/useFolders';
+import { HABIT_CATEGORIES, MAX_HABITS } from '@/lib/utils';
+import type { Folder, HabitCategory } from '@/types';
 
 interface FolderFormProps {
   folder?: Folder;
@@ -13,75 +11,164 @@ interface FolderFormProps {
 }
 
 export function FolderForm({ folder, onClose }: FolderFormProps) {
-  const [name, setName] = useState(folder?.name ?? '');
-  const [color, setColor] = useState(folder?.color ?? FOLDER_COLORS[0]);
-  const [icon, setIcon] = useState(folder?.icon ?? '📁');
+  const folders = useFolders();
+  const habitCount = folders?.length ?? 0;
+
+  const [category, setCategory] = useState<HabitCategory>(folder?.category ?? 'custom');
+  const [customName, setCustomName] = useState(
+    folder?.name ?? ''
+  );
+  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  
+
+  const selectedCat = HABIT_CATEGORIES.find(c => c.id === category)!;
+
+  // For editing, use the stored name; for new, derive from category unless custom
+  function getEffectiveName(): string {
+    if (category === 'custom') return customName.trim();
+    // If editing and name was customised, keep it — otherwise use category label
+    if (folder && folder.category === category) return folder.name;
+    return selectedCat.label;
+  }
+
+  const atLimit = !folder && habitCount >= MAX_HABITS;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
-    
+    setError('');
+    const name = getEffectiveName();
+    if (!name) {
+      setError('Please enter a name for your custom habit.');
+      return;
+    }
+    if (atLimit) {
+      setError(`You can have at most ${MAX_HABITS} habits.`);
+      return;
+    }
     setSaving(true);
     try {
       if (folder) {
-        await updateFolder(folder.id, { name: name.trim(), color, icon });
+        await updateFolder(folder.id, {
+          name,
+          color: selectedCat.color,
+          icon: selectedCat.icon,
+          category,
+        });
       } else {
-        await createFolder({ name: name.trim(), color, icon });
+        await createFolder({
+          name,
+          color: selectedCat.color,
+          icon: selectedCat.icon,
+          category,
+        });
       }
       onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setSaving(false);
     }
   }
-  
+
   return (
-    <form onSubmit={handleSubmit} className="p-6 space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-        <input
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="e.g. Health, Learning, Finance"
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color</label>
-        <div className="flex gap-2 flex-wrap">
-          {FOLDER_COLORS.map(c => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setColor(c)}
-              className={`w-8 h-8 rounded-full border-2 transition-transform ${color === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'}`}
-              style={{ backgroundColor: c }}
-            />
-          ))}
+    <form onSubmit={handleSubmit} className="p-6 space-y-5">
+
+      {/* Habit count indicator */}
+      {!folder && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+            Choose a life area to build habits in
+          </p>
+          <span
+            className="text-[11px] font-semibold tabular px-2 py-0.5 rounded-full"
+            style={{
+              backgroundColor: habitCount >= MAX_HABITS ? 'var(--danger-soft)' : 'var(--surface-2)',
+              color: habitCount >= MAX_HABITS ? 'var(--danger)' : 'var(--text-3)',
+            }}
+          >
+            {habitCount}/{MAX_HABITS}
+          </span>
         </div>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Icon</label>
-        <div className="flex gap-2 flex-wrap">
-          {ICONS.map(ic => (
+      )}
+
+      {/* Category grid */}
+      <div className="grid grid-cols-2 gap-2">
+        {HABIT_CATEGORIES.map(cat => {
+          const isSelected = category === cat.id;
+          return (
             <button
-              key={ic}
+              key={cat.id}
               type="button"
-              onClick={() => setIcon(ic)}
-              className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center border-2 transition-colors ${icon === ic ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              onClick={() => setCategory(cat.id)}
+              className="flex items-start gap-2.5 p-3 rounded-xl text-left transition-colors"
+              style={{
+                border: `1.5px solid ${isSelected ? cat.color : 'var(--border)'}`,
+                backgroundColor: isSelected
+                  ? `color-mix(in srgb, ${cat.color} 10%, var(--surface))`
+                  : 'var(--surface)',
+              }}
             >
-              {ic}
+              <span className="text-xl leading-none shrink-0 mt-0.5">{cat.icon}</span>
+              <div className="min-w-0">
+                <p
+                  className="text-xs font-semibold leading-tight"
+                  style={{ color: isSelected ? cat.color : 'var(--text)' }}
+                >
+                  {cat.label}
+                </p>
+                <p className="text-[10px] mt-0.5 leading-snug" style={{ color: 'var(--text-3)' }}>
+                  {cat.description}
+                </p>
+              </div>
             </button>
-          ))}
+          );
+        })}
+      </div>
+
+      {/* Custom name field — only shown for custom category or when editing */}
+      {(category === 'custom' || folder) && (
+        <div>
+          <label
+            className="block text-xs font-medium mb-1.5"
+            style={{ color: 'var(--text-2)' }}
+          >
+            {category === 'custom' ? 'Habit name *' : 'Name (optional override)'}
+          </label>
+          <input
+            value={category === 'custom' ? customName : (folder?.name ?? selectedCat.label)}
+            onChange={e => {
+              if (category === 'custom') setCustomName(e.target.value);
+              else updateFolder(folder!.id, { name: e.target.value });
+            }}
+            placeholder={category === 'custom' ? 'e.g. Morning Pages' : selectedCat.label}
+            maxLength={50}
+            className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none"
+            style={{
+              border: '1px solid var(--border)',
+              backgroundColor: 'transparent',
+              color: 'var(--text)',
+            }}
+            autoFocus={category === 'custom'}
+          />
         </div>
-      </div>
-      
-      <div className="flex justify-end gap-3 pt-2">
+      )}
+
+      {error && (
+        <p className="text-xs" style={{ color: 'var(--danger)' }}>{error}</p>
+      )}
+
+      <div className="flex justify-end gap-3 pt-1">
         <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
-        <Button type="submit" loading={saving}>{folder ? 'Update' : 'Create'} Folder</Button>
+        <Button type="submit" loading={saving} disabled={atLimit && !folder}>
+          {folder ? 'Update habit' : 'Create habit'}
+        </Button>
       </div>
+
+      {atLimit && !folder && (
+        <p className="text-xs text-center" style={{ color: 'var(--danger)' }}>
+          You&apos;ve reached the maximum of {MAX_HABITS} habits. Remove one to add another.
+        </p>
+      )}
     </form>
   );
 }

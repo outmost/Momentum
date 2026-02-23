@@ -1,5 +1,84 @@
 import { format, parseISO, isToday, eachDayOfInterval, subDays } from 'date-fns';
-import type { Frequency } from '@/types';
+import type { Frequency, HabitCategory } from '@/types';
+
+export interface HabitCategoryDef {
+  id: HabitCategory;
+  label: string;
+  icon: string;
+  color: string;
+  description: string;
+}
+
+export const HABIT_CATEGORIES: HabitCategoryDef[] = [
+  {
+    id: 'physical-health',
+    label: 'Physical Health',
+    icon: '💪',
+    color: '#10B981',
+    description: 'Exercise, nutrition, hydration, dental care',
+  },
+  {
+    id: 'sleep-rest',
+    label: 'Sleep & Rest',
+    icon: '😴',
+    color: '#8B5CF6',
+    description: 'Consistent sleep schedule, recovery routines',
+  },
+  {
+    id: 'productivity',
+    label: 'Productivity',
+    icon: '🎯',
+    color: '#3B82F6',
+    description: 'Time management, goal setting, organization',
+  },
+  {
+    id: 'mental-wellbeing',
+    label: 'Mental Well-being',
+    icon: '🧘',
+    color: '#F97316',
+    description: 'Mindfulness, stress management, learning',
+  },
+  {
+    id: 'financial',
+    label: 'Financial',
+    icon: '💰',
+    color: '#EAB308',
+    description: 'Saving, budgeting, spending wisely',
+  },
+  {
+    id: 'social',
+    label: 'Social & Relationships',
+    icon: '❤️',
+    color: '#EC4899',
+    description: 'Gratitude, active listening, connections',
+  },
+  {
+    id: 'mindful-consumption',
+    label: 'Mindful Consumption',
+    icon: '🌱',
+    color: '#14B8A6',
+    description: 'Limiting social media, healthy choices',
+  },
+  {
+    id: 'custom',
+    label: 'Custom',
+    icon: '⭐',
+    color: '#6366F1',
+    description: 'Your own habit category',
+  },
+];
+
+export function getHabitCategory(id: HabitCategory): HabitCategoryDef {
+  return HABIT_CATEGORIES.find(c => c.id === id) ?? HABIT_CATEGORIES[HABIT_CATEGORIES.length - 1];
+}
+
+/** Max habits a user can create */
+export const MAX_HABITS = 7;
+/** Recommended goals per habit */
+export const MIN_GOALS_PER_HABIT = 3;
+export const MAX_GOALS_PER_HABIT = 5;
+/** Days to form a habit */
+export const HABIT_FORMATION_DAYS = 66;
 
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? parseISO(date) : date;

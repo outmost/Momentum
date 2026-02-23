@@ -1,7 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { nanoid } from 'nanoid';
-import type { Folder } from '@/types';
+import { MAX_HABITS } from '@/lib/utils';
+import type { Folder, HabitCategory } from '@/types';
 
 export function useFolders() {
   return useLiveQuery(() => db.folders.orderBy('sortOrder').toArray());
@@ -11,18 +12,28 @@ export function useFolder(id: string) {
   return useLiveQuery(() => db.folders.get(id), [id]);
 }
 
-export async function createFolder(data: Omit<Folder, 'id' | 'createdAt' | 'sortOrder'>) {
+export async function createFolder(
+  data: Omit<Folder, 'id' | 'createdAt' | 'sortOrder' | 'startedAt'> & { category: HabitCategory }
+) {
+  // Enforce max 7 habits
+  const count = await db.folders.count();
+  if (count >= MAX_HABITS) {
+    throw new Error(`You can have at most ${MAX_HABITS} habits.`);
+  }
+
   const maxOrder = await db.folders.toArray().then(folders =>
     folders.reduce((max, f) => Math.max(max, f.sortOrder), 0)
   );
-  
+
+  const now = Date.now();
   const folder: Folder = {
     ...data,
     id: nanoid(),
     sortOrder: maxOrder + 1000,
-    createdAt: Date.now(),
+    startedAt: now,
+    createdAt: now,
   };
-  
+
   await db.folders.add(folder);
   return folder;
 }

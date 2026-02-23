@@ -20,11 +20,12 @@ const TYPE_LABELS: Record<string, string> = {
 interface GoalListItemProps {
   goal: Goal;
   completionRate7?: number;
+  currentStreak?: number;
   draggable?: boolean;
   isLast?: boolean;
 }
 
-export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isLast = false }: GoalListItemProps) {
+export function GoalListItem({ goal, completionRate7 = 0, currentStreak = 0, draggable = false, isLast = false }: GoalListItemProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [deleteOpen, setDeleteOpen]   = useState(false);
@@ -133,6 +134,17 @@ export function GoalListItem({ goal, completionRate7 = 0, draggable = false, isL
           >
             <Share2 size={12} />
           </button>
+        )}
+
+        {/* Streak badge */}
+        {currentStreak > 0 && (
+          <div
+            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full shrink-0"
+            style={{ backgroundColor: 'var(--streak-soft)', border: '1px solid color-mix(in srgb, var(--streak) 20%, transparent)' }}
+          >
+            <span style={{ fontSize: '9px' }}>🔥</span>
+            <span className="text-[10px] font-semibold tabular" style={{ color: 'var(--streak)' }}>{currentStreak}</span>
+          </div>
         )}
 
         <div className="w-12 shrink-0 space-y-0.5">

@@ -1,10 +1,10 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { createGoal, updateGoal } from '@/hooks/useGoals';
-import { useFolders, createFolder } from '@/hooks/useFolders';
+import { createGoal, updateGoal, useGoals } from '@/hooks/useGoals';
+import { useFolders } from '@/hooks/useFolders';
 import { useRoutineBlocks } from '@/hooks/useRoutine';
-import { FOLDER_COLORS, GOAL_COLORS } from '@/lib/utils';
+import { GOAL_COLORS, MAX_GOALS_PER_HABIT, MIN_GOALS_PER_HABIT } from '@/lib/utils';
 import { VisibilityPicker } from '@/components/sharing/VisibilityPicker';
 import type { Goal, GoalType, Frequency, GoalVisibility } from '@/types';
 
@@ -18,12 +18,32 @@ const inputClass = "w-full px-3 py-2 rounded-md text-sm focus:outline-none trans
 const inputStyle = { border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--text)' };
 const labelStyle = { color: 'var(--text-2)', fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '6px' } as const;
 
-// Human-readable type labels — keeps the segmented control concise.
 const TYPE_LABELS: Record<GoalType, string> = {
   binary: 'Done / not done',
   numeric: 'Track a number',
   timer: 'Time-based',
 };
+
+function GoalCountHint({ folderId, currentGoalId }: { folderId: string; currentGoalId?: string }) {
+  const goals = useGoals(folderId, 'active');
+  if (!goals) return null;
+  const count = goals.filter(g => g.id !== currentGoalId).length;
+  if (count < MIN_GOALS_PER_HABIT) {
+    return (
+      <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>
+        {count} of {MIN_GOALS_PER_HABIT}–{MAX_GOALS_PER_HABIT} key results — add {MIN_GOALS_PER_HABIT - count} more to complete your habit.
+      </p>
+    );
+  }
+  if (count < MAX_GOALS_PER_HABIT) {
+    return (
+      <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>
+        {count} key results — {MAX_GOALS_PER_HABIT - count} slot{MAX_GOALS_PER_HABIT - count !== 1 ? 's' : ''} remaining.
+      </p>
+    );
+  }
+  return null;
+}
 
 export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const folders = useFolders();
@@ -31,10 +51,10 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
 
   const [title, setTitle] = useState(goal?.title ?? '');
   const [why, setWhy] = useState(goal?.why ?? '');
+  const [folderId, setFolderId] = useState(goal?.folderId ?? defaultFolderId ?? '');
   const [routineBlockId, setRoutineBlockId] = useState(goal?.routineBlockId ?? '');
   const [description, setDescription] = useState(goal?.description ?? '');
   const [type, setType] = useState<GoalType>(goal?.type ?? 'binary');
-  const [folderId, setFolderId] = useState(goal?.folderId ?? defaultFolderId ?? '');
   const [target, setTarget] = useState(goal?.target?.toString() ?? '');
   const [unit, setUnit] = useState(goal?.unit ?? '');
   const [duration, setDuration] = useState(goal?.duration ? Math.floor(goal.duration / 60).toString() : '');
@@ -46,18 +66,28 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   const [visibility, setVisibility] = useState<GoalVisibility>(goal?.visibility ?? 'private');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-  const [showNewFolder, setShowNewFolder] = useState(false);
 
-  // Progressive disclosure: show advanced options only when explicitly requested,
-  // or always-open when editing an existing goal so nothing looks hidden.
   const [showAdvanced, setShowAdvanced] = useState(!!goal);
 
+  // Auto-select first folder if only one exists
+  useEffect(() => {
+    if (!folderId && folders && folders.length === 1) {
+      setFolderId(folders[0].id);
+    }
+  }, [folders, folderId]);
+
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Check goal count limit for the selected folder
+  const folderGoals = useGoals(folderId || undefined, 'active');
+  const goalCountInFolder = (folderGoals ?? []).filter(g => g.id !== goal?.id).length;
+  const atGoalLimit = !!folderId && goalCountInFolder >= MAX_GOALS_PER_HABIT;
 
   function validate() {
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = 'Title is required';
+    if (!folderId) errs.folderId = 'Please select a habit for this key result';
+    if (atGoalLimit) errs.folderId = `This habit already has the maximum of ${MAX_GOALS_PER_HABIT} key results`;
     if (type === 'numeric' && (!target || Number(target) <= 0)) errs.target = 'Target must be greater than 0';
     if (type === 'timer' && (!duration || Number(duration) <= 0)) errs.duration = 'Duration must be greater than 0';
     if (frequency === 'custom' && customDays.length === 0) errs.customDays = 'Select at least one day';
@@ -99,18 +129,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
     }
   }
 
-  async function handleCreateFolder() {
-    if (!newFolderName.trim()) return;
-    const folder = await createFolder({
-      name: newFolderName.trim(),
-      color: FOLDER_COLORS[Math.floor(Math.random() * FOLDER_COLORS.length)],
-      icon: '📁',
-    });
-    setFolderId(folder.id);
-    setNewFolderName('');
-    setShowNewFolder(false);
-  }
-
   const pillBtn = (active: boolean) => ({
     padding: '5px 12px',
     borderRadius: '4px',
@@ -126,8 +144,66 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
   return (
     <form onSubmit={handleSubmit} className="p-5 space-y-4">
 
-      {/* ── Title — always first, auto-focused ── */}
+      {/* ── Habit (required) — always visible at the top ── */}
       <div>
+        <label style={labelStyle}>
+          Habit <span style={{ color: 'var(--danger)' }}>*</span>
+        </label>
+        {folders && folders.length > 0 ? (
+          <>
+            <div className="space-y-1">
+              {folders.map(f => {
+                const isSelected = folderId === f.id;
+                const goalCount = isSelected ? goalCountInFolder : null;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setFolderId(f.id)}
+                    className="flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-left transition-colors"
+                    style={{
+                      border: `1px solid ${isSelected ? f.color : 'var(--border)'}`,
+                      backgroundColor: isSelected
+                        ? `color-mix(in srgb, ${f.color} 10%, transparent)`
+                        : 'transparent',
+                    }}
+                  >
+                    <span className="text-base shrink-0">{f.icon}</span>
+                    <span
+                      className="text-sm font-medium flex-1 truncate"
+                      style={{ color: isSelected ? f.color : 'var(--text)' }}
+                    >
+                      {f.name}
+                    </span>
+                    {isSelected && goalCount !== null && (
+                      <span
+                        className="text-[10px] shrink-0 tabular"
+                        style={{ color: goalCount >= MAX_GOALS_PER_HABIT ? 'var(--danger)' : 'var(--text-3)' }}
+                      >
+                        {goalCount}/{MAX_GOALS_PER_HABIT}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {folderId && <GoalCountHint folderId={folderId} currentGoalId={goal?.id} />}
+          </>
+        ) : (
+          <p className="text-sm py-2" style={{ color: 'var(--text-3)' }}>
+            Create a habit first, then add key results to it.
+          </p>
+        )}
+        {errors.folderId && (
+          <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.folderId}</p>
+        )}
+      </div>
+
+      {/* ── Title ── */}
+      <div>
+        <label style={labelStyle}>
+          Key result <span style={{ color: 'var(--danger)' }}>*</span>
+        </label>
         <input
           value={title}
           onChange={e => setTitle(e.target.value)}
@@ -139,7 +215,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         {errors.title && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.title}</p>}
       </div>
 
-      {/* ── Why — the emotional anchor (always visible) ── */}
+      {/* ── Why — emotional anchor ── */}
       <div>
         <input
           value={why}
@@ -151,7 +227,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         />
       </div>
 
-      {/* ── Routine block — "When will you do this?" ── */}
+      {/* ── Routine block ── */}
       {routineBlocks && routineBlocks.length > 0 && (
         <div>
           <label style={labelStyle}>When?</label>
@@ -192,7 +268,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         </div>
       )}
 
-      {/* ── Goal type — four compact tiles ── */}
+      {/* ── Goal type ── */}
       <div>
         <label style={labelStyle}>Type</label>
         <div className="grid grid-cols-3 gap-1.5">
@@ -221,9 +297,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         </div>
       </div>
 
-      {/* ── Type-specific required fields (always visible) ── */}
-
-      {/* Numeric */}
+      {/* ── Type-specific fields ── */}
       {type === 'numeric' && (
         <div className="flex gap-3">
           <div className="flex-1">
@@ -246,7 +320,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         </div>
       )}
 
-      {/* Timer */}
       {type === 'timer' && (
         <div>
           <label style={labelStyle}>Duration (minutes) *</label>
@@ -263,7 +336,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         </div>
       )}
 
-      {/* ── More options — collapsed by default for new goals ──────────────── */}
+      {/* ── More options ── */}
       <div>
         <button
           type="button"
@@ -278,33 +351,6 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
 
       {showAdvanced && (
         <div className="space-y-4 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
-
-          {/* Folder */}
-          <div>
-            <label style={labelStyle}>Folder</label>
-            {showNewFolder ? (
-              <div className="flex gap-2">
-                <input
-                  value={newFolderName}
-                  onChange={e => setNewFolderName(e.target.value)}
-                  placeholder="Folder name"
-                  className={inputClass}
-                  style={inputStyle}
-                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCreateFolder())}
-                />
-                <button type="button" onClick={handleCreateFolder} className="px-3 py-2 rounded-md text-sm font-medium text-white" style={{ backgroundColor: 'var(--accent)' }}>Add</button>
-                <button type="button" onClick={() => setShowNewFolder(false)} className="px-3 py-2 rounded-md text-sm" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>Cancel</button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <select value={folderId} onChange={e => setFolderId(e.target.value)} className={`${inputClass} flex-1`} style={inputStyle}>
-                  <option value="">No folder</option>
-                  {folders?.map(f => <option key={f.id} value={f.id}>{f.icon} {f.name}</option>)}
-                </select>
-                <button type="button" onClick={() => setShowNewFolder(true)} className="px-3 py-2 rounded-md text-sm whitespace-nowrap" style={{ color: 'var(--accent)', border: '1px solid var(--border)' }}>+ New</button>
-              </div>
-            )}
-          </div>
 
           {/* Description */}
           <div>
@@ -407,8 +453,13 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
         <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-md" style={{ color: 'var(--text-2)', border: '1px solid var(--border)' }}>
           Cancel
         </button>
-        <button type="submit" disabled={saving} className="px-4 py-2 text-sm font-medium rounded-md text-white disabled:opacity-50" style={{ backgroundColor: 'var(--accent)' }}>
-          {saving ? 'Saving…' : goal ? 'Update' : 'Add goal'}
+        <button
+          type="submit"
+          disabled={saving || atGoalLimit}
+          className="px-4 py-2 text-sm font-medium rounded-md text-white disabled:opacity-50"
+          style={{ backgroundColor: 'var(--accent)' }}
+        >
+          {saving ? 'Saving…' : goal ? 'Update' : 'Add key result'}
         </button>
       </div>
     </form>

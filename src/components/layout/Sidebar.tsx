@@ -7,7 +7,7 @@ import { useUIStore } from '@/lib/store';
 
 const navItems = [
   { href: '/',         label: 'Today',    icon: CheckSquare },
-  { href: '/goals',    label: 'Goals',    icon: Layers },
+  { href: '/goals',    label: 'Habits',   icon: Layers },
   { href: '/routine',  label: 'Routine',  icon: Repeat },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -48,14 +48,14 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* New Goal button */}
+      {/* New key result button */}
       <div className="px-3 mb-4">
         <button
           onClick={() => setAddGoalOpen(true)}
           className="btn btn-primary w-full"
         >
           <Plus size={15} strokeWidth={2.5} />
-          New Goal
+          New Key Result
         </button>
       </div>
 

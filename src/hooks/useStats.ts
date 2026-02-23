@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import type { Goal, Entry } from '@/types';
-import { isScheduledForDate } from '@/lib/utils';
+import { isScheduledForDate, HABIT_FORMATION_DAYS } from '@/lib/utils';
 
 function getScheduledDays(goal: Goal, days: string[]): string[] {
   return days.filter(day => isScheduledForDate(day, goal.frequency, goal.customDays));
@@ -192,7 +192,7 @@ export function useDateRangeProgress(startDate: string, endDate: string) {
 }
 
 // Lightweight stats for Goals list page and Progress dashboard.
-// No per-goal streak computation — O(goals × 7) instead of O(goals × 365).
+// Includes current streak (capped at 66 days) for display in goal list.
 export function useAllGoalStats() {
   return useLiveQuery(async () => {
     const goals = await db.goals.where('status').equals('active').toArray();
@@ -211,14 +211,51 @@ export function useAllGoalStats() {
       }));
       const completionRate7 = computeCompletionRate(goalEntries, goal, 7);
       const totalCompletions = goalEntries.filter(e => e.completed).length;
+      const currentStreak = computeCurrentStreak(goalEntries, goal);
       return {
         goal,
         completionRate7,
         last7,
         totalCompletions,
+        currentStreak,
       };
     }).sort((a, b) => b.completionRate7 - a.completionRate7); // highest momentum first
   });
+}
+
+/**
+ * Tracks 66-day habit formation progress for a habit (folder).
+ * Counts unique days where at least one goal in the habit was completed,
+ * from the habit's startedAt date up to today (max HABIT_FORMATION_DAYS).
+ */
+export function useHabitFormationProgress(folderId: string, startedAt: number) {
+  return useLiveQuery(async () => {
+    const goals = await db.goals
+      .where('folderId')
+      .equals(folderId)
+      .filter(g => g.status === 'active' || g.status === 'completed')
+      .toArray();
+
+    if (goals.length === 0) return { practicedDays: 0, target: HABIT_FORMATION_DAYS };
+
+    const startDate = format(new Date(startedAt), 'yyyy-MM-dd');
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const goalIds = goals.map(g => g.id);
+
+    const entries = await db.entries
+      .where('goalId')
+      .anyOf(goalIds)
+      .filter(e => e.completed && e.date >= startDate && e.date <= today)
+      .toArray();
+
+    // Count unique days practiced (cap at HABIT_FORMATION_DAYS)
+    const practicedDays = Math.min(
+      new Set(entries.map(e => e.date)).size,
+      HABIT_FORMATION_DAYS
+    );
+
+    return { practicedDays, target: HABIT_FORMATION_DAYS };
+  }, [folderId, startedAt]);
 }
 
 /**

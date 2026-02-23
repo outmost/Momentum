@@ -1,12 +1,13 @@
 'use client';
 import React, { useState } from 'react';
-import { Search, FolderPlus, Flame } from 'lucide-react';
+import { Search, Plus, Flame } from 'lucide-react';
 import { useAllGoals } from '@/hooks/useGoals';
 import { useFolders } from '@/hooks/useFolders';
 import { useAllGoalStats, useOverallStreak } from '@/hooks/useStats';
 import { FolderSection } from '@/components/folders/FolderSection';
 import { Modal } from '@/components/ui/Modal';
 import { FolderForm } from '@/components/folders/FolderForm';
+import { MAX_HABITS } from '@/lib/utils';
 import type { Goal, GoalStatus } from '@/types';
 
 const STATUS_FILTERS: { label: string; value: GoalStatus | 'all' }[] = [
@@ -24,9 +25,11 @@ export default function GoalsPage() {
   const streak   = useOverallStreak();
   const [search, setSearch]             = useState('');
   const [statusFilter, setStatusFilter] = useState<GoalStatus | 'all'>('active');
-  const [folderFormOpen, setFolderFormOpen] = useState(false);
+  const [habitFormOpen, setHabitFormOpen] = useState(false);
 
   const statsMap = new Map(allStats?.map(s => [s.goal.id, s]) ?? []);
+  const habitCount = folders?.length ?? 0;
+  const atHabitLimit = habitCount >= MAX_HABITS;
 
   const filteredGoals = (goals ?? [])
     .filter(g => {
@@ -45,9 +48,14 @@ export default function GoalsPage() {
 
   return (
     <div>
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6 animate-in">
-        <h1 className="page-title">Goals</h1>
+        <div>
+          <h1 className="page-title">Habits</h1>
+          <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-3)' }}>
+            {habitCount}/{MAX_HABITS} habits · key results track progress
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           {streak && streak.current > 0 && (
             <div className="streak-badge">
@@ -56,16 +64,17 @@ export default function GoalsPage() {
             </div>
           )}
           <button
-            onClick={() => setFolderFormOpen(true)}
+            onClick={() => setHabitFormOpen(true)}
+            disabled={atHabitLimit}
             className="btn btn-secondary btn-icon"
-            title="New folder"
+            title={atHabitLimit ? `Maximum of ${MAX_HABITS} habits reached` : 'New habit'}
           >
-            <FolderPlus size={15} />
+            <Plus size={15} />
           </button>
         </div>
       </div>
 
-      {/* Search */}
+      {/* ── Search ── */}
       <div className="relative mb-4 animate-in">
         <Search
           size={13}
@@ -75,13 +84,13 @@ export default function GoalsPage() {
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search goals…"
+          placeholder="Search key results…"
           className="field"
           style={{ paddingLeft: '32px' }}
         />
       </div>
 
-      {/* Status filter chips */}
+      {/* ── Status filter chips ── */}
       <div className="flex gap-1.5 mb-6 overflow-x-auto scrollbar-hide">
         {STATUS_FILTERS.map(({ label, value }) => (
           <button
@@ -94,35 +103,61 @@ export default function GoalsPage() {
         ))}
       </div>
 
-      {/* Goal groups by folder — each folder shows a mini heatmap */}
+      {/* ── Habit sections (each shows 66-day ring + mini heatmap + key results) ── */}
       <div className="space-y-3">
         {(folders ?? []).map(folder => {
           const folderGoals = (grouped.get(folder.id) ?? []).map(g => ({
-            ...g, completionRate7: statsMap.get(g.id)?.completionRate7 ?? 0,
+            ...g,
+            completionRate7: statsMap.get(g.id)?.completionRate7 ?? 0,
+            currentStreak: statsMap.get(g.id)?.currentStreak ?? 0,
           }));
           if (statusFilter !== 'all' && folderGoals.length === 0) return null;
           return <FolderSection key={folder.id} folder={folder} goals={folderGoals} />;
         })}
 
+        {/* Uncategorized (goals without a habit) */}
         {(grouped.get(null)?.length ?? 0) > 0 && (
           <FolderSection
             goals={(grouped.get(null) ?? []).map(g => ({
-              ...g, completionRate7: statsMap.get(g.id)?.completionRate7 ?? 0,
+              ...g,
+              completionRate7: statsMap.get(g.id)?.completionRate7 ?? 0,
+              currentStreak: statsMap.get(g.id)?.currentStreak ?? 0,
             }))}
           />
         )}
 
+        {/* Empty state */}
         {filteredGoals.length === 0 && (
           <div className="text-center py-12 animate-in">
-            <p className="text-sm" style={{ color: 'var(--text-3)' }}>
-              {search ? 'No goals match your search.' : 'No goals here.'}
-            </p>
+            {(folders ?? []).length === 0 ? (
+              <>
+                <p className="text-3xl mb-3">🌱</p>
+                <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>
+                  Start with a habit
+                </p>
+                <p className="text-sm mb-5" style={{ color: 'var(--text-3)', maxWidth: 240, margin: '0 auto 20px' }}>
+                  Choose a life area, then add 3–5 key results to track for 66 days.
+                </p>
+                <button
+                  onClick={() => setHabitFormOpen(true)}
+                  className="btn btn-primary"
+                >
+                  <Plus size={14} />
+                  Create your first habit
+                </button>
+              </>
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--text-3)' }}>
+                {search ? 'No key results match your search.' : 'No key results here.'}
+              </p>
+            )}
           </div>
         )}
       </div>
 
-      <Modal open={folderFormOpen} onClose={() => setFolderFormOpen(false)} title="New folder">
-        <FolderForm onClose={() => setFolderFormOpen(false)} />
+      {/* ── New habit modal ── */}
+      <Modal open={habitFormOpen} onClose={() => setHabitFormOpen(false)} title="New habit">
+        <FolderForm onClose={() => setHabitFormOpen(false)} />
       </Modal>
     </div>
   );

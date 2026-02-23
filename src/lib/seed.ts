@@ -32,8 +32,8 @@ export async function seedDemoData(): Promise<boolean> {
   const learningId = nanoid();
 
   await db.folders.bulkAdd([
-    { id: healthId,   name: 'Health',   color: '#22C55E', icon: '💪', sortOrder: 1000, createdAt: now },
-    { id: learningId, name: 'Learning', color: '#8B5CF6', icon: '📚', sortOrder: 2000, createdAt: now },
+    { id: healthId,   name: 'Physical Health', color: '#10B981', icon: '💪', category: 'physical-health', startedAt: now, sortOrder: 1000, createdAt: now },
+    { id: learningId, name: 'Mental Well-being', color: '#F97316', icon: '🧘', category: 'mental-wellbeing', startedAt: now, sortOrder: 2000, createdAt: now },
   ]);
 
   // ── Goals ─────────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ export async function seedDemoData(): Promise<boolean> {
     },
     {
       id: deepworkId, title: 'Deep work', type: 'timer', status: 'active',
-      folderId: undefined, sortOrder: 1000, frequency: 'custom',
+      folderId: learningId, sortOrder: 3000, frequency: 'custom',
       customDays: [1, 2, 3, 4, 5], // Mon–Fri
       duration: 90 * 60,
       reminderEnabled: false, color: '#0057FF', visibility: 'private', createdAt: now, updatedAt: now,

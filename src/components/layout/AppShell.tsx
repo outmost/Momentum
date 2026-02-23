@@ -4,8 +4,7 @@ import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { useTheme } from '@/hooks/useTheme';
 import { useUIStore } from '@/lib/store';
-import { Modal } from '@/components/ui/Modal';
-import { GoalForm } from '@/components/goals/GoalForm';
+import { QuickAddModal } from '@/components/goals/QuickAddModal';
 import { Undo2 } from 'lucide-react';
 
 function Toast() {
@@ -72,9 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       <BottomNav />
 
-      <Modal open={addGoalOpen} onClose={() => setAddGoalOpen(false)} title="New goal" size="md">
-        <GoalForm onClose={() => setAddGoalOpen(false)} />
-      </Modal>
+      <QuickAddModal open={addGoalOpen} onClose={() => setAddGoalOpen(false)} />
 
       <Toast />
     </div>

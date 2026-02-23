@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { useFolders, createFolder } from '@/hooks/useFolders';
 import { useGoals, createGoal } from '@/hooks/useGoals';
+import { useRoutineBlocks } from '@/hooks/useRoutine';
 import { HABIT_CATEGORIES, MAX_HABITS, MAX_GOALS_PER_HABIT } from '@/lib/utils';
 import type { HabitCategory, GoalType, Frequency } from '@/types';
 
@@ -50,7 +51,13 @@ function ChooseScreen({ onHabit, onGoal }: { onHabit: () => void; onGoal: () => 
 }
 
 // ── Habit screen ───────────────────────────────────────────────────────────
-function HabitScreen({ onClose, onBack }: { onClose: () => void; onBack: () => void }) {
+function HabitScreen({
+  onBack,
+  onCreated,
+}: {
+  onBack: () => void;
+  onCreated: (folderId: string) => void;
+}) {
   const folders = useFolders();
   const habitCount = folders?.length ?? 0;
   const [category, setCategory] = useState<HabitCategory>('physical-health');
@@ -67,10 +74,17 @@ function HabitScreen({ onClose, onBack }: { onClose: () => void; onBack: () => v
     const name = category === 'custom' ? customName.trim() : selectedCat.label;
     if (!name) { setError('Please enter a habit name.'); return; }
     if (atLimit) { setError(`Maximum of ${MAX_HABITS} habits reached.`); return; }
+
+    // Duplicate check
+    if (folders?.some(f => f.name.toLowerCase() === name.toLowerCase())) {
+      setError(`A habit called "${name}" already exists.`);
+      return;
+    }
+
     setSaving(true);
     try {
-      await createFolder({ name, color: selectedCat.color, icon: selectedCat.icon, category });
-      onClose();
+      const folder = await createFolder({ name, color: selectedCat.color, icon: selectedCat.icon, category });
+      onCreated(folder.id);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -129,7 +143,7 @@ function HabitScreen({ onClose, onBack }: { onClose: () => void; onBack: () => v
           Back
         </button>
         <button type="submit" disabled={saving || atLimit} className="btn btn-primary flex-1">
-          {saving ? 'Creating…' : 'Create habit'}
+          {saving ? 'Creating…' : 'Create habit & add goal →'}
         </button>
       </div>
     </form>
@@ -140,14 +154,17 @@ function HabitScreen({ onClose, onBack }: { onClose: () => void; onBack: () => v
 function GoalScreen({
   onClose,
   onBack,
-  onHabit,
+  preselectedFolderId,
+  onNewHabit,
 }: {
   onClose: () => void;
   onBack: () => void;
-  onHabit: () => void;
+  preselectedFolderId?: string;
+  onNewHabit: () => void;
 }) {
   const folders = useFolders();
-  const [folderId, setFolderId] = useState('');
+  const routineBlocks = useRoutineBlocks();
+  const [folderId, setFolderId] = useState(preselectedFolderId ?? '');
   const [title, setTitle] = useState('');
   const [type, setType] = useState<GoalType>('binary');
   const [target, setTarget] = useState('');
@@ -155,10 +172,16 @@ function GoalScreen({
   const [duration, setDuration] = useState('');
   const [frequency, setFrequency] = useState<Frequency>('daily');
   const [customDays, setCustomDays] = useState<number[]>([]);
+  const [routineBlockId, setRoutineBlockId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
   const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // When preselectedFolderId arrives (after habit creation), apply it
+  useEffect(() => {
+    if (preselectedFolderId) setFolderId(preselectedFolderId);
+  }, [preselectedFolderId]);
 
   // Auto-select the only habit if there's exactly one
   useEffect(() => {
@@ -183,6 +206,7 @@ function GoalScreen({
         type,
         status: 'active',
         folderId,
+        routineBlockId: routineBlockId || undefined,
         frequency,
         customDays: frequency === 'custom' ? customDays : undefined,
         reminderEnabled: false,
@@ -201,27 +225,10 @@ function GoalScreen({
 
   if (!folders) return null;
 
-  // No habits yet — prompt to create one
-  if (folders.length === 0) {
-    return (
-      <div className="p-6 text-center space-y-3">
-        <p className="text-4xl">🌱</p>
-        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Create a habit first</p>
-        <p className="text-sm" style={{ color: 'var(--text-3)', maxWidth: 240, margin: '0 auto' }}>
-          Goals live inside habits. Add a habit to get started.
-        </p>
-        <div className="pt-2">
-          <button onClick={onHabit} className="btn btn-primary w-full">
-            Create a habit
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <form onSubmit={handleSubmit} className="p-5 space-y-4">
-      {/* Habit chips */}
+
+      {/* Habit chips + "New habit" chip */}
       <div>
         <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-3)' }}>Habit</p>
         <div className="flex flex-wrap gap-2">
@@ -243,6 +250,21 @@ function GoalScreen({
               {f.name}
             </button>
           ))}
+          {/* New habit chip */}
+          {(folders.length < MAX_HABITS) && (
+            <button
+              type="button"
+              onClick={onNewHabit}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+              style={{
+                border: '1.5px dashed var(--border)',
+                backgroundColor: 'transparent',
+                color: 'var(--text-3)',
+              }}
+            >
+              + New habit
+            </button>
+          )}
         </div>
         {atGoalLimit && (
           <p className="text-xs mt-1.5" style={{ color: 'var(--danger)' }}>
@@ -251,7 +273,7 @@ function GoalScreen({
         )}
       </div>
 
-      {/* Title — Enter submits for binary type */}
+      {/* Title — Enter submits for binary/checkbox type */}
       <input
         ref={titleRef}
         value={title}
@@ -285,32 +307,35 @@ function GoalScreen({
               color: type === t ? 'var(--accent)' : 'var(--text-3)',
             }}
           >
-            {t === 'binary' ? '✓ Done' : t === 'numeric' ? '# Number' : '⏱ Timer'}
+            {t === 'binary' ? '☐ Checkbox' : t === 'numeric' ? '# Number' : '⏱ Timer'}
           </button>
         ))}
       </div>
 
-      {/* When (frequency) */}
+      {/* When */}
       <div>
         <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-3)' }}>When</p>
-        <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--border)' }}>
-          {(['daily', 'weekly', 'custom'] as Frequency[]).map(f => (
+
+        {/* Frequency: daily / custom */}
+        <div className="flex gap-1 p-1 rounded-lg mb-2" style={{ backgroundColor: 'var(--border)' }}>
+          {(['daily', 'custom'] as Frequency[]).map(f => (
             <button
               key={f}
               type="button"
               onClick={() => setFrequency(f)}
-              className="flex-1 py-1.5 rounded-md text-xs font-medium capitalize transition-colors"
+              className="flex-1 py-1.5 rounded-md text-xs font-medium transition-colors"
               style={{
                 backgroundColor: frequency === f ? 'var(--surface)' : 'transparent',
                 color: frequency === f ? 'var(--text)' : 'var(--text-3)',
               }}
             >
-              {f}
+              {f === 'daily' ? 'Every day' : 'Specific days'}
             </button>
           ))}
         </div>
+
         {frequency === 'custom' && (
-          <div className="flex gap-1.5 mt-2 flex-wrap">
+          <div className="flex gap-1.5 mb-2 flex-wrap">
             {DAY_NAMES.map((day, i) => (
               <button
                 key={i}
@@ -326,6 +351,39 @@ function GoalScreen({
                 }}
               >
                 {day}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Routine block (time of day) */}
+        {routineBlocks && routineBlocks.length > 0 && (
+          <div className="flex gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setRoutineBlockId('')}
+              className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: routineBlockId === '' ? 'var(--text)' : 'transparent',
+                color: routineBlockId === '' ? 'var(--bg)' : 'var(--text-3)',
+                border: routineBlockId === '' ? '1px solid transparent' : '1px solid var(--border)',
+              }}
+            >
+              Anytime
+            </button>
+            {routineBlocks.map(block => (
+              <button
+                key={block.id}
+                type="button"
+                onClick={() => setRoutineBlockId(block.id)}
+                className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: routineBlockId === block.id ? 'var(--text)' : 'transparent',
+                  color: routineBlockId === block.id ? 'var(--bg)' : 'var(--text-3)',
+                  border: routineBlockId === block.id ? '1px solid transparent' : '1px solid var(--border)',
+                }}
+              >
+                {block.emoji} {block.name}
               </button>
             ))}
           </div>
@@ -386,14 +444,23 @@ function GoalScreen({
 // ── Main export ────────────────────────────────────────────────────────────
 export function QuickAddModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [screen, setScreen] = useState<Screen>('choose');
+  const [preselectedFolderId, setPreselectedFolderId] = useState<string | undefined>();
 
-  // Reset to chooser after the modal finishes closing
+  // Reset after the modal finishes closing
   useEffect(() => {
     if (!open) {
-      const t = setTimeout(() => setScreen('choose'), 300);
+      const t = setTimeout(() => {
+        setScreen('choose');
+        setPreselectedFolderId(undefined);
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [open]);
+
+  function handleHabitCreated(folderId: string) {
+    setPreselectedFolderId(folderId);
+    setScreen('goal');
+  }
 
   return (
     <Modal open={open} onClose={onClose} title={SCREEN_TITLES[screen]} size="md">
@@ -404,13 +471,17 @@ export function QuickAddModal({ open, onClose }: { open: boolean; onClose: () =>
         />
       )}
       {screen === 'habit' && (
-        <HabitScreen onClose={onClose} onBack={() => setScreen('choose')} />
+        <HabitScreen
+          onBack={() => setScreen('choose')}
+          onCreated={handleHabitCreated}
+        />
       )}
       {screen === 'goal' && (
         <GoalScreen
           onClose={onClose}
           onBack={() => setScreen('choose')}
-          onHabit={() => setScreen('habit')}
+          preselectedFolderId={preselectedFolderId}
+          onNewHabit={() => setScreen('habit')}
         />
       )}
     </Modal>

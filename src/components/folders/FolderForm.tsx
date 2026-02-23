@@ -33,6 +33,11 @@ export function FolderForm({ folder, onClose }: FolderFormProps) {
     const trimmed = name.trim();
     if (!trimmed) { setError('Please enter a habit name.'); return; }
     if (atLimit) { setError(`You can have at most ${MAX_HABITS} habits.`); return; }
+    // Duplicate check (ignore self when editing)
+    if (folders?.some(f => f.name.toLowerCase() === trimmed.toLowerCase() && f.id !== folder?.id)) {
+      setError(`A habit called "${trimmed}" already exists.`);
+      return;
+    }
     setSaving(true);
     try {
       if (folder) {

@@ -191,7 +191,7 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
               color: type === t ? 'var(--accent)' : 'var(--text-3)',
             }}
           >
-            {t === 'binary' ? '✓ Done' : t === 'numeric' ? '# Number' : '⏱ Timer'}
+            {t === 'binary' ? '☐ Checkbox' : t === 'numeric' ? '# Number' : '⏱ Timer'}
           </button>
         ))}
       </div>
@@ -242,18 +242,18 @@ export function GoalForm({ goal, onClose, defaultFolderId }: GoalFormProps) {
       <div>
         <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-3)' }}>When</p>
         <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--border)' }}>
-          {(['daily', 'weekly', 'custom'] as Frequency[]).map(f => (
+          {(['daily', 'custom'] as Frequency[]).map(f => (
             <button
               key={f}
               type="button"
               onClick={() => setFrequency(f)}
-              className="flex-1 py-1.5 rounded-md text-xs font-medium capitalize transition-colors"
+              className="flex-1 py-1.5 rounded-md text-xs font-medium transition-colors"
               style={{
                 backgroundColor: frequency === f ? 'var(--surface)' : 'transparent',
                 color: frequency === f ? 'var(--text)' : 'var(--text-3)',
               }}
             >
-              {f}
+              {f === 'daily' ? 'Every day' : 'Specific days'}
             </button>
           ))}
         </div>

@@ -39,7 +39,29 @@ export default function SettingsPage() {
   const [importing, setImporting]               = useState(false);
   const [seedMsg, setSeedMsg]                   = useState<string | null>(null);
   const [importMode, setImportMode]             = useState<'merge' | 'replace'>('merge');
+  const [editingIdentity, setEditingIdentity]   = useState(false);
+  const [identityInput, setIdentityInput]       = useState(settings?.userIdentity ?? '');
+  const [cueInput, setCueInput]                 = useState(settings?.userCue ?? '');
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Update input values when settings change
+  React.useEffect(() => {
+    if (settings?.userIdentity) setIdentityInput(settings.userIdentity);
+    if (settings?.userCue) setCueInput(settings.userCue);
+  }, [settings?.userIdentity, settings?.userCue]);
+
+  async function handleSaveIdentity() {
+    if (identityInput.trim()) {
+      await updateSettings({ userIdentity: identityInput.trim() });
+      setEditingIdentity(false);
+    }
+  }
+
+  async function handleSaveCue() {
+    if (cueInput.trim()) {
+      await updateSettings({ userCue: cueInput.trim() });
+    }
+  }
 
   async function handleExport() {
     const data = await exportAllData();
@@ -92,6 +114,66 @@ export default function SettingsPage() {
       <p className="page-subtitle mb-8 animate-in">Customize your experience</p>
 
       <div className="space-y-7">
+        {/* You */}
+        <Section label="You">
+          {!editingIdentity ? (
+            <Row>
+              <button
+                onClick={() => setEditingIdentity(true)}
+                className="w-full text-left"
+              >
+                <p className="text-[13px] mb-2" style={{ color: 'var(--text-3)' }}>Your identity</p>
+                <p className="text-base font-medium" style={{ color: 'var(--text)' }}>
+                  {settings?.userIdentity || 'Tap to add...'}
+                </p>
+              </button>
+            </Row>
+          ) : (
+            <Row>
+              <input
+                type="text"
+                value={identityInput}
+                onChange={(e) => setIdentityInput(e.target.value)}
+                className="field w-full mb-3"
+                placeholder="Who do you want to become?"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setEditingIdentity(false);
+                    setIdentityInput(settings?.userIdentity ?? '');
+                  }}
+                  className="btn btn-sm flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveIdentity}
+                  disabled={!identityInput.trim()}
+                  className="btn btn-sm btn-primary flex-1"
+                >
+                  Save
+                </button>
+              </div>
+            </Row>
+          )}
+          <Row last>
+            <p className="text-[13px] mb-2" style={{ color: 'var(--text-3)' }}>Your trigger</p>
+            <input
+              type="text"
+              value={cueInput}
+              onChange={(e) => setCueInput(e.target.value)}
+              onBlur={handleSaveCue}
+              className="field w-full"
+              placeholder="Your daily anchor habit..."
+            />
+            <p className="text-xs mt-2" style={{ color: 'var(--text-3)' }}>
+              When does this habit happen?
+            </p>
+          </Row>
+        </Section>
+
         {/* Appearance */}
         <Section label="Appearance">
           <Row>

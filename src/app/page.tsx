@@ -190,7 +190,7 @@ export default function TodayPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                {allDone ? 'All done' : `${completedCount} of ${scheduledGoals.length}`}
+                {allDone ? 'All done' : `${completedCount} time${completedCount === 1 ? '' : 's'} so far`}
               </motion.span>
             </AnimatePresence>
           )}
@@ -212,7 +212,7 @@ export default function TodayPage() {
         >
           <motion.div
             className="h-full rounded-full"
-            style={{ backgroundColor: allDone ? 'var(--success)' : 'var(--accent)' }}
+            style={{ backgroundColor: allDone ? 'var(--success)' : 'var(--progress)' }}
             animate={{ width: `${pct * 100}%` }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           />

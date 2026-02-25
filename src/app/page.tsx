@@ -66,6 +66,16 @@ export default function TodayPage() {
     seedDefaultRoutineBlocks();
   }, []);
 
+  const today            = localToday();
+  const isSelectedToday  = selectedDate === today;
+  const isSelectedFuture = selectedDate > today;
+
+  const scheduledGoals = (goals ?? [])
+    .filter(g => isScheduledForDate(selectedDate, g.frequency, g.customDays))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
+
   // Show missed day modal when navigating to a past incomplete day
   useEffect(() => {
     const isPastDate = !isSelectedToday && !isSelectedFuture;
@@ -81,16 +91,6 @@ export default function TodayPage() {
       return () => clearTimeout(timer);
     }
   }, [selectedDate, scheduledGoals, entryMap, isSelectedToday, isSelectedFuture]);
-
-  const today            = localToday();
-  const isSelectedToday  = selectedDate === today;
-  const isSelectedFuture = selectedDate > today;
-
-  const scheduledGoals = (goals ?? [])
-    .filter(g => isScheduledForDate(selectedDate, g.frequency, g.customDays))
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-
-  const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
   const blocks = useMemo(() => routineBlocks ?? [], [routineBlocks]);
 
   // Group goals by routine block

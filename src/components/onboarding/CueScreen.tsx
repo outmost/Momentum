@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 
 interface CueScreenProps {
   onBack: () => void;

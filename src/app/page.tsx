@@ -15,6 +15,7 @@ import { GoalCard } from '@/components/goals/GoalCard';
 import { WeekStrip } from '@/components/today/WeekStrip';
 import { Confetti } from '@/components/ui/Confetti';
 import { AllDoneCelebration } from '@/components/ui/AllDoneCelebration';
+import { MissedDayModal } from '@/components/modals/MissedDayModal';
 import type { Goal } from '@/types';
 
 function localToday(): string {
@@ -50,8 +51,10 @@ export default function TodayPage() {
   const [showConfetti,    setShowConfetti]    = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [showMissedDayModal, setShowMissedDayModal] = useState(false);
   const wasAllDone        = useRef(false);
   const hasSeenIncomplete = useRef(false);
+  const hasShownMissedDay  = useRef(false);
   const bannerQuote = useRef(BANNER_QUOTES[Math.floor(Math.random() * BANNER_QUOTES.length)]);
 
   const rangeStart = useMemo(() => format(subDays(new Date(), 6), 'yyyy-MM-dd'), []);
@@ -62,6 +65,22 @@ export default function TodayPage() {
     initializeSettings();
     seedDefaultRoutineBlocks();
   }, []);
+
+  // Show missed day modal when navigating to a past incomplete day
+  useEffect(() => {
+    const isPastDate = !isSelectedToday && !isSelectedFuture;
+    const hasGoals = scheduledGoals.length > 0;
+    const isIncomplete = scheduledGoals.some(g => !entryMap.get(g.id)?.completed);
+
+    if (isPastDate && hasGoals && isIncomplete && !hasShownMissedDay.current) {
+      // Delay showing modal to allow initial render
+      const timer = setTimeout(() => {
+        setShowMissedDayModal(true);
+        hasShownMissedDay.current = true;
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedDate, scheduledGoals, entryMap, isSelectedToday, isSelectedFuture]);
 
   const today            = localToday();
   const isSelectedToday  = selectedDate === today;
@@ -429,6 +448,16 @@ export default function TodayPage() {
           })}
         </div>
       )}
+
+      {/* Missed day recovery modal */}
+      <MissedDayModal
+        open={showMissedDayModal}
+        onClose={() => setShowMissedDayModal(false)}
+        onBackToIt={() => {
+          setShowMissedDayModal(false);
+          setSelectedDate(today);
+        }}
+      />
 
     </div>
   );

@@ -8,6 +8,9 @@ import { FirstHabitScreen } from '@/components/onboarding/FirstHabitScreen';
 import { CueScreen } from '@/components/onboarding/CueScreen';
 import { ExpectationScreen } from '@/components/onboarding/ExpectationScreen';
 import { ImageryScreen } from '@/components/onboarding/ImageryScreen';
+import { createGoal } from '@/hooks/useGoals';
+import { createFolder } from '@/hooks/useFolders';
+import { updateSettings } from '@/hooks/useSettings';
 
 type OnboardingStep = 'welcome' | 'identity' | 'habit' | 'cue' | 'expectation' | 'imagery';
 
@@ -50,16 +53,45 @@ export default function OnboardingPage() {
     setStep('imagery');
   };
 
+  const completeOnboarding = async () => {
+    try {
+      // Create folder for the identity
+      const folder = await createFolder({
+        name: data.identity,
+        color: '#5B5BD6', // Groove indigo
+        icon: '🎯',
+        category: 'custom',
+      });
+
+      // Create the first goal
+      await createGoal({
+        title: data.habit,
+        type: 'binary',
+        status: 'active',
+        folderId: folder.id,
+        frequency: 'daily',
+        reminderEnabled: false,
+        visibility: 'private',
+      });
+
+      // Mark onboarding as completed
+      await updateSettings({ onboardingCompleted: true });
+
+      // Redirect to home
+      router.push('/');
+    } catch (error) {
+      console.error('Onboarding completion error:', error);
+      // Still redirect even if there's an error
+      router.push('/');
+    }
+  };
+
   const handleImageryComplete = async () => {
-    // TODO: Create initial goal and redirect to home
-    // For now, just redirect to home
-    router.push('/');
+    await completeOnboarding();
   };
 
   const handleImagerySkip = async () => {
-    // TODO: Create initial goal and redirect to home
-    // For now, just redirect to home
-    router.push('/');
+    await completeOnboarding();
   };
 
   return (

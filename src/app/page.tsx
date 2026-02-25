@@ -8,6 +8,7 @@ import { useTodayViewGoals } from '@/hooks/useGoals';
 import { useEntriesForDate } from '@/hooks/useEntries';
 import { useRoutineBlocks } from '@/hooks/useRoutine';
 import { useDateRangeProgress, useOverallStreak } from '@/hooks/useStats';
+import { useSettings } from '@/hooks/useSettings';
 import { seedDefaultRoutineBlocks } from '@/hooks/useRoutine';
 import { initializeSettings } from '@/lib/db';
 import { isScheduledForDate } from '@/lib/utils';
@@ -16,6 +17,7 @@ import { WeekStrip } from '@/components/today/WeekStrip';
 import { Confetti } from '@/components/ui/Confetti';
 import { AllDoneCelebration } from '@/components/ui/AllDoneCelebration';
 import { MissedDayModal } from '@/components/modals/MissedDayModal';
+import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
 import type { Goal } from '@/types';
 
 function localToday(): string {
@@ -47,11 +49,13 @@ export default function TodayPage() {
   const entries       = useEntriesForDate(selectedDate);
   const routineBlocks = useRoutineBlocks();
   const streak        = useOverallStreak();
+  const settings      = useSettings();
 
   const [showConfetti,    setShowConfetti]    = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showMissedDayModal, setShowMissedDayModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const wasAllDone        = useRef(false);
   const hasSeenIncomplete = useRef(false);
   const hasShownMissedDay  = useRef(false);
@@ -65,6 +69,13 @@ export default function TodayPage() {
     initializeSettings();
     seedDefaultRoutineBlocks();
   }, []);
+
+  // Show onboarding if not completed
+  useEffect(() => {
+    if (settings && !settings.onboardingCompleted) {
+      setShowOnboarding(true);
+    }
+  }, [settings]);
 
   const today            = localToday();
   const isSelectedToday  = selectedDate === today;
@@ -457,6 +468,12 @@ export default function TodayPage() {
           setShowMissedDayModal(false);
           setSelectedDate(today);
         }}
+      />
+
+      {/* Onboarding modal */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
       />
 
     </div>

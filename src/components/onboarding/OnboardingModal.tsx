@@ -33,7 +33,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
     setIsLoading(true);
     try {
       // Create a default folder for the habit
-      const folderId = await createFolder({
+      const folder = await createFolder({
         name: 'Personal Growth',
         color: 'indigo',
         icon: '🌱',
@@ -42,12 +42,13 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
 
       // Create the first goal
       await createGoal({
-        folderId,
+        folderId: folder.id,
         title: habit.trim(),
         type: 'binary',
         frequency: 'daily',
-        sortOrder: 1000,
         visibility: 'private',
+        status: 'active',
+        reminderEnabled: false,
       });
 
       // Update settings

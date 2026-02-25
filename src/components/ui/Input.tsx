@@ -5,9 +5,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   hint?: string;
+  success?: boolean;
 }
 
-export function Input({ label, error, hint, className, id, style, ...props }: InputProps) {
+export function Input({ label, error, hint, success, className, id, style, ...props }: InputProps) {
   const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
   return (
     <div className="flex flex-col gap-1.5">
@@ -18,7 +19,7 @@ export function Input({ label, error, hint, className, id, style, ...props }: In
       )}
       <input
         id={inputId}
-        className={cn('field', error && 'border-[var(--danger)]', className)}
+        className={cn('field', success && 'field-success', error && 'border-b-[var(--danger)]', className)}
         style={style}
         {...props}
       />
@@ -32,9 +33,10 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   label?: string;
   error?: string;
   hint?: string;
+  success?: boolean;
 }
 
-export function Textarea({ label, error, hint, className, id, style, ...props }: TextareaProps) {
+export function Textarea({ label, error, hint, success, className, id, style, ...props }: TextareaProps) {
   const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
   return (
     <div className="flex flex-col gap-1.5">
@@ -45,7 +47,7 @@ export function Textarea({ label, error, hint, className, id, style, ...props }:
       )}
       <textarea
         id={inputId}
-        className={cn('field resize-none', error && 'border-[var(--danger)]', className)}
+        className={cn('field resize-none', success && 'field-success', error && 'border-b-[var(--danger)]', className)}
         style={{ height: 'auto', paddingTop: '10px', paddingBottom: '10px', ...style }}
         {...props}
       />

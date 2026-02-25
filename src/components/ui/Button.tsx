@@ -2,8 +2,8 @@ import React from 'react';
 import { cn } from '@/lib/cn';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'danger' | 'outline';
+  size?: 'sm' | 'md';
   loading?: boolean;
 }
 
@@ -19,6 +19,7 @@ export function Button({
   const variants = {
     primary:  'btn btn-primary',
     secondary:'btn btn-secondary',
+    tertiary: 'btn btn-tertiary',
     ghost:    'btn btn-ghost',
     danger:   'btn btn-danger',
     outline:  'btn btn-secondary',
@@ -27,7 +28,6 @@ export function Button({
   const sizes = {
     sm: 'btn-sm',
     md: '',
-    lg: 'btn-lg',
   };
 
   return (

@@ -21,7 +21,7 @@
 @layer base {
   :root {
     /* ── Surfaces ── */
-    --bg:            #F0EDE7;
+    --bg:            #F7F4F0;
     --surface:       #FAFAF7;
     --surface-2:     #F0EDE7;
     --surface-3:     #E7E3DB;
@@ -33,14 +33,21 @@
     --text-2:        #625D54;
     --text-3:        #A09890;
 
-    /* ── Brand — dusty sage ── */
-    --accent:        #4A6A5A;
-    --accent-2:      rgba(74, 106, 90, 0.09);
-    --accent-hover:  #3A5748;
-    --accent-glow:   rgba(74, 106, 90, 0.22);
+    /* ── Brand — Groove Indigo ── */
+    --accent:        #5B5BD6;
+    --accent-light:  rgba(91, 91, 214, 0.12);
+    --accent-dark:   #3D3D9F;
+    --accent-2:      rgba(91, 91, 214, 0.09);
+    --accent-hover:  #3D3D9F;
+    --accent-glow:   rgba(91, 91, 214, 0.24);
+
+    /* ── Frosted Glass ── */
+    --frosted-light: rgba(255, 255, 255, 0.72);
+    --frosted-dark:  rgba(255, 255, 255, 0.08);
+    --focus-ring:    #5B5BD6;
 
     /* ── Progress / Success ── */
-    --progress:      #4A6A5A;
+    --progress:      #5B5BD6;
     --success:       #4A6A5A;
     --success-soft:  rgba(74, 106, 90, 0.09);
     --success-glow:  rgba(74, 106, 90, 0.22);
@@ -51,8 +58,8 @@
     --streak-glow:   rgba(201, 122, 56, 0.26);
 
     /* ── Danger ── */
-    --danger:        #B84848;
-    --danger-soft:   rgba(184, 72, 72, 0.09);
+    --danger:        #D93025;
+    --danger-soft:   rgba(217, 48, 37, 0.09);
 
     /* ── Shadows ── */
     --shadow-xs:     0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03);
@@ -60,7 +67,7 @@
     --shadow-md:     0 4px 16px rgba(0,0,0,0.09), 0 2px 4px rgba(0,0,0,0.05);
     --shadow-lg:     0 12px 40px rgba(0,0,0,0.11), 0 4px 12px rgba(0,0,0,0.06);
     --shadow-xl:     0 20px 60px rgba(0,0,0,0.13), 0 8px 20px rgba(0,0,0,0.08);
-    --glow:          rgba(74, 106, 90, 0.24);
+    --glow:          rgba(91, 91, 214, 0.24);
 
     /* ── Geometry ── */
     --radius:        16px;
@@ -88,17 +95,24 @@
     --text-2:        #A09689;
     --text-3:        #6E6558;
 
-    /* ── Brand — sage, lighter for dark ── */
-    --accent:        #84B89E;
-    --accent-2:      rgba(132, 184, 158, 0.12);
-    --accent-hover:  #9ECAB4;
-    --accent-glow:   rgba(132, 184, 158, 0.28);
+    /* ── Brand — Groove Indigo for dark ── */
+    --accent:        #7070E0;
+    --accent-light:  rgba(112, 112, 224, 0.15);
+    --accent-dark:   #5B5BD6;
+    --accent-2:      rgba(112, 112, 224, 0.12);
+    --accent-hover:  #8080F0;
+    --accent-glow:   rgba(112, 112, 224, 0.32);
+
+    /* ── Frosted Glass ── */
+    --frosted-light: rgba(255, 255, 255, 0.08);
+    --frosted-dark:  rgba(255, 255, 255, 0.08);
+    --focus-ring:    #7070E0;
 
     /* ── Progress / Success ── */
-    --progress:      #84B89E;
-    --success:       #84B89E;
-    --success-soft:  rgba(132, 184, 158, 0.12);
-    --success-glow:  rgba(132, 184, 158, 0.28);
+    --progress:      #7070E0;
+    --success:       #4A6A5A;
+    --success-soft:  rgba(74, 106, 90, 0.12);
+    --success-glow:  rgba(74, 106, 90, 0.28);
 
     /* ── Streak / Warmth ── */
     --streak:        #E89055;
@@ -115,7 +129,7 @@
     --shadow-md:     0 4px 16px rgba(0,0,0,0.45);
     --shadow-lg:     0 12px 40px rgba(0,0,0,0.55);
     --shadow-xl:     0 20px 60px rgba(0,0,0,0.65);
-    --glow:          rgba(132, 184, 158, 0.32);
+    --glow:          rgba(112, 112, 224, 0.32);
   }
 
   * { box-sizing: border-box; }
@@ -203,6 +217,28 @@
     box-shadow: var(--shadow-sm);
   }
 
+  /* Frosted glass card — for prominent surfaces */
+  .card-glass {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background-color: var(--frosted-light);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+
+  .dark .card-glass {
+    background-color: var(--frosted-dark);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+
+  .card-glass-sm {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius);
+  }
+
   /* ── Typography ─────────────────────────────────────── */
 
   .page-title {
@@ -235,107 +271,151 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    height: 36px;
-    padding: 0 14px;
-    font-size: 13px;
-    font-weight: 550;
-    border-radius: var(--radius-sm);
+    height: 56px;
+    padding: 0 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 100px;
     border: none;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s var(--ease-smooth);
+    transition: all 0.3s var(--ease-smooth);
     outline: none;
     text-decoration: none;
     position: relative;
+    letter-spacing: -0.01em;
   }
 
-  .btn:active { transform: scale(0.96); }
+  .btn:active { transform: scale(0.96); transition: transform 0.15s var(--ease-smooth); }
   .btn:disabled { opacity: 0.4; pointer-events: none; }
 
   .btn-primary {
     background-color: var(--accent);
     color: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px var(--accent-glow);
   }
   .btn-primary:hover {
-    background-color: var(--accent-hover);
-    box-shadow: 0 2px 8px var(--accent-glow);
+    background-color: var(--accent-dark);
+    box-shadow: 0 4px 16px var(--accent-glow);
   }
 
   .btn-secondary {
     background-color: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-2);
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-weight: 600;
   }
-  .btn-secondary:hover { border-color: var(--border-2); color: var(--text); }
+  .btn-secondary:hover {
+    background-color: var(--accent-light);
+    border-color: var(--accent-dark);
+  }
+
+  .btn-tertiary {
+    background-color: transparent;
+    border: none;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .btn-tertiary:hover { background-color: var(--accent-light); }
 
   .btn-ghost {
     background-color: transparent;
     color: var(--text-2);
+    font-weight: 500;
   }
   .btn-ghost:hover { color: var(--text); background-color: var(--surface-3); }
 
   .btn-danger {
     background-color: var(--danger);
     color: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    box-shadow: 0 2px 8px rgba(217, 48, 37, 0.25);
   }
-  .btn-danger:hover { background-color: #B91C1C; }
+  .btn-danger:hover {
+    background-color: #B91C1C;
+    box-shadow: 0 4px 16px rgba(217, 48, 37, 0.30);
+  }
 
   .btn-sm {
     height: 30px;
     padding: 0 10px;
-    font-size: 12px;
-    border-radius: 8px;
+    font-size: 11px;
+    border-radius: 20px;
+    font-weight: 500;
   }
 
   .btn-lg {
-    height: 44px;
-    padding: 0 20px;
-    font-size: 14px;
-    border-radius: 12px;
+    height: 56px;
+    padding: 0 24px;
+    font-size: 16px;
+    border-radius: 100px;
+    font-weight: 600;
   }
 
   .btn-icon {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     padding: 0;
-    border-radius: var(--radius-sm);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .btn-icon-sm {
-    width: 30px;
-    height: 30px;
+    width: 36px;
+    height: 36px;
     padding: 0;
-    border-radius: 8px;
+    border-radius: 50%;
   }
 
   /* ── Form fields ─────────────────────────────────────── */
 
   .field {
     width: 100%;
-    height: 40px;
-    padding: 0 12px;
+    height: 48px;
+    padding: 12px 0;
     background-color: transparent;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 13px;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    border-radius: 0;
+    font-size: 15px;
+    font-weight: 400;
     font-family: inherit;
     color: var(--text);
-    transition: border-color 0.2s var(--ease-smooth), box-shadow 0.2s var(--ease-smooth);
+    transition: border-color 0.25s var(--ease-smooth), background-color 0.25s var(--ease-smooth);
     outline: none;
   }
 
   .field:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-2);
+    border-bottom-color: var(--accent);
+    background-color: rgba(91, 91, 214, 0.02);
+    box-shadow: none;
   }
+
   .field::placeholder { color: var(--text-3); }
+
+  .field:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Success state — brief green transition after form submission */
+  .field.field-success {
+    border-bottom-color: var(--success);
+    animation: fieldSuccessPulse 1.2s var(--ease-out-expo) forwards;
+  }
+
+  @keyframes fieldSuccessPulse {
+    0% { border-bottom-color: var(--success); background-color: rgba(74, 106, 90, 0.02); }
+    70% { border-bottom-color: var(--success); background-color: rgba(74, 106, 90, 0.02); }
+    100% { border-bottom-color: var(--border); background-color: transparent; }
+  }
 
   .field-sm {
     height: 34px;
     font-size: 12px;
-    border-radius: 8px;
+    border-radius: 0;
+    border-bottom: 1px solid var(--border);
   }
 
   /* ── Filter chips / pills ────────────────────────────── */
@@ -405,6 +485,38 @@
 ──────────────────────────────────────────────────────────── */
 
 @layer utilities {
+  /* ── Focus ring — custom Groove accent ── */
+  button:focus-visible,
+  a[href]:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* ── Reduced motion support ── */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    button:focus-visible,
+    a[href]:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible,
+    [role="button"]:focus-visible {
+      outline-offset: 0px;
+    }
+  }
+
   .tabular { font-variant-numeric: tabular-nums; }
 
   /* ── Entry animations ── */

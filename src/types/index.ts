@@ -107,6 +107,9 @@ export interface AppSettings {
   defaultView: 'today' | 'dashboard';
   notificationsEnabled: boolean;
   seeded?: boolean;
+  onboardingCompleted?: boolean;
+  userIdentity?: string;       // "Who do you want to become?"
+  userCue?: string;            // "Your daily trigger/anchor habit"
   createdAt: number;
   updatedAt: number;
 }

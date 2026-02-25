@@ -8,6 +8,7 @@ import { useTodayViewGoals } from '@/hooks/useGoals';
 import { useEntriesForDate } from '@/hooks/useEntries';
 import { useRoutineBlocks } from '@/hooks/useRoutine';
 import { useDateRangeProgress, useOverallStreak } from '@/hooks/useStats';
+import { useSettings } from '@/hooks/useSettings';
 import { seedDefaultRoutineBlocks } from '@/hooks/useRoutine';
 import { initializeSettings } from '@/lib/db';
 import { isScheduledForDate } from '@/lib/utils';
@@ -15,6 +16,8 @@ import { GoalCard } from '@/components/goals/GoalCard';
 import { WeekStrip } from '@/components/today/WeekStrip';
 import { Confetti } from '@/components/ui/Confetti';
 import { AllDoneCelebration } from '@/components/ui/AllDoneCelebration';
+import { MissedDayModal } from '@/components/modals/MissedDayModal';
+import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
 import type { Goal } from '@/types';
 
 function localToday(): string {
@@ -46,12 +49,16 @@ export default function TodayPage() {
   const entries       = useEntriesForDate(selectedDate);
   const routineBlocks = useRoutineBlocks();
   const streak        = useOverallStreak();
+  const settings      = useSettings();
 
   const [showConfetti,    setShowConfetti]    = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [showMissedDayModal, setShowMissedDayModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const wasAllDone        = useRef(false);
   const hasSeenIncomplete = useRef(false);
+  const hasShownMissedDay  = useRef(false);
   const bannerQuote = useRef(BANNER_QUOTES[Math.floor(Math.random() * BANNER_QUOTES.length)]);
 
   const rangeStart = useMemo(() => format(subDays(new Date(), 6), 'yyyy-MM-dd'), []);
@@ -63,6 +70,13 @@ export default function TodayPage() {
     seedDefaultRoutineBlocks();
   }, []);
 
+  // Show onboarding if not completed
+  useEffect(() => {
+    if (settings && !settings.onboardingCompleted) {
+      setShowOnboarding(true);
+    }
+  }, [settings]);
+
   const today            = localToday();
   const isSelectedToday  = selectedDate === today;
   const isSelectedFuture = selectedDate > today;
@@ -72,6 +86,22 @@ export default function TodayPage() {
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const entryMap = new Map((entries ?? []).map(e => [e.goalId, e]));
+
+  // Show missed day modal when navigating to a past incomplete day
+  useEffect(() => {
+    const isPastDate = !isSelectedToday && !isSelectedFuture;
+    const hasGoals = scheduledGoals.length > 0;
+    const isIncomplete = scheduledGoals.some(g => !entryMap.get(g.id)?.completed);
+
+    if (isPastDate && hasGoals && isIncomplete && !hasShownMissedDay.current) {
+      // Delay showing modal to allow initial render
+      const timer = setTimeout(() => {
+        setShowMissedDayModal(true);
+        hasShownMissedDay.current = true;
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedDate, scheduledGoals, entryMap, isSelectedToday, isSelectedFuture]);
   const blocks = useMemo(() => routineBlocks ?? [], [routineBlocks]);
 
   // Group goals by routine block
@@ -190,7 +220,7 @@ export default function TodayPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                {allDone ? 'All done' : `${completedCount} of ${scheduledGoals.length}`}
+                {allDone ? 'All done' : `${completedCount} time${completedCount === 1 ? '' : 's'} so far`}
               </motion.span>
             </AnimatePresence>
           )}
@@ -212,7 +242,7 @@ export default function TodayPage() {
         >
           <motion.div
             className="h-full rounded-full"
-            style={{ backgroundColor: allDone ? 'var(--success)' : 'var(--accent)' }}
+            style={{ backgroundColor: allDone ? 'var(--success)' : 'var(--progress)' }}
             animate={{ width: `${pct * 100}%` }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           />
@@ -429,6 +459,22 @@ export default function TodayPage() {
           })}
         </div>
       )}
+
+      {/* Missed day recovery modal */}
+      <MissedDayModal
+        open={showMissedDayModal}
+        onClose={() => setShowMissedDayModal(false)}
+        onBackToIt={() => {
+          setShowMissedDayModal(false);
+          setSelectedDate(today);
+        }}
+      />
+
+      {/* Onboarding modal */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+      />
 
     </div>
   );

@@ -11,9 +11,10 @@ interface ModalProps {
   children: React.ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  glass?: boolean;
 }
 
-export function Modal({ open, onClose, title, children, className, size = 'md' }: ModalProps) {
+export function Modal({ open, onClose, title, children, className, size = 'md', glass = false }: ModalProps) {
   const scrollYRef = useRef(0);
   const [mounted, setMounted] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -108,9 +109,14 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
           className,
         )}
         style={{
-          backgroundColor: 'var(--surface)',
+          backgroundColor: glass ? 'var(--frosted-light)' : 'var(--surface)',
+          backdropFilter: glass ? 'blur(20px)' : 'none',
+          WebkitBackdropFilter: glass ? 'blur(20px)' : 'none',
           maxHeight: '92dvh',
-          boxShadow: '0 -2px 20px rgba(0,0,0,0.08), 0 0 0 1px var(--border)',
+          boxShadow: glass
+            ? '0 -2px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(255, 255, 255, 0.5)'
+            : '0 -2px 20px rgba(0,0,0,0.08), 0 0 0 1px var(--border)',
+          border: glass ? 'none' : undefined,
         }}
         onClick={e => e.stopPropagation()}
       >
